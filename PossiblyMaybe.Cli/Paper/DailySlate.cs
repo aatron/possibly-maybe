@@ -162,8 +162,8 @@ public static class DailySlate
         try { xg = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
         catch { /* */ }
 
-        var xgBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
-        var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var xgBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var g in games)
         {

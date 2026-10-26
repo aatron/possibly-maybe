@@ -36,6 +36,16 @@ public static class TotalsMath
         => leagueAvg + scale * (homeOff + awayOff - homeDef - awayDef);
 }
 
+/// <summary>EMA α from half-life in games: α = 1 − 0.5^(1/hl). Dixon–Coles-style recency for books.</summary>
+public static class EmaDecay
+{
+    public static double AlphaFromHalfLife(double halfLifeGames)
+        => halfLifeGames <= 0 ? 1.0 : 1.0 - Math.Pow(0.5, 1.0 / halfLifeGames);
+
+    public static double HalfLifeFromAlpha(double alpha)
+        => alpha is <= 0 or >= 1 ? double.PositiveInfinity : Math.Log(0.5) / Math.Log(1.0 - alpha);
+}
+
 /// <summary>Walk-forward team points-for / points-against EMA → expected game total.</summary>
 public sealed class ScoringBook
 {

@@ -35,6 +35,8 @@ public static class TotalsEdgeBacktest
         double minAbsEdge,
         TotalsModelKind model = TotalsModelKind.PaceEff,
         string? trackingDir = null,
+        double alpha = 0.15,
+        double restB2bPts = 0,
         CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -67,8 +69,9 @@ public static class TotalsEdgeBacktest
             ? TeamEfgPriors.Load(trackingDir ?? GuessTrackingDir(dbPath))
             : null;
 
-        var scoring = new ScoringBook();
-        var pace = new PaceEfficiencyBook();
+        var scoring = new ScoringBook(alpha: alpha);
+        var pace = new PaceEfficiencyBook(alpha: alpha);
+        var rest = new RestTracker();
         var train = new Acc("train_totals");
         var hold = new Acc("holdout_2024_25");
         var usedPace = 0;
@@ -89,11 +92,15 @@ public static class TotalsEdgeBacktest
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
 
             // Ratings are pre-game; box row (if any) only updates the book after the bet decision.
             double modelExp = model == TotalsModelKind.Scoring
                 ? scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam)
                 : pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (restB2bPts != 0)
+                modelExp += restB2bPts * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+
             if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg
                 or TotalsModelKind.PaceEffPlatt or TotalsModelKind.PaceEffRidge)
             {
@@ -162,11 +169,65 @@ public static class TotalsEdgeBacktest
                     box.FgaHome, box.OrebHome, box.TovHome, box.FtaHome, box.PtsHome, box.Fg3aHome,
                     box.FgaAway, box.OrebAway, box.TovAway, box.FtaAway, box.PtsAway, box.Fg3aAway);
             }
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
         }
 
         Console.WriteLine(
-            $"  [model={model} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched}]");
+            $"  [model={model} α={alpha:F3} restB2bPts={restB2bPts:F2} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched}]");
         return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>
+    /// Soft-threshold OLS of (actual−modelExp) on B2B-count using TRAIN seasons only.
+    /// Returns 0 if |β| &lt; thresh (L1-style drop).
+    /// </summary>
+    public static async Task<double> FitRestB2bPtsAsync(
+        string dbPath, TotalsModelKind model, double alpha, double softThreshPts = 0.5,
+        CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null && g.Season != HoldoutSeason)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        Dictionary<int, GameBox> boxes = [];
+        try { boxes = await db.GameBoxes.AsNoTracking().ToDictionaryAsync(b => b.GameId, ct); }
+        catch { /* older DB */ }
+
+        var scoring = new ScoringBook(alpha: alpha);
+        var pace = new PaceEfficiencyBook(alpha: alpha);
+        var rest = new RestTracker();
+        double sxx = 0, sxy = 0;
+        foreach (var g in games)
+        {
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
+            var modelExp = model == TotalsModelKind.Scoring
+                ? scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam)
+                : pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var x = (double)rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            var y = g.HomeScore!.Value + g.AwayScore!.Value - modelExp;
+            sxx += x * x;
+            sxy += x * y;
+            scoring.Update(g.HomeTeam, g.AwayTeam, g.HomeScore.Value, g.AwayScore!.Value);
+            if (boxes.TryGetValue(g.Id, out var box))
+            {
+                pace.Update(
+                    g.HomeTeam, g.AwayTeam,
+                    box.FgaHome, box.OrebHome, box.TovHome, box.FtaHome, box.PtsHome, box.Fg3aHome,
+                    box.FgaAway, box.OrebAway, box.TovAway, box.FtaAway, box.PtsAway, box.Fg3aAway);
+            }
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
+        }
+
+        if (sxx < 1e-9) return 0;
+        var beta = sxy / sxx;
+        return Math.Abs(beta) < softThreshPts ? 0 : beta;
     }
 
     private static double PredictOver(

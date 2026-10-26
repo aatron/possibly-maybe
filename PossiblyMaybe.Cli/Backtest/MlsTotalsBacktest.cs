@@ -14,7 +14,8 @@ public static class MlsTotalsBacktest
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, double marketWeight, double minEv, double minAbsEdge,
-        bool usePlatt = false, CancellationToken ct = default)
+        bool usePlatt = false, double alpha = MlsChampConfig.EmaAlpha, double restB2bGoals = 0,
+        CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -30,8 +31,9 @@ public static class MlsTotalsBacktest
         try { xgByGame = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
         catch { /* table may be empty on old DBs */ }
 
-        var xgBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
-        var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var xgBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var rest = new RestTracker();
         var seenXg = new HashSet<string>(StringComparer.Ordinal);
         OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc("mls_train");
@@ -39,9 +41,12 @@ public static class MlsTotalsBacktest
 
         foreach (var g in games)
         {
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
             if (g.Season is "2026")
             {
                 ApplyUpdate(g, xgByGame, xgBook, goalsBook, seenXg);
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
                 continue;
             }
 
@@ -49,13 +54,25 @@ public static class MlsTotalsBacktest
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
-            if (open?.Line is not { } line || close?.Line is not { } closeLine) continue;
-            if (Math.Abs(line - closeLine) < 0.25) continue;
+            if (open?.Line is not { } line || close?.Line is not { } closeLine)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
+            if (Math.Abs(line - closeLine) < 0.25)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
 
             var useXg = seenXg.Contains(g.HomeTeam) && seenXg.Contains(g.AwayTeam);
             var modelExp = useXg
                 ? xgBook.ExpectedTotal(g.HomeTeam, g.AwayTeam)
                 : goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (restB2bGoals != 0)
+                modelExp += restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
 
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
@@ -85,9 +102,51 @@ public static class MlsTotalsBacktest
             acc.AddGame();
             platt?.Observe(modelExp, line, ou);
             ApplyUpdate(g, xgByGame, xgBook, goalsBook, seenXg);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
         }
 
         return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>Soft-threshold OLS residual~B2B (train ≤2024). Drop if |β|&lt;thresh.</summary>
+    public static async Task<double> FitRestB2bGoalsAsync(
+        string dbPath, double alpha = 0.18, double softThresh = 0.05, CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "MLS" && g.HomeScore != null && g.Season != HoldoutSeason && g.Season != "2026")
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        Dictionary<int, MlsGameXg> xgByGame = [];
+        try { xgByGame = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
+        catch { /* empty */ }
+
+        var xgBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var rest = new RestTracker();
+        var seenXg = new HashSet<string>(StringComparer.Ordinal);
+        double sxx = 0, sxy = 0;
+        foreach (var g in games)
+        {
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
+            var useXg = seenXg.Contains(g.HomeTeam) && seenXg.Contains(g.AwayTeam);
+            var modelExp = useXg
+                ? xgBook.ExpectedTotal(g.HomeTeam, g.AwayTeam)
+                : goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var x = (double)rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            var y = g.HomeScore!.Value + g.AwayScore!.Value - modelExp;
+            sxx += x * x;
+            sxy += x * y;
+            ApplyUpdate(g, xgByGame, xgBook, goalsBook, seenXg);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
+        }
+        if (sxx < 1e-9) return 0;
+        var beta = sxy / sxx;
+        return Math.Abs(beta) < softThresh ? 0 : beta;
     }
 
     private static void ApplyUpdate(
@@ -109,7 +168,7 @@ public static class MlsTotalsBacktest
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, usePlatt: false, ct);
+            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, usePlatt: false, ct: ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1} ll={ho.LogLoss:F4} br={ho.Brier:F4}");
@@ -142,8 +201,8 @@ public static class MlsTotalsBacktest
     private static async Task ComparePlattAsync(
         string dbPath, double w, double edge, CancellationToken ct)
     {
-        var (_, baseHold) = await RunAsync(dbPath, w, MlsChampConfig.MinEv, edge, usePlatt: false, ct);
-        var (_, platHold) = await RunAsync(dbPath, w, MlsChampConfig.MinEv, edge, usePlatt: true, ct);
+        var (_, baseHold) = await RunAsync(dbPath, w, MlsChampConfig.MinEv, edge, usePlatt: false, ct: ct);
+        var (_, platHold) = await RunAsync(dbPath, w, MlsChampConfig.MinEv, edge, usePlatt: true, ct: ct);
         Console.WriteLine($"=== MLS PLATT vs BASE @ w={w:F2} edge={edge:F2} ===");
         Console.WriteLine(
             $"BASE  n={baseHold.Bets} clv={baseHold.MeanClv:F3} pnl={baseHold.PaperPnlUnits:F1} ll={baseHold.LogLoss:F4} br={baseHold.Brier:F4}");

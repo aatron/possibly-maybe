@@ -12,7 +12,8 @@ public static class SoccerLeagueTotalsBacktest
 {
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, string sport, string holdoutSeason, double marketWeight, double minEv, double minAbsEdge,
-        bool usePlatt = false, CancellationToken ct = default)
+        bool usePlatt = false, double alpha = 0.18, double restB2bGoals = 0,
+        CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -25,7 +26,8 @@ public static class SoccerLeagueTotalsBacktest
         var odds = await db.OddsSnapshots.AsNoTracking().Where(o => o.Market == "TOTAL").ToListAsync(ct);
         var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
-        var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var rest = new RestTracker();
         OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc($"{sport}_train");
         var hold = new Acc($"{sport}_holdout_{holdoutSeason}");
@@ -33,9 +35,12 @@ public static class SoccerLeagueTotalsBacktest
         foreach (var g in games)
         {
             var season = g.Season ?? "";
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
             if (string.CompareOrdinal(season, holdoutSeason) > 0)
             {
                 goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
                 continue;
             }
 
@@ -43,10 +48,22 @@ public static class SoccerLeagueTotalsBacktest
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
-            if (open?.Line is not { } line || close?.Line is not { } closeLine) continue;
-            if (Math.Abs(line - closeLine) < 0.25) continue;
+            if (open?.Line is not { } line || close?.Line is not { } closeLine)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
+            if (Math.Abs(line - closeLine) < 0.25)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
 
             var modelExp = goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (restB2bGoals != 0)
+                modelExp += restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
             var acc = season == holdoutSeason ? hold : train;
@@ -75,9 +92,47 @@ public static class SoccerLeagueTotalsBacktest
             acc.AddGame();
             platt?.Observe(modelExp, line, ou);
             goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
         }
 
         return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>Soft-threshold OLS residual~B2B on train only. Drop if |β|&lt;thresh.</summary>
+    public static async Task<double> FitRestB2bGoalsAsync(
+        string dbPath, string sport, string holdoutSeason, double alpha = 0.18,
+        double softThresh = 0.05, CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == sport && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var rest = new RestTracker();
+        double sxx = 0, sxy = 0;
+        foreach (var g in games)
+        {
+            var season = g.Season ?? "";
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
+            if (string.CompareOrdinal(season, holdoutSeason) >= 0)
+                continue;
+
+            var modelExp = goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var x = (double)rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            var y = g.HomeScore!.Value + g.AwayScore!.Value - modelExp;
+            sxx += x * x;
+            sxy += x * y;
+            goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore.Value, g.AwayScore!.Value);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
+        }
+        if (sxx < 1e-9) return 0;
+        var beta = sxy / sxx;
+        return Math.Abs(beta) < softThresh ? 0 : beta;
     }
 
     public static async Task SweepAsync(
@@ -89,7 +144,7 @@ public static class SoccerLeagueTotalsBacktest
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, usePlatt: false, ct);
+            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, usePlatt: false, ct: ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1} ll={ho.LogLoss:F4} br={ho.Brier:F4}");
@@ -126,8 +181,8 @@ public static class SoccerLeagueTotalsBacktest
         string dbPath, string sport, string holdoutSeason,
         double w, double minEv, double edge, CancellationToken ct)
     {
-        var (_, baseHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: false, ct);
-        var (_, platHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: true, ct);
+        var (_, baseHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: false, ct: ct);
+        var (_, platHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: true, ct: ct);
         Console.WriteLine($"=== {sport} PLATT vs BASE @ w={w:F2} edge={edge:F2} ===");
         Console.WriteLine(
             $"BASE  n={baseHold.Bets} clv={baseHold.MeanClv:F3} pnl={baseHold.PaperPnlUnits:F1} ll={baseHold.LogLoss:F4} br={baseHold.Brier:F4}");

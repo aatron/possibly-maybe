@@ -206,6 +206,17 @@ public sealed class RestTracker
         return RestScore(home, date) - RestScore(away, date);
     }
 
+    /// <summary>1 if team played yesterday (or same day), else 0. Unknown schedule ⇒ 0.</summary>
+    public int B2bFlag(string team, DateOnly date)
+    {
+        if (!_last.TryGetValue(team, out var prev)) return 0;
+        return date.DayNumber - prev.DayNumber <= 1 ? 1 : 0;
+    }
+
+    /// <summary>Count of B2B sides (0–2). Cheap totals load feature from TipoffUtc only.</summary>
+    public int B2bCount(string home, string away, DateOnly date)
+        => B2bFlag(home, date) + B2bFlag(away, date);
+
     private double RestScore(string team, DateOnly date)
     {
         if (!_last.TryGetValue(team, out var prev))
