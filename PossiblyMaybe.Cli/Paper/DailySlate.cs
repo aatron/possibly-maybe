@@ -148,7 +148,7 @@ public static class DailySlate
         return pace;
     }
 
-    private static async Task<(DixonColesBook Xg, DixonColesBook Goals, HashSet<string> SeenXg)> BuildMlsBooksAsync(
+    private static async Task<(ScoringBook Xg, ScoringBook Goals, HashSet<string> SeenXg)> BuildMlsBooksAsync(
         string dbPath, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
@@ -162,8 +162,8 @@ public static class DailySlate
         try { xg = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
         catch { /* */ }
 
-        var xgBook = new DixonColesBook(alpha: MlsChampConfig.DcAlpha);
-        var goalsBook = new DixonColesBook(alpha: MlsChampConfig.DcAlpha);
+        var xgBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var g in games)
         {

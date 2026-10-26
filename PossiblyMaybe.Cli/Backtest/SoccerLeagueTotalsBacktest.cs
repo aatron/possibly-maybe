@@ -7,14 +7,14 @@ namespace PossiblyMaybe.Cli.Backtest;
 /// <summary>
 /// Goals-EMA totals for any soccer Sport code (EFL Championship, Liga MX, …).
 /// Holdout locked: train seasons &lt; holdout; skip seasons after holdout.
-/// Optional Dixon–Coles att-def EMA via useDixonColes.
+/// Optional Dixon–Coles via useDixonColes (Serie A champ).
 /// </summary>
 public static class SoccerLeagueTotalsBacktest
 {
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, string sport, string holdoutSeason, double marketWeight, double minEv, double minAbsEdge,
-        bool usePlatt = false, bool useDixonColes = false, double dcAlpha = 0.12,
-        CancellationToken ct = default)
+        bool usePlatt = false, double alpha = 0.18, double restB2bGoals = 0,
+        bool useDixonColes = false, double dcAlpha = 0.12, CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -27,8 +27,9 @@ public static class SoccerLeagueTotalsBacktest
         var odds = await db.OddsSnapshots.AsNoTracking().Where(o => o.Market == "TOTAL").ToListAsync(ct);
         var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
-        var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
         var dcBook = useDixonColes ? new DixonColesBook(alpha: dcAlpha) : null;
+        var rest = new RestTracker();
         OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc($"{sport}_train");
         var hold = new Acc($"{sport}_holdout_{holdoutSeason}");
@@ -36,10 +37,13 @@ public static class SoccerLeagueTotalsBacktest
         foreach (var g in games)
         {
             var season = g.Season ?? "";
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
             if (string.CompareOrdinal(season, holdoutSeason) > 0)
             {
                 goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
                 dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
                 continue;
             }
 
@@ -47,11 +51,23 @@ public static class SoccerLeagueTotalsBacktest
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
-            if (open?.Line is not { } line || close?.Line is not { } closeLine) continue;
-            if (Math.Abs(line - closeLine) < 0.25) continue;
+            if (open?.Line is not { } line || close?.Line is not { } closeLine)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
+            if (Math.Abs(line - closeLine) < 0.25)
+            {
+                rest.Played(g.HomeTeam, date);
+                rest.Played(g.AwayTeam, date);
+                continue;
+            }
 
             var modelExp = dcBook?.ExpectedTotal(g.HomeTeam, g.AwayTeam)
                 ?? goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (restB2bGoals != 0)
+                modelExp += restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
             var acc = season == holdoutSeason ? hold : train;
@@ -81,9 +97,47 @@ public static class SoccerLeagueTotalsBacktest
             platt?.Observe(modelExp, line, ou);
             goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
             dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
         }
 
         return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>Soft-threshold OLS residual~B2B on train only. Drop if |β|&lt;thresh.</summary>
+    public static async Task<double> FitRestB2bGoalsAsync(
+        string dbPath, string sport, string holdoutSeason, double alpha = 0.18,
+        double softThresh = 0.05, CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == sport && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var rest = new RestTracker();
+        double sxx = 0, sxy = 0;
+        foreach (var g in games)
+        {
+            var season = g.Season ?? "";
+            var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
+            if (string.CompareOrdinal(season, holdoutSeason) >= 0)
+                continue;
+
+            var modelExp = goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var x = (double)rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            var y = g.HomeScore!.Value + g.AwayScore!.Value - modelExp;
+            sxx += x * x;
+            sxy += x * y;
+            goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore.Value, g.AwayScore!.Value);
+            rest.Played(g.HomeTeam, date);
+            rest.Played(g.AwayTeam, date);
+        }
+        if (sxx < 1e-9) return 0;
+        var beta = sxy / sxx;
+        return Math.Abs(beta) < softThresh ? 0 : beta;
     }
 
     public static async Task SweepAsync(
@@ -128,22 +182,22 @@ public static class SoccerLeagueTotalsBacktest
             await ComparePlattAsync(dbPath, sport, holdoutSeason, best.W, 0.04, best.Edge, ct);
     }
 
-    /// <summary>Train-only w/edge/α sweep for Dixon–Coles EMA; holdout scored once for winner.</summary>
+    /// <summary>Train-only w/edge/α sweep for Dixon–Coles EMA; holdout once (Serie A champ path).</summary>
     public static async Task SweepDixonColesAsync(
         string dbPath, string sport, string holdoutSeason, CancellationToken ct = default)
     {
         Console.WriteLine($"######## {sport} TOTALS (Dixon–Coles / Poisson att-def EMA) ########");
         Console.WriteLine($"Holdout locked: {holdoutSeason} (train earlier; skip later seasons)");
         var rows = new List<(double W, double Edge, double Alpha, Gate1aResult Train, Gate1aResult Hold)>();
-        foreach (var alpha in new[] { 0.06, 0.12, 0.18, 0.25 })
+        foreach (var a in new[] { 0.06, 0.12, 0.18, 0.25 })
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
         {
             var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge,
-                usePlatt: false, useDixonColes: true, dcAlpha: alpha, ct: ct);
-            rows.Add((w, edge, alpha, tr, ho));
+                usePlatt: false, useDixonColes: true, dcAlpha: a, ct: ct);
+            rows.Add((w, edge, a, tr, ho));
             Console.WriteLine(
-                $"α={alpha:F2} w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
+                $"α={a:F2} w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
         }
 
         var eligible = rows

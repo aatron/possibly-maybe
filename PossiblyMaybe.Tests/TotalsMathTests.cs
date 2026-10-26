@@ -66,6 +66,14 @@ public class TotalsMathTests
     }
 
     [Test]
+    public async Task EmaDecay_half_life_roundtrip()
+    {
+        var a = EmaDecay.AlphaFromHalfLife(10);
+        await Assert.That(a).IsEqualTo(1.0 - Math.Pow(0.5, 0.1)).Within(1e-12);
+        await Assert.That(EmaDecay.HalfLifeFromAlpha(a)).IsEqualTo(10.0).Within(1e-9);
+    }
+
+    [Test]
     public async Task OuPlatt_learns_positive_edge_means_over()
     {
         var c = new OuPlattCalibrator(fallbackSharpness: 0.25);

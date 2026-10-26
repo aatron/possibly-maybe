@@ -194,6 +194,19 @@ switch (command)
             await SoccerLeagueTotalsBacktest.SweepDixonColesAsync(dbPath, sport, args[2]);
         return 0;
     }
+    case "sweep-decay":
+    {
+        // Library: EMA half-life / α + sparse B2B gate (TRAIN select; holdout once)
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await TimeDecaySweep.RunAsync(dbPath);
+        return 0;
+    }
     case "advise":
     case "advise-ou":
     {
@@ -431,6 +444,7 @@ static void PrintUsage()
           sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
+          sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
