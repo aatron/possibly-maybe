@@ -12,7 +12,7 @@ public static class SoccerLeagueTotalsBacktest
 {
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, string sport, string holdoutSeason, double marketWeight, double minEv, double minAbsEdge,
-        CancellationToken ct = default)
+        bool usePlatt = false, CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -26,6 +26,7 @@ public static class SoccerLeagueTotalsBacktest
         var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
         var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc($"{sport}_train");
         var hold = new Acc($"{sport}_holdout_{holdoutSeason}");
 
@@ -52,26 +53,27 @@ public static class SoccerLeagueTotalsBacktest
             var juice = -110;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
             var clv = TotalsMath.OverClvPoints(line, closeLine);
+            var pOver = platt?.OverProb(modelExp, line) ?? TotalsMath.OverProb(exp, line, sharpness: 1.2);
 
             if (Math.Abs(edge) >= minAbsEdge)
             {
                 if (edge > 0)
                 {
-                    var p = TotalsMath.OverProb(exp, line, sharpness: 1.2);
-                    var ev = OddsMath.ExpectedValue(p, juice);
+                    var ev = OddsMath.ExpectedValue(pOver, juice);
                     if (ev >= minEv)
-                        acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou));
+                        acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou), pOver);
                 }
                 else
                 {
-                    var p = 1 - TotalsMath.OverProb(exp, line, sharpness: 1.2);
-                    var ev = OddsMath.ExpectedValue(p, juice);
+                    var pUnder = 1 - pOver;
+                    var ev = OddsMath.ExpectedValue(pUnder, juice);
                     if (ev >= minEv)
-                        acc.AddBet(-clv, ou < 0, TotalsMath.OuPnL(juice, -ou));
+                        acc.AddBet(-clv, ou < 0, TotalsMath.OuPnL(juice, -ou), pUnder);
                 }
             }
 
             acc.AddGame();
+            platt?.Observe(modelExp, line, ou);
             goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
         }
 
@@ -87,10 +89,10 @@ public static class SoccerLeagueTotalsBacktest
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, ct);
+            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, usePlatt: false, ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
-                $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
+                $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1} ll={ho.LogLoss:F4} br={ho.Brier:F4}");
         }
 
         var eligible = rows
@@ -106,27 +108,63 @@ public static class SoccerLeagueTotalsBacktest
         var best = eligible[0];
         Console.WriteLine($"=== {sport} CHAMP w={best.W:F2} edge={best.Edge:F2} ===");
         Console.WriteLine($"TRAIN  n={best.Train.Bets} clv={best.Train.MeanClv:F3} hit={best.Train.HitRate:P1} pnl={best.Train.PaperPnlUnits:F1}");
-        Console.WriteLine($"HOLDOUT n={best.Hold.Bets} clv={best.Hold.MeanClv:F3} hit={best.Hold.HitRate:P1} pnl={best.Hold.PaperPnlUnits:F1}");
+        Console.WriteLine(
+            $"HOLDOUT n={best.Hold.Bets} clv={best.Hold.MeanClv:F3} hit={best.Hold.HitRate:P1} pnl={best.Hold.PaperPnlUnits:F1} ll={best.Hold.LogLoss:F4} br={best.Hold.Brier:F4}");
         var pass = best.Hold.PaperPnlUnits > 0 && best.Hold.MeanClv > 0 && best.Hold.Bets >= 40;
         Console.WriteLine(pass
             ? $"KILL: HOLD PASS — {sport} totals soft spot (paper)."
             : $"KILL: HOLD FAIL — {sport} not money yet.");
+
+        if (sport == "LIGUE1")
+            await ComparePlattAsync(dbPath, sport, holdoutSeason,
+                Ligue1ChampConfig.MarketWeight, Ligue1ChampConfig.MinEv, Ligue1ChampConfig.MinAbsTotalEdge, ct);
+        else
+            await ComparePlattAsync(dbPath, sport, holdoutSeason, best.W, 0.04, best.Edge, ct);
+    }
+
+    private static async Task ComparePlattAsync(
+        string dbPath, string sport, string holdoutSeason,
+        double w, double minEv, double edge, CancellationToken ct)
+    {
+        var (_, baseHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: false, ct);
+        var (_, platHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: true, ct);
+        Console.WriteLine($"=== {sport} PLATT vs BASE @ w={w:F2} edge={edge:F2} ===");
+        Console.WriteLine(
+            $"BASE  n={baseHold.Bets} clv={baseHold.MeanClv:F3} pnl={baseHold.PaperPnlUnits:F1} ll={baseHold.LogLoss:F4} br={baseHold.Brier:F4}");
+        Console.WriteLine(
+            $"PLATT n={platHold.Bets} clv={platHold.MeanClv:F3} pnl={platHold.PaperPnlUnits:F1} ll={platHold.LogLoss:F4} br={platHold.Brier:F4}");
+        var platPass = platHold.PaperPnlUnits > 0 && platHold.MeanClv > 0 && platHold.Bets >= 40;
+        var beats = platPass
+            && platHold.PaperPnlUnits > baseHold.PaperPnlUnits
+            && platHold.MeanClv >= baseHold.MeanClv;
+        Console.WriteLine(beats
+            ? $"KILL: PLATT PASS — beats base hold CLV+PnL; promote {sport} ChampConfig."
+            : $"KILL: PLATT FAIL — keep base champ (no {sport} ChampConfig change).");
     }
 
     private sealed class Acc(string slice)
     {
         private int _games, _bets, _hits;
-        private double _clv, _pnl;
+        private double _clv, _pnl, _ll, _br;
         public void AddGame() => _games++;
-        public void AddBet(double clv, bool won, double pnl)
+        public void AddBet(double clv, bool won, double pnl, double pSide)
         {
-            _bets++; _clv += clv; _pnl += pnl; if (won) _hits++;
+            _bets++;
+            _clv += clv;
+            _pnl += pnl;
+            if (won) _hits++;
+            var p = Math.Clamp(pSide, 1e-6, 1 - 1e-6);
+            var y = won ? 1.0 : 0.0;
+            _ll += -(y * Math.Log(p) + (1 - y) * Math.Log(1 - p));
+            _br += (p - y) * (p - y);
         }
         public Gate1aResult ToResult() => new()
         {
             Slice = slice, GamesScored = _games, Bets = _bets,
             MeanClv = _bets == 0 ? 0 : _clv / _bets, ClvUnit = "goals",
             HitRate = _bets == 0 ? 0 : (double)_hits / _bets, PaperPnlUnits = _pnl,
+            LogLoss = _bets == 0 ? 0 : _ll / _bets,
+            Brier = _bets == 0 ? 0 : _br / _bets,
         };
     }
 }

@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-10-26 (Gate 2b paper month live; slate-nba/mls) |
+| **Last updated** | 2026-10-26 (MLS/Ligue1 ISLP ll+Brier + Platt kill; Gate 2b paper) |
 | **Rollback** | `git checkout 7be68f0` — prior Scoring champ (w=0.4, edge≥3.5, hold +8.4u / 320) |
 | **Current gate** | **2b** live paper month ($1000) — **paper only** until month CLV/PnL trust |
 | **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
@@ -64,10 +64,10 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 |---|---|---|---|---|
 | **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
 | **NBA + tracking eFG** | yes (prior-szn pt_shot) | PaceEffEfg | 2024–25 | **FAIL** vs PaceEff (+6.2u/74 &lt; +16.3u/62) |
-| **MLS totals** | **3506** + ASA xG | xG EMA × market | **2025** | **PASS** (+12.2u / 93, CLV +0.18) — paper |
+| **MLS totals** | **3506** + ASA xG | xG EMA × market | **2025** | **PASS** (+12.2u / 93, CLV +0.18, ll=0.681 br=0.244) — paper; **Platt FAIL** (same PnL/CLV, worse ll) |
 | **EFL Championship OU** | 2026 open/close | goals EMA | **2024-2025** | **FAIL** (champ hold −0.5u / 54) |
 | **Liga MX OU** | 1424 open/close | goals EMA | **2024-2025** | **FAIL** (hold +2.0u / 21, CLV +0.23 — n&lt;40) |
-| **Ligue 1 OU** | 1483 open/close | goals EMA | **2024-2025** | **PASS** (+8.4u / 49, CLV +0.03) — paper |
+| **Ligue 1 OU** | 1483 open/close | goals EMA | **2024-2025** | **PASS** (+8.4u / 49, CLV +0.03, ll=0.692 br=0.249) — paper; **Platt FAIL** (1 bet −1.0u) |
 | **La Liga OU** | 1650 open/close | goals EMA | **2024-2025** | **FAIL** (hold −5.0u / 28, CLV −0.10) |
 | **Serie A OU** | 1731 open/close | goals EMA | **2024-2025** | **FAIL** (hold −8.5u / 40, CLV +0.09) |
 | **Cricket / AFL / Darts** | outcomes free; **no free DK open→close** | — | — | **NO Gate 0** |
@@ -91,7 +91,9 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 
 CLI: `import-mlb` / `import-nfl` / `import-mls` / `sweep-mlb` / `sweep-nfl` / `sweep-mls`
 
-**MLS champ:** w=0.40 · `|exp−line|≥0.25` · holdout locked in `NOTES_MLS.md` before peek. Paper only.
+**MLS champ:** w=0.40 · `|exp−line|≥0.25` · holdout locked in `NOTES_MLS.md` before peek. Paper only. Walk-forward Platt on `(modelExp−line)` does **not** beat base → no `MlsChampConfig` change.
+
+**Ligue 1 champ:** w=0.40 · `|exp−line|≥0.25` · hold **+8.4u / 49**. Same Platt kill → no `Ligue1ChampConfig` change. Sweeps print hold bet-slice log loss + Brier.
 
 ## Nightly
 

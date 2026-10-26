@@ -48,4 +48,35 @@ public class TotalsMathTests
         await Assert.That(EfgPriorMath.PriorFileKey(2025)).IsEqualTo("2023_24");
         await Assert.That(EfgPriorMath.AdjPts(0.55, 0.55, 0.54)).IsEqualTo(2.0).Within(1e-9);
     }
+
+    [Test]
+    public async Task OuPlatt_learns_positive_edge_means_over()
+    {
+        var c = new OuPlattCalibrator(fallbackSharpness: 0.25);
+        for (var i = 0; i < OuPlattCalibrator.MinFit; i++)
+            c.Observe(modelExp: 3.0, line: 2.5, ouResult: 1); // edge +0.5 → over
+        var p = c.OverProb(3.0, 2.5);
+        await Assert.That(p).IsGreaterThan(0.55);
+    }
+
+    [Test]
+    public async Task RidgeLogistic_separates_signed_edge()
+    {
+        var x = new List<double[]>();
+        var y = new List<double>();
+        for (var i = 0; i < 40; i++)
+        {
+            x.Add([1.0, -5.0]);
+            y.Add(0.0);
+            x.Add([1.0, 5.0]);
+            y.Add(1.0);
+        }
+
+        var beta = RidgeLogistic.Fit(x, y, lambda: 1.0);
+        var pLow = RidgeLogistic.Predict(beta, [1.0, -5.0]);
+        var pHigh = RidgeLogistic.Predict(beta, [1.0, 5.0]);
+        await Assert.That(pHigh).IsGreaterThan(pLow);
+        await Assert.That(pHigh).IsGreaterThan(0.7);
+        await Assert.That(pLow).IsLessThan(0.3);
+    }
 }
