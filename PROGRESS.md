@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-10-25 (PaceEff totals beat Scoring) |
+| **Last updated** | 2026-10-25 (MLB park×SP FIP still HOLD FAIL) |
 | **Rollback** | `git checkout 7be68f0` — prior Scoring champ (w=0.4, edge≥3.5, hold +8.4u / 320) |
 | **Current gate** | **2** live paper |
 | **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
@@ -36,7 +36,7 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 | Sport | Imported | Model | Holdout | Result |
 |---|---|---|---|---|
 | **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
-| **MLB totals** | 2290 games + SP prior FIP | SP FIP × market | Sep–Nov 2025 | **FAIL** (train +21u, hold −2.2u / 94) |
+| **MLB totals** | 2290 games + SP prior FIP + Savant 3yr PF | SP FIP × home PF × market | Sep–Nov 2025 | **FAIL** (champ w=0.4 edge=0.5: train +18.4u / 473; hold **+1.4u / 100**, CLV **−0.03** — PnL>0 but CLV≤0) |
 | **NFL totals** | 6502 close + 92 open/close | scoring + roof/wind | 2024 | **FAIL** (hold −0.6u / 14; CLV thin) |
 
 CLI: `import-mlb` / `import-nfl` / `sweep-mlb` / `sweep-nfl`

@@ -10,7 +10,8 @@ Gate: both **HOLD FAIL** — do not real-bet. NBA champ untouched.
 | Open/close totals (~2477) | `data/raw/kaggle/mlb_closing_odds_2025/` | yes (`import-mlb`) |
 | Probable SP + **prior-season FIP** (~2590) | `data/raw/mlb/games_sp_fip_2025.csv` + BRef `pitching_bref_202{3,4,5}.csv` | yes (`GamePitching`) |
 | Schedule raw | `data/raw/mlb/schedule_raw_2025.csv` | SP join only |
-| Sweep | `sweep-mlb` — SP FIP × market; hold Sep–Nov 2025 **−2.2u / 94** | |
+| Sweep | `sweep-mlb` — SP FIP × home PF × market; hold Sep–Nov 2025 **+1.4u / 100**, CLV **−0.03** → **HOLD FAIL** | |
+| Park factors | `data/raw/mlb/park_factors.csv` (Savant 2024 3yr `index_runs`; `scripts/fetch_mlb_park_factors.py`) | yes (`MlbParkFactors`) |
 
 ### NFL
 | Piece | Where | Used in model? |
@@ -26,7 +27,7 @@ Gate: both **HOLD FAIL** — do not real-bet. NBA champ untouched.
 ### MLB (have SP prior FIP; lack the rest of the stack)
 | Gap | Why soft spots care |
 |---|---|
-| **Park factor** | Coors / Petco swing expected runs harder than most SP deltas |
+| ~~**Park factor**~~ | **Done** — home `pf_3yr/100` on modelExp; still HOLD FAIL (CLV) |
 | **Weather** (temp, wind out/in) | Open parks; not in M1 CSV |
 | **Same-season SP form** | Prior-year FIP misses hot/cold / IL returns mid-season |
 | **Lineups / platoon (L/R)** | Posting moves the total after open |

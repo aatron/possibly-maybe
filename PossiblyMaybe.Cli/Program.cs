@@ -120,7 +120,8 @@ switch (command)
     {
         var repoRoot = FindRepoRoot();
         var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
-        await MlbTotalsBacktest.SweepAsync(dbPath);
+        var pf = Path.Combine(ResolveRawRoot(), "mlb", "park_factors.csv");
+        await MlbTotalsBacktest.SweepAsync(dbPath, pf);
         return 0;
     }
     case "sweep-nfl":

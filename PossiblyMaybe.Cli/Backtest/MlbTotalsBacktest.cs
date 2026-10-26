@@ -5,7 +5,7 @@ using PossiblyMaybe.Domain;
 namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
-/// MLB totals: prior-season SP FIP → expected runs, blended with open total.
+/// MLB totals: prior-season SP FIP × home park factor → expected runs, blended with open total.
 /// Holdout = tipoff on/after 2025-09-01 (locked before metric peek in pack notes).
 /// </summary>
 public static class MlbTotalsBacktest
@@ -14,7 +14,8 @@ public static class MlbTotalsBacktest
         new(2025, 9, 1, 0, 0, 0, TimeSpan.Zero);
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
-        string dbPath, double marketWeight, double minEv, double minAbsEdge, CancellationToken ct = default)
+        string dbPath, double marketWeight, double minEv, double minAbsEdge,
+        string? parkFactorsPath = null, CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -31,6 +32,7 @@ public static class MlbTotalsBacktest
         Dictionary<int, GamePitching> pitch = [];
         try { pitch = await db.GamePitchings.AsNoTracking().ToDictionaryAsync(p => p.GameId, ct); }
         catch { /* */ }
+        var park = MlbParkFactors.Load(parkFactorsPath);
 
         const double lgRpg = 4.5;
         const double lgFip = 4.0;
@@ -56,6 +58,7 @@ public static class MlbTotalsBacktest
             else
                 modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
 
+            modelExp = MlbParkFactors.Scale(modelExp, g.HomeTeam, park);
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
             var acc = g.TipoffUtc >= HoldoutStart ? hold : train;
@@ -88,15 +91,18 @@ public static class MlbTotalsBacktest
         return (train.ToResult(), hold.ToResult());
     }
 
-    public static async Task SweepAsync(string dbPath, CancellationToken ct = default)
+    public static async Task SweepAsync(string dbPath, string? parkFactorsPath = null, CancellationToken ct = default)
     {
-        Console.WriteLine("######## MLB TOTALS (SP FIP prior) ########");
+        Console.WriteLine("######## MLB TOTALS (SP FIP × home park) ########");
         Console.WriteLine($"Holdout start: {HoldoutStart:yyyy-MM-dd}");
+        var parkPath = parkFactorsPath ?? "";
+        var nPf = MlbParkFactors.Load(string.IsNullOrEmpty(parkPath) ? null : parkPath).Count;
+        Console.WriteLine($"Park factors: {(nPf > 0 ? $"{nPf} teams from {parkPath}" : "none (PF=100)")}");
         var rows = new List<(double W, double Edge, Gate1aResult Train, Gate1aResult Hold)>();
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7 })
         foreach (var edge in new[] { 0.5, 0.75, 1.0, 1.25, 1.5 })
         {
-            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, ct);
+            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, parkFactorsPath, ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
