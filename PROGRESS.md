@@ -41,7 +41,7 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 
 CLI: `import-mlb` / `import-nfl` / `sweep-mlb` / `sweep-nfl`
 
-**Next soft spots to try:** MLB park+weather; NFL EPA from nflverse PBP; more NFL open/close history. Do **not** bet MLB/NFL real until HOLD PASS.
+**Next soft spots:** see `SportPacks/GAPS_MLB_NFL.md` (park factors; nflverse EPA). MLS pack notes: `NOTES_MLS.md` / `SportPacks/MlsPack.md`. Do **not** bet MLB/NFL/MLS real until HOLD PASS.
 
 ## Nightly
 
