@@ -3,13 +3,13 @@ namespace PossiblyMaybe.Cli.Backtest;
 /// <summary>
 /// Train-only O/U sweep. Money objective: max train PnL among CLV&gt;0 configs with
 /// enough volume (500..5000 train bets). Holdout season 2025 scored once.
-/// Compares Scoring (legacy) vs PaceEff (box pace×ORtg).
+/// Compares Scoring vs PaceEff vs PaceEffEfg (prior-season tracking eFG).
 /// </summary>
 public static class TotalsSweep
 {
     public static async Task RunAsync(string dbPath, CancellationToken ct = default)
     {
-        foreach (var model in new[] { TotalsModelKind.Scoring, TotalsModelKind.PaceEff })
+        foreach (var model in new[] { TotalsModelKind.Scoring, TotalsModelKind.PaceEff, TotalsModelKind.PaceEffEfg })
             await RunModelAsync(dbPath, model, ct);
     }
 
@@ -25,7 +25,7 @@ public static class TotalsSweep
         foreach (var w in marketWeights)
         foreach (var minEdge in minEdges)
         {
-            var (train, hold) = await TotalsEdgeBacktest.RunAsync(dbPath, w, minEv, minEdge, model, ct);
+            var (train, hold) = await TotalsEdgeBacktest.RunAsync(dbPath, w, minEv, minEdge, model, ct: ct);
             rows.Add(new Row(w, minEv, minEdge, train, hold));
             Console.WriteLine(
                 $"train w={w:F2} minEdge={minEdge:F1}  bets={train.Bets} clv={train.MeanClv:F2} pnl={train.PaperPnlUnits:F1}  | hold bets={hold.Bets} clv={hold.MeanClv:F2} pnl={hold.PaperPnlUnits:F1}");

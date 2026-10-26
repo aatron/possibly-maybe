@@ -49,6 +49,9 @@ public sealed class ScoringBook
     }
 
     public void Update(string home, string away, int homeScore, int awayScore)
+        => Update(home, away, (double)homeScore, awayScore);
+
+    public void Update(string home, string away, double homeScore, double awayScore)
     {
         var h = Get(home);
         var a = Get(away);

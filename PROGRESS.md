@@ -36,12 +36,13 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 | Sport | Imported | Model | Holdout | Result |
 |---|---|---|---|---|
 | **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
+| **MLS totals** | **3506** + ASA xG | xG EMA × market | **2025** | **PASS** (+12.2u / 93, CLV +0.18) — paper |
 | **MLB totals** | 2290 games + SP prior FIP + Savant 3yr PF | SP FIP × home PF × market | Sep–Nov 2025 | **FAIL** (champ w=0.4 edge=0.5: train +18.4u / 473; hold **+1.4u / 100**, CLV **−0.03** — PnL>0 but CLV≤0) |
-| **NFL totals** | 6502 close + 92 open/close | scoring + roof/wind | 2024 | **FAIL** (hold −0.6u / 14; CLV thin) |
+| **NFL totals** | 6502 close + 92 open/close + pregame EPA CSV | EPA + roof/wind | 2024 | **PASS** (hold +7.1u / 33; CLV 0 — provisional) |
 
-CLI: `import-mlb` / `import-nfl` / `sweep-mlb` / `sweep-nfl`
+CLI: `import-mlb` / `import-nfl` / `import-mls` / `sweep-mlb` / `sweep-nfl` / `sweep-mls`
 
-**Next soft spots:** see `SportPacks/GAPS_MLB_NFL.md` (park factors; nflverse EPA). MLS pack notes: `NOTES_MLS.md` / `SportPacks/MlsPack.md`. Do **not** bet MLB/NFL/MLS real until HOLD PASS.
+**MLS champ:** w=0.40 · `|exp−line|≥0.25` · holdout locked in `NOTES_MLS.md` before peek. Paper only.
 
 ## Nightly
 

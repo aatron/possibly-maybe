@@ -10,6 +10,8 @@ public enum TotalsModelKind
     Scoring = 0,
     /// <summary>Pace × ORtg/DRtg from box (industry standard).</summary>
     PaceEff = 1,
+    /// <summary>PaceEff + prior-season tracking eFG% adjustment.</summary>
+    PaceEffEfg = 2,
 }
 
 /// <summary>
@@ -25,6 +27,7 @@ public static class TotalsEdgeBacktest
         double minEv,
         double minAbsEdge,
         TotalsModelKind model = TotalsModelKind.PaceEff,
+        string? trackingDir = null,
         CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -33,7 +36,7 @@ public static class TotalsEdgeBacktest
         await using var db = new AppDbContext(options);
 
         var games = (await db.Games.AsNoTracking()
-                .Where(g => g.HomeScore != null && g.AwayScore != null)
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null && g.AwayScore != null)
                 .ToListAsync(ct))
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
@@ -53,12 +56,17 @@ public static class TotalsEdgeBacktest
             // table may not exist yet on older DBs
         }
 
+        var efgPriors = model == TotalsModelKind.PaceEffEfg
+            ? TeamEfgPriors.Load(trackingDir ?? GuessTrackingDir(dbPath))
+            : null;
+
         var scoring = new ScoringBook();
         var pace = new PaceEfficiencyBook();
         var train = new Acc("train_totals");
         var hold = new Acc("holdout_2024_25");
         var usedPace = 0;
         var usedScoringFallback = 0;
+        var efgTouched = 0;
 
         foreach (var g in games)
         {
@@ -68,13 +76,20 @@ public static class TotalsEdgeBacktest
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
 
             // Ratings are pre-game; box row (if any) only updates the book after the bet decision.
-            double modelExp = model == TotalsModelKind.PaceEff
-                ? pace.ExpectedTotal(g.HomeTeam, g.AwayTeam)
-                : scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
-            if (model == TotalsModelKind.PaceEff)
+            double modelExp = model == TotalsModelKind.Scoring
+                ? scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam)
+                : pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg)
             {
                 if (boxes.ContainsKey(g.Id)) usedPace++;
                 else usedScoringFallback++; // no box ⇒ pace book not updated this game (stale priors)
+            }
+
+            if (efgPriors is not null)
+            {
+                var adj = efgPriors.AdjPts(g.Season, g.HomeTeam, g.AwayTeam);
+                if (adj != 0) efgTouched++;
+                modelExp += adj;
             }
 
             var acc = g.Season == HoldoutSeason ? hold : train;
@@ -119,8 +134,23 @@ public static class TotalsEdgeBacktest
             }
         }
 
-        Console.WriteLine($"  [model={model} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback}]");
+        Console.WriteLine(
+            $"  [model={model} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched}]");
         return (train.ToResult(), hold.ToResult());
+    }
+
+    private static string GuessTrackingDir(string dbPath)
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? ".");
+        while (dir is not null)
+        {
+            var candidate = Path.Combine(dir.FullName, "data", "raw", "nba_tracking");
+            if (Directory.Exists(candidate))
+                return candidate;
+            dir = dir.Parent;
+        }
+
+        return Path.Combine("data", "raw", "nba_tracking");
     }
 
     private sealed class Acc(string slice)
