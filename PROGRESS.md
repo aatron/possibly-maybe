@@ -4,8 +4,8 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-10-26 (NBA PaceEff ISLP Platt/Ridge FAIL; champ unchanged) |
-| **Rollback** | `git checkout 7be68f0` — prior Scoring champ (w=0.4, edge≥3.5, hold +8.4u / 320) |
+| **Last updated** | 2026-10-26 (Dixon–Coles KEEP MLS+SerieA; de-vig/pooling REVERT) |
+| **Rollback** | `git checkout 311127f` — pre–Dixon–Coles champs (MLS xG-EMA +12.2u; no Serie A) |
 | **Current gate** | **2b** live paper month ($1000) — **paper only** until month CLV/PnL trust |
 | **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
 | **Kill status** | **HOLD PASS** |
@@ -79,12 +79,12 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 | **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
 | **NBA + tracking eFG** | yes (prior-szn pt_shot) | PaceEffEfg | 2024–25 | **FAIL** vs PaceEff (+6.2u/74 &lt; +16.3u/62) |
 | **NBA + Platt / ridge cal** | yes (walk-forward) | PaceEffPlatt / Ridge | 2024–25 | **FAIL** vs PaceEff (PnL 9.1u/8.2u &lt; 16.3u; Platt LL broken) |
-| **MLS totals** | **3506** + ASA xG | xG EMA × market | **2025** | **PASS** (+12.2u / 93, CLV +0.18, ll=0.681 br=0.244) — paper; **Platt FAIL** (same PnL/CLV, worse ll) |
-| **EFL Championship OU** | 2026 open/close | goals EMA | **2024-2025** | **FAIL** (champ hold −0.5u / 54) |
-| **Liga MX OU** | 1424 open/close | goals EMA | **2024-2025** | **FAIL** (hold +2.0u / 21, CLV +0.23 — n&lt;40) |
-| **Ligue 1 OU** | 1483 open/close | goals EMA | **2024-2025** | **PASS** (+8.4u / 49, CLV +0.03, ll=0.692 br=0.249) — paper; **Platt FAIL** (1 bet −1.0u) |
-| **La Liga OU** | 1650 open/close | goals EMA | **2024-2025** | **FAIL** (hold −5.0u / 28, CLV −0.10) |
-| **Serie A OU** | 1731 open/close | goals EMA | **2024-2025** | **FAIL** (hold −8.5u / 40, CLV +0.09) |
+| **MLS totals** | **3506** + ASA xG | **Dixon–Coles xG** (α=0.12) × market | **2025** | **PASS** (+13.2u / 116, CLV +0.18) — paper; prior xG-EMA +12.2u/93; Platt FAIL |
+| **EFL Championship OU** | 2026 open/close | goals EMA / DC | **2024-2025** | **FAIL** (EMA −0.5u/54; DC −2.2u/6) |
+| **Liga MX OU** | 1424 open/close | goals EMA / DC | **2024-2025** | **FAIL** (EMA +2.0u/21 n&lt;40; DC −9.6u/45) |
+| **Ligue 1 OU** | 1483 open/close | goals EMA | **2024-2025** | **PASS** (+8.4u / 49, CLV +0.03) — paper; DC FAIL vs EMA; Platt FAIL |
+| **La Liga OU** | 1650 open/close | goals EMA / DC | **2024-2025** | **FAIL** (EMA −5.0u/28; DC no train band) |
+| **Serie A OU** | 1731 open/close | **Dixon–Coles goals** (α=0.18) | **2024-2025** | **PASS** (+1.7u / 113, CLV +0.03) — prior EMA FAIL −8.5u/40; no live slate yet |
 | **Cricket / AFL / Darts** | outcomes free; **no free DK open→close** | — | — | **NO Gate 0** |
 | **TWA–Tokyo** | = **WTA Pan Pacific (Tokyo)** (WTA misread) | tennis open/close exists (Valuebet) | — | **No Gate 0 for one event**; full WTA/ATP pack later if prioritized |
 | **TT Elite Series** | results free; no free O→C | — | — | **NO Gate 0** |
@@ -97,18 +97,29 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 | Sport | Holdout PnL | On $1000 |
 |---|---|---|
 | NBA PaceEff | +16.3u | **+$163** |
-| MLS xG | +12.2u | **+$122** |
+| MLS Dixon–Coles xG | +13.2u | **+$132** |
 | Ligue 1 goals EMA | +8.4u | **+$84** |
+| Serie A Dixon–Coles | +1.7u | **+$17** |
 
-**Shared $1000 soft-spot book (all PASS tickets, 1u=$10):** +16.3+12.2+8.4 = **+36.9u → +$369** on those holdout samples (different calendars — not one simultaneous year).
+**Shared $1000 soft-spot book (all PASS tickets, 1u=$10):** +16.3+13.2+8.4+1.7 = **+39.6u → +$396** on those holdout samples (different calendars — not one simultaneous year).
+
+### Library ML experiments (2026-10-26)
+
+| Topic | Verdict | Notes |
+|---|---|---|
+| Dixon–Coles att-def EMA | **KEEP** MLS + Serie A | `67cea7a`; rollback `311127f` |
+| De-vig / fair EV juice | **REVERT** | Identical to champ (−110 warehouse); `reports/library_devig.md` |
+| EB partial pooling (k0) | **REVERT** | No holdout win; `reports/library_partial_pooling.md` |
 | **MLB totals** | 2290 games + SP prior FIP + Savant 3yr PF | SP FIP × home PF × market | Sep–Nov 2025 | **FAIL** (champ w=0.4 edge=0.5: train +18.4u / 473; hold **+1.4u / 100**, CLV **−0.03** — PnL>0 but CLV≤0) |
 | **NFL totals** | 6502 close + **450 ESPN** + 92 minmaxer OU open/close + EPA | EPA + roof/wind | 2024 | **FAIL** (real OpenClose: no train config with PnL>0 in band; prior +7.1u was CloseOnly mirage) |
 
 CLI: `import-mlb` / `import-nfl` / `import-mls` / `sweep-mlb` / `sweep-nfl` / `sweep-mls`
 
-**MLS champ:** w=0.40 · `|exp−line|≥0.25` · holdout locked in `NOTES_MLS.md` before peek. Paper only. Walk-forward Platt on `(modelExp−line)` does **not** beat base → no `MlsChampConfig` change.
+**MLS champ:** Dixon–Coles xG · α=0.12 · w=0.50 · `|exp−line|≥0.25` · hold **+13.2u / 116**. Paper slate uses `DixonColesBook`.
 
-**Ligue 1 champ:** w=0.40 · `|exp−line|≥0.25` · hold **+8.4u / 49**. Same Platt kill → no `Ligue1ChampConfig` change. Sweeps print hold bet-slice log loss + Brier.
+**Serie A champ:** Dixon–Coles goals · α=0.18 · w=0.40 · `|exp−line|≥0.35` · hold **+1.7u / 113**. No live slate CLI yet.
+
+**Ligue 1 champ:** goals EMA · w=0.40 · `|exp−line|≥0.25` · hold **+8.4u / 49**. DC did not beat EMA.
 
 ## Nightly
 
