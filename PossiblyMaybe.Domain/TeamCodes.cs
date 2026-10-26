@@ -62,5 +62,5 @@ public static class TeamCodes
         => officialName.Contains("Donaghy", StringComparison.OrdinalIgnoreCase);
 
     public static string GameKey(DateOnly date, string home, string away)
-        => $"nba:{date:yyyy-MM-dd}:{home}:{away}";
+        => SportTeams.GameKey("nba", date, home, away);
 }

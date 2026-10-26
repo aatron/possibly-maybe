@@ -71,6 +71,29 @@ public sealed class RefereeAssignment
     public bool DonaghyExcludeFromFit { get; set; }
 }
 
+/// <summary>MLB starting pitchers + prior-season FIP approx (leakage-safe).</summary>
+public sealed class GamePitching
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+    public string HomeSp { get; set; } = "";
+    public string AwaySp { get; set; } = "";
+    public double HomeFipPrior { get; set; }
+    public double AwayFipPrior { get; set; }
+}
+
+/// <summary>NFL situational context from nflverse (roof/wind/rest).</summary>
+public sealed class NflGameContext
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+    public string? Roof { get; set; }
+    public double? WindMph { get; set; }
+    public double? TempF { get; set; }
+    public int HomeRest { get; set; }
+    public int AwayRest { get; set; }
+}
+
 /// <summary>Team box inputs for pace / ORtg / DRtg (one row per game).</summary>
 public sealed class GameBox
 {

@@ -1,31 +1,40 @@
-# MLB sport pack — Gate 0 checklist
+# MLB sport pack — Gate 0 / feature plan
 
-Scaffold only. **Do not change NBA import/backtest paths.** Shared Domain (`Sport` on games/markets) is fine; no MLB importer until files are local (see `data/raw/NOTES_MLB.md`).
+**Do not change NBA champ paths.** Shared Domain + ledger only.
 
-## Scope (first pass)
+## Are we using baseball-critical metrics today?
 
-| Market | Priority | Notes |
-|---|---|---|
-| **Totals (over/under runs)** | First | Open→close when available; else close-only + flag |
-| **Run line** | First | Parallel to NBA spread; own CLV series |
-| Moneyline | Later | After totals/run line ingest QC |
+**No.** Files are local (`mlb_closing_odds_2025`); importer/metrics not built yet.  
+A naive “team runs EMA” (NBA-style scoring book) is **wrong for MLB** — the **starting pitcher** dominates the total.
 
-## Gate 0 done-when
+## What sites say matters for MLB totals (ranked)
 
-- [ ] Human download **M1** (and **M2** only if useful) into `data/raw/` — URLs in `NOTES_MLB.md`
-- [ ] `NOTES_MLB.md` updated: local paths, download date, license, row-count QC
-- [ ] Import targets mapped (no code yet until files present):
-  - [ ] `Games` — date, teams, final scores (runs)
-  - [ ] `OddsSnapshots` — totals + run line; `PriceKind=open|close`; `ClvQuality=open_close|close_only`
-- [ ] Coverage sanity: holdout season has scores + usable prices (report % if open incomplete)
-- [ ] **Own holdout** locked before any Gate 1 metrics (separate from NBA 2023–24). Record season in `PROGRESS.md` when locked — look once
+| Priority | Metric | Why | Free sources |
+|---|---|---|---|
+| 1 | **Starting pitcher** quality | Biggest single lever on the total | Probables: MLB.com; FIP/xFIP/SIERA/K-BB%: FanGraphs |
+| 2 | **Park factor** | Coors etc. swing runs hard | Baseball Savant park factors |
+| 3 | **Weather** (temp, wind out/in) | Especially open parks | NOAA / game-day feeds |
+| 4 | Recent team offense / runs allowed | Secondary to SP | Baseball-Reference / FanGraphs |
+| 5 | Lineup / platoon (L/R) | Moves after lineup posts | MLB.com lineups |
+| 6 | Bullpen rest | Smaller than SP/park on average | Box + recent IP |
 
-## Explicit non-goals (this scaffold)
+ERA alone is weak (includes defense/luck). Prefer **FIP / xFIP / K-BB%**.
 
-- Full MLB importer / CLI command
-- Umpire/ref features, pitcher load, news
-- Shared holdout or shared “champ” with NBA
+## Gate 0 (data)
 
-## After Gate 0
+- [x] M1 downloaded → `data/raw/kaggle/mlb_closing_odds_2025/mlb_2025_closing_odds.csv` (~2477 games, open/close totals)
+- [ ] Import games + TOTAL open/close (`Sport=MLB`)
+- [ ] Lock holdout **inside 2025** (only one open/close season) — e.g. train before 2025-09-01, holdout Sep–Nov — **freeze before peeking metrics**
+- [ ] Gate 1 **only after** SP features exist (or explicitly kill “runs-only” as insufficient)
 
-Gate 1 kill is **per sport**: walk-forward CLV on MLB totals/run line only. Infra reuse (odds math, Kelly, ledger `Sport`) yes; NBA Elo/ref recipes no.
+## Gate 1 feature order (kill if no OOS CLV)
+
+1. Open/close totals + naive runs book (baseline — expect weak)
+2. **Add probable SP FIP/xFIP** (must-have)
+3. Park factor table
+4. Weather when available
+5. Run line only after totals process works
+
+## Non-goals until SP works
+
+Copying NBA Elo/pace recipes; umpires as first feature; props.

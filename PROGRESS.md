@@ -31,20 +31,17 @@ PaceEff wins on **dollars** (same flat 1u); fewer tickets (higher bar). Volume-f
 
 Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, rest/B2B in totals path.
 
-## Other sports
+## Other sports (soft-spot hunt — 2026-10-25)
 
-See `data/raw/NOTES_NFL.md` / `NOTES_MLB.md` (subagents) — **you must download Kaggle zips** (auth).
+| Sport | Imported | Model | Holdout | Result |
+|---|---|---|---|---|
+| **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
+| **MLB totals** | 2290 games + SP prior FIP | SP FIP × market | Sep–Nov 2025 | **FAIL** (train +21u, hold −2.2u / 94) |
+| **NFL totals** | 6502 close + 92 open/close | scoring + roof/wind | 2024 | **FAIL** (hold −0.6u / 14; CLV thin) |
 
-### Kaggle URLs to download
+CLI: `import-mlb` / `import-nfl` / `sweep-mlb` / `sweep-nfl`
 
-**NFL**
-- https://www.kaggle.com/datasets/tobycrabtree/nfl-scores-and-betting-data
-- https://www.kaggle.com/datasets/minmaxer/nfl-odds-2026 (open/close — prefer)
-
-**MLB**
-- https://www.kaggle.com/datasets/minmaxer/mlb-closing-odds-2025
-
-Put under `data/raw/kaggle/` like NBA.
+**Next soft spots to try:** MLB park+weather; NFL EPA from nflverse PBP; more NFL open/close history. Do **not** bet MLB/NFL real until HOLD PASS.
 
 ## Nightly
 
