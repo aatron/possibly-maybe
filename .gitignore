@@ -72,3 +72,6 @@ data/raw/**
 
 # Large analytics dumps (belt+suspenders; data/raw already ignored)
 *.parquet
+
+# Local reference library (books/articles), not committed
+library/
