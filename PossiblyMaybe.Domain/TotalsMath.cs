@@ -25,6 +25,15 @@ public static class TotalsMath
         if (ouResult == 0) return 0;
         return ouResult > 0 ? OddsMath.AmericanToDecimal(americanJuice) - 1.0 : -1.0;
     }
+
+    /// <summary>
+    /// NFL expected total from pregame EPA/play (nflverse rolling priors).
+    /// shortcut: scale≈7 from OLS on 2021–25; retune if EPA definition changes.
+    /// </summary>
+    public static double NflTotalFromEpa(
+        double homeOff, double homeDef, double awayOff, double awayDef,
+        double leagueAvg = 45.2, double scale = 7.0)
+        => leagueAvg + scale * (homeOff + awayOff - homeDef - awayDef);
 }
 
 /// <summary>Walk-forward team points-for / points-against EMA → expected game total.</summary>

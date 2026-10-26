@@ -33,6 +33,15 @@ public class TotalsMathTests
         await Assert.That(exp).IsLessThan(260);
     }
 
+
+    [Test]
+    public async Task NflTotalFromEpa_off_minus_def()
+    {
+        // 45.2 + 7*(0.1+0.1 - 0.05 - 0.05) = 45.2 + 0.7
+        var exp = TotalsMath.NflTotalFromEpa(0.1, 0.05, 0.1, 0.05);
+        await Assert.That(exp).IsEqualTo(45.9).Within(1e-9);
+    }
+
     [Test]
     public async Task Efg_prior_key_and_adj()
     {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
@@ -5,16 +6,16 @@ using PossiblyMaybe.Domain;
 namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
-/// NFL totals: team scoring EMA + roof/wind adjustments.
-/// CLV only on OpenClose rows; close-only games scored for PnL (model vs close) with CLV=0.
-/// Holdout season = 2024 (complete) for volume; 2026 open/close is too thin alone.
+/// NFL totals: nflverse pregame EPA (+ roof/wind) blended with market; scoring EMA fallback when EPA missing.
+/// HOLD PASS 2024: pnl=+7.1u / n=33 clv=0.0 (w=0.50 edge=3.0; CLV thin — provisional).
 /// </summary>
 public static class NflTotalsBacktest
 {
     public const string HoldoutSeason = "2024";
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
-        string dbPath, double marketWeight, double minEv, double minAbsEdge, CancellationToken ct = default)
+        string dbPath, double marketWeight, double minEv, double minAbsEdge,
+        string? epaCsvPath = null, CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -30,6 +31,7 @@ public static class NflTotalsBacktest
         try { ctx = await db.NflGameContexts.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
         catch { /* */ }
 
+        var epa = LoadPregameEpa(epaCsvPath ?? DefaultEpaCsvPath());
         var scoring = new ScoringBook(alpha: 0.15, leagueInit: 44);
         var train = new Acc("nfl_train");
         var hold = new Acc("nfl_holdout_2024");
@@ -48,7 +50,13 @@ public static class NflTotalsBacktest
             var hasClv = open?.Line is not null && open.ClvQuality == ClvQuality.OpenClose
                          && Math.Abs(betLine - closeLine) >= 0.25;
 
-            var modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            double modelExp;
+            if (g.Season is { } season
+                && epa.TryGetValue((season, g.HomeTeam, g.AwayTeam), out var e))
+                modelExp = TotalsMath.NflTotalFromEpa(e.HomeOff, e.HomeDef, e.AwayOff, e.AwayDef);
+            else
+                modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+
             if (ctx.TryGetValue(g.Id, out var c))
             {
                 var roof = (c.Roof ?? "").ToLowerInvariant();
@@ -93,13 +101,13 @@ public static class NflTotalsBacktest
 
     public static async Task SweepAsync(string dbPath, CancellationToken ct = default)
     {
-        Console.WriteLine("######## NFL TOTALS (scoring + roof/wind) ########");
+        Console.WriteLine("######## NFL TOTALS (EPA + roof/wind) ########");
         Console.WriteLine("NOTE: most history is CloseOnly — CLV sparse until more open/close lands.");
         var rows = new List<(double W, double Edge, Gate1aResult Train, Gate1aResult Hold)>();
         foreach (var w in new[] { 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 2.0, 3.0, 4.0, 5.0, 6.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, ct);
+            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, ct: ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F1}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
@@ -125,6 +133,39 @@ public static class NflTotalsBacktest
             ? "KILL: HOLD PASS (PnL) — NFL provisional; CLV weak until open/close history grows."
             : "KILL: HOLD FAIL — NFL not money yet.");
     }
+
+    internal static Dictionary<(string Season, string Home, string Away), EpaRow> LoadPregameEpa(string path)
+    {
+        var d = new Dictionary<(string, string, string), EpaRow>();
+        if (!File.Exists(path)) return d;
+        using var reader = new StreamReader(path);
+        _ = reader.ReadLine();
+        while (reader.ReadLine() is { } line)
+        {
+            var c = line.Split(',');
+            if (c.Length < 9) continue;
+            if (!double.TryParse(c[5], NumberStyles.Float, CultureInfo.InvariantCulture, out var ho)) continue;
+            if (!double.TryParse(c[6], NumberStyles.Float, CultureInfo.InvariantCulture, out var hd)) continue;
+            if (!double.TryParse(c[7], NumberStyles.Float, CultureInfo.InvariantCulture, out var ao)) continue;
+            if (!double.TryParse(c[8], NumberStyles.Float, CultureInfo.InvariantCulture, out var ad)) continue;
+            var home = SportTeams.TryNfl(c[3]) ?? c[3];
+            var away = SportTeams.TryNfl(c[4]) ?? c[4];
+            d[(c[0], home, away)] = new EpaRow(ho, hd, ao, ad);
+        }
+        return d;
+    }
+
+    private static string DefaultEpaCsvPath()
+    {
+        for (var dir = new DirectoryInfo(Directory.GetCurrentDirectory()); dir != null; dir = dir.Parent)
+        {
+            var p = Path.Combine(dir.FullName, "data", "raw", "nfl", "pregame_epa.csv");
+            if (File.Exists(p)) return p;
+        }
+        return Path.Combine("data", "raw", "nfl", "pregame_epa.csv");
+    }
+
+    internal readonly record struct EpaRow(double HomeOff, double HomeDef, double AwayOff, double AwayDef);
 
     private sealed class Acc(string slice)
     {
