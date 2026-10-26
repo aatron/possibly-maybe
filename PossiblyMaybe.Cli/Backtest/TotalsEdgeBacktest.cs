@@ -12,6 +12,10 @@ public enum TotalsModelKind
     PaceEff = 1,
     /// <summary>PaceEff + prior-season tracking eFG% adjustment.</summary>
     PaceEffEfg = 2,
+    /// <summary>PaceEff + walk-forward Platt on blended edge → P(over).</summary>
+    PaceEffPlatt = 3,
+    /// <summary>PaceEff + walk-forward ridge-logistic on [line, modelExp] → P(over).</summary>
+    PaceEffRidge = 4,
 }
 
 /// <summary>
@@ -20,6 +24,9 @@ public enum TotalsModelKind
 public static class TotalsEdgeBacktest
 {
     public const string HoldoutSeason = "2025";
+    private const int RidgeMinRows = 100;
+    private const double RidgeLambda = 1.0;
+    private const int RidgeRefitEvery = 50; // shortcut: not every tip; upgrade if cal drifts
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath,
@@ -68,6 +75,14 @@ public static class TotalsEdgeBacktest
         var usedScoringFallback = 0;
         var efgTouched = 0;
 
+        OuPlattCalibrator? platt = model == TotalsModelKind.PaceEffPlatt
+            ? new OuPlattCalibrator(fallbackSharpness: 0.25)
+            : null;
+        var ridgeX = model == TotalsModelKind.PaceEffRidge ? new List<double[]>() : null;
+        var ridgeY = model == TotalsModelKind.PaceEffRidge ? new List<double>() : null;
+        double[]? ridgeBeta = null;
+        var ridgeFitAt = 0;
+
         foreach (var g in games)
         {
             byGame.TryGetValue(g.Id, out var snaps);
@@ -79,7 +94,8 @@ public static class TotalsEdgeBacktest
             double modelExp = model == TotalsModelKind.Scoring
                 ? scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam)
                 : pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
-            if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg)
+            if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg
+                or TotalsModelKind.PaceEffPlatt or TotalsModelKind.PaceEffRidge)
             {
                 if (boxes.ContainsKey(g.Id)) usedPace++;
                 else usedScoringFallback++; // no box ⇒ pace book not updated this game (stale priors)
@@ -103,25 +119,39 @@ public static class TotalsEdgeBacktest
                 var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
                 var clvOver = TotalsMath.OverClvPoints(line, closeLine);
 
+                var pOver = PredictOver(platt, ridgeX, ridgeY, ref ridgeBeta, ref ridgeFitAt,
+                    exp, line, modelExp);
+
+                // Secondary ISLP metrics on all scored non-push games.
+                if (ou != 0)
+                    acc.AddPred(pOver, ou > 0);
+
                 if (Math.Abs(edge) >= minAbsEdge)
                 {
                     if (edge > 0)
                     {
-                        var p = TotalsMath.OverProb(exp, line);
-                        var ev = OddsMath.ExpectedValue(p, juice);
+                        var ev = OddsMath.ExpectedValue(pOver, juice);
                         if (ev >= minEv)
                             acc.AddBet(clvOver, ou > 0, TotalsMath.OuPnL(juice, ou));
                     }
                     else
                     {
-                        var p = 1 - TotalsMath.OverProb(exp, line);
-                        var ev = OddsMath.ExpectedValue(p, juice);
+                        var pUnder = 1 - pOver;
+                        var ev = OddsMath.ExpectedValue(pUnder, juice);
                         if (ev >= minEv)
                             acc.AddBet(-clvOver, ou < 0, TotalsMath.OuPnL(juice, -ou));
                     }
                 }
 
                 acc.AddGame();
+
+                // Leakage-safe: update calibrator only after this tip's decision.
+                platt?.Observe(exp, line, ou);
+                if (ridgeX is not null && ridgeY is not null && ou != 0)
+                {
+                    ridgeX.Add([1.0, line / 100.0, modelExp / 100.0]);
+                    ridgeY.Add(ou > 0 ? 1.0 : 0.0);
+                }
             }
 
             scoring.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
@@ -137,6 +167,31 @@ public static class TotalsEdgeBacktest
         Console.WriteLine(
             $"  [model={model} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched}]");
         return (train.ToResult(), hold.ToResult());
+    }
+
+    private static double PredictOver(
+        OuPlattCalibrator? platt,
+        List<double[]>? ridgeX,
+        List<double>? ridgeY,
+        ref double[]? ridgeBeta,
+        ref int ridgeFitAt,
+        double exp,
+        double line,
+        double modelExp)
+    {
+        if (platt is not null)
+            return platt.OverProb(exp, line);
+
+        if (ridgeX is null || ridgeY is null || ridgeX.Count < RidgeMinRows)
+            return TotalsMath.OverProb(exp, line);
+
+        if (ridgeBeta is null || ridgeX.Count - ridgeFitAt >= RidgeRefitEvery)
+        {
+            ridgeBeta = RidgeLogistic.Fit(ridgeX, ridgeY, RidgeLambda, warm: ridgeBeta);
+            ridgeFitAt = ridgeX.Count;
+        }
+
+        return RidgeLogistic.Predict(ridgeBeta, [1.0, line / 100.0, modelExp / 100.0]);
     }
 
     private static string GuessTrackingDir(string dbPath)
@@ -155,10 +210,19 @@ public static class TotalsEdgeBacktest
 
     private sealed class Acc(string slice)
     {
-        private int _games, _bets, _hits;
-        private double _clv, _pnl;
+        private int _games, _bets, _hits, _nPred;
+        private double _clv, _pnl, _ll, _br;
 
         public void AddGame() => _games++;
+
+        public void AddPred(double pOver, bool wentOver)
+        {
+            var p = Math.Clamp(pOver, 1e-6, 1 - 1e-6);
+            var y = wentOver ? 1.0 : 0.0;
+            _ll += -(y * Math.Log(p) + (1 - y) * Math.Log(1 - p));
+            _br += (p - y) * (p - y);
+            _nPred++;
+        }
 
         public void AddBet(double clv, bool won, double pnl)
         {
@@ -176,6 +240,8 @@ public static class TotalsEdgeBacktest
             MeanClv = _bets == 0 ? 0 : _clv / _bets,
             ClvUnit = "total_pts",
             HitRate = _bets == 0 ? 0 : (double)_hits / _bets,
+            LogLoss = _nPred == 0 ? 0 : _ll / _nPred,
+            Brier = _nPred == 0 ? 0 : _br / _nPred,
             PaperPnlUnits = _pnl,
         };
     }

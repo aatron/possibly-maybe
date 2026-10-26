@@ -127,13 +127,19 @@ switch (command)
     case "sweep-totals":
     {
         var repoRoot = FindRepoRoot();
-        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        var dbPath = args.Length > 1 && !args[1].StartsWith('-')
+            ? args[1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
         if (!File.Exists(dbPath))
         {
             Console.Error.WriteLine($"DB not found: {dbPath}. Run import then import-totals.");
             return 2;
         }
-        await TotalsSweep.RunAsync(dbPath);
+        // `sweep-totals [db] --cal` → same-gate Platt/Ridge vs PaceEff only
+        if (args.Any(a => a is "--cal" or "cal"))
+            await TotalsSweep.CompareChampGatesAsync(dbPath);
+        else
+            await TotalsSweep.RunAsync(dbPath);
         return 0;
     }
     case "sweep-mlb":
@@ -405,7 +411,7 @@ static void PrintUsage()
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
-          sweep-totals [db]          NBA O/U Scoring vs PaceEff vs PaceEffEfg
+          sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
