@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PossiblyMaybe — Stake lanes</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+  :root { --bg:#0f1419; --panel:#1a222d; --ink:#e7ecf3; --muted:#8b9bb4; --line:#2a3544; --up:#3ecf8e; --down:#f07178; --accent:#6cb6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; background: radial-gradient(1200px 600px at 10% -10%, #1c2a3a, var(--bg)); color: var(--ink); }
+  header { padding: 1.5rem 2rem 0.5rem; }
+  header h1 { margin:0; font-size:1.4rem; letter-spacing:0.02em; }
+  header p { margin:0.35rem 0 0; color:var(--muted); font-size:0.95rem; }
+  .tabs { display:flex; gap:0.4rem; padding: 0.75rem 2rem 0; }
+  .tab { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:8px 8px 0 0; padding:0.45rem 1rem; cursor:pointer; font:inherit; }
+  .tab.active { color:var(--ink); border-color:var(--accent); background:var(--panel); }
+  main { padding: 1rem 2rem 3rem; display:grid; gap:1.25rem; }
+  .board { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:0.75rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem; cursor:pointer; }
+  .card:hover { border-color: var(--accent); }
+  .card.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .card .code { font-size:0.75rem; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; }
+  .card .name { font-weight:600; margin-top:0.15rem; }
+  .card .bank { font-size:1.35rem; margin-top:0.4rem; font-variant-numeric: tabular-nums; }
+  .card .meta { color:var(--muted); font-size:0.8rem; margin-top:0.25rem; }
+  .pos { color:var(--up); } .neg { color:var(--down); }
+  .chart-wrap { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:1rem; }
+  table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+  th, td { text-align:left; padding:0.55rem 0.6rem; border-bottom:1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { color:var(--muted); font-weight:500; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
+  .rule { color:var(--muted); font-size:0.8rem; }
+  #board-table tbody tr { cursor:pointer; }
+  #board-table tbody tr:hover td { background: rgba(108,182,255,0.06); }
+  #board-table tbody tr.active td { background: rgba(108,182,255,0.12); }
+  #detail { display:none; }
+  #detail.open { display:block; }
+  .detail-head { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; }
+  .detail-head h2 { margin:0; font-size:1.05rem; font-weight:600; }
+  .detail-close { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.7rem; cursor:pointer; font:inherit; }
+  .ticket-scroll { max-height: 22rem; overflow:auto; }
+  .badge { display:inline-block; min-width:1.6rem; text-align:center; padding:0.1rem 0.35rem; border-radius:4px; font-size:0.75rem; font-weight:600; }
+  .badge.open { background:#2a3544; color:var(--muted); }
+  .badge.W { background:rgba(62,207,142,0.2); color:var(--up); }
+  .badge.L { background:rgba(240,113,120,0.2); color:var(--down); }
+  .badge.P { background:rgba(230,180,80,0.2); color:#e6b450; }
+  .cal-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.85rem; flex-wrap:wrap; }
+  .cal-head h2 { margin:0; font-size:1.05rem; font-weight:600; }
+  .cal-nav { display:flex; gap:0.4rem; align-items:center; }
+  .cal-nav button { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.65rem; cursor:pointer; font:inherit; }
+  .cal-grid { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap:0.5rem; }
+  @media (max-width: 900px) { .cal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .cal-day { background:rgba(0,0,0,0.18); border:1px solid var(--line); border-radius:8px; padding:0.55rem 0.6rem; min-height:7.5rem; }
+  .cal-day.today { border-color: var(--accent); }
+  .cal-day.empty { opacity:0.55; }
+  .cal-day .dow { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .cal-day .dom { font-size:1.05rem; font-weight:600; margin:0.1rem 0 0.45rem; }
+  .cal-bet { font-size:0.78rem; line-height:1.25; padding:0.35rem 0; border-top:1px solid var(--line); }
+  .cal-bet .pick { font-weight:600; }
+  .cal-bet .stake { color:var(--muted); }
+  .cal-none { color:var(--muted); font-size:0.78rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stake lane leaderboard</h1>
+  <p id="sub">Loading…</p>
+</header>
+<div class="tabs" id="tabs">
+  <button type="button" class="tab active" data-venue="DK">DraftKings</button>
+  <button type="button" class="tab" data-venue="Kalshi">Kalshi</button>
+</div>
+<main>
+  <section class="board" id="cards"></section>
+  <section class="chart-wrap" id="calendar">
+    <div class="cal-head">
+      <div>
+        <h2>Bet calendar</h2>
+        <div class="hint rule" id="cal-range">Next 7 days</div>
+      </div>
+      <div class="cal-nav">
+        <button type="button" id="cal-prev">Prev</button>
+        <button type="button" id="cal-today">This week</button>
+        <button type="button" id="cal-next">Next</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </section>
+  <section class="chart-wrap">
+    <canvas id="equity" height="120"></canvas>
+  </section>
+  <section class="chart-wrap">
+    <table id="board-table">
+      <thead>
+        <tr><th>Lane</th><th>Rule</th><th>Equity</th><th>At risk</th><th>Available</th><th>PnL</th><th>W-L</th><th>Open</th><th>Max DD</th></tr>
+      </thead>
+      <tbody id="table"></tbody>
+    </table>
+  </section>
+  <section class="chart-wrap" id="detail">
+    <div class="detail-head">
+      <div>
+        <h2 id="detail-title">Tickets</h2>
+        <div class="hint rule" id="detail-hint"></div>
+      </div>
+      <button type="button" class="detail-close" id="detail-close">Close</button>
+    </div>
+    <div class="ticket-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>When</th><th>Game</th><th>Side</th><th>Line</th><th>Odds</th>
+            <th>Stake</th><th>p</th><th>Edge</th><th>Result</th><th>PnL</th><th>CLV</th>
+          </tr>
+        </thead>
+        <tbody id="tickets"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+const DATA = {
+  "generatedAt": "2026-10-26T07:05:38.5171437\u002B00:00",
+  "horizonEnd": "2026-12-31",
+  "seed": 1000,
+  "venues": {
+    "DK": {
+      "lanes": [
+        {
+          "code": "Flat",
+          "name": "Level Flat",
+          "rule": "$10 every GO",
+          "bank": 1000,
+          "reserved": 60,
+          "available": 940,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5161490\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5162483\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 32,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 27,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 22,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 17,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 12,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 7,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 10,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        },
+        {
+          "code": "Kelly2",
+          "name": "Quarter Cap",
+          "rule": "\u00BC Kelly, max 2% bankroll",
+          "bank": 1000,
+          "reserved": 120,
+          "available": 880,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5170858\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5170881\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 6,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 5,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 4,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 3,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 2,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 1,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        },
+        {
+          "code": "Kelly5",
+          "name": "Quarter Wide",
+          "rule": "\u00BC Kelly, max 5% bankroll",
+          "bank": 1000,
+          "reserved": 211.5,
+          "available": 788.5,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5170969\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5170973\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 33,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 30.17,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 28,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 43.09,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 23,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 24.28,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 18,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 37.93,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 13,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 26.03,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 8,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 50,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        },
+        {
+          "code": "EvProp",
+          "name": "EV Proportional",
+          "rule": "stake \u221D EV, floor 0.5%, cap 2%",
+          "bank": 1000,
+          "reserved": 114.16,
+          "available": 885.84,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171031\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171033\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 34,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 18.08,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 29,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 18.45,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 24,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 18.82,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 19,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 19.21,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 14,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 19.6,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 9,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 20,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        },
+        {
+          "code": "ConfBand",
+          "name": "Confidence Band",
+          "rule": "|p\u22120.5| \u2192 0.5\u20132% of bankroll",
+          "bank": 1000,
+          "reserved": 51.72,
+          "available": 948.28,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171057\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171060\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 35,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 7.57,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 30,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 10.09,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 25,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 7.02,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 20,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 8.08,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 15,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 7.13,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 10,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 11.83,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        },
+        {
+          "code": "EdgeBand",
+          "name": "Edge Band",
+          "rule": "|model\u2212line| \u2192 0.5\u20132% (sport-scaled)",
+          "bank": 1000,
+          "reserved": 29.64,
+          "available": 970.36,
+          "pnl": 0,
+          "settled": 0,
+          "open": 6,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171103\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171106\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 36,
+              "placedAt": "2026-10-26T04:17:20.8975203\u002B00:00",
+              "gameKey": "20261028 HOU@SEA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 4.88,
+              "modelProb": 0.594,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "25ed543c030c",
+              "venue": "DK"
+            },
+            {
+              "id": 31,
+              "placedAt": "2026-10-26T04:17:20.1288391\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 4.9,
+              "modelProb": 0.658,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "ba5f90c683f0",
+              "venue": "DK"
+            },
+            {
+              "id": 26,
+              "placedAt": "2026-10-26T04:17:19.3636545\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 4.93,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "031a3fba940d",
+              "venue": "DK"
+            },
+            {
+              "id": 21,
+              "placedAt": "2026-10-26T04:17:18.5537985\u002B00:00",
+              "gameKey": "20261028 CLB@DAL",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 4.95,
+              "modelProb": 0.602,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "9c59805b4e7d",
+              "venue": "DK"
+            },
+            {
+              "id": 16,
+              "placedAt": "2026-10-26T04:17:17.7740684\u002B00:00",
+              "gameKey": "20261028 RSL@ATX",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -110,
+              "stake": 4.98,
+              "modelProb": 0.576,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "4509abdf8e00",
+              "venue": "DK"
+            },
+            {
+              "id": 11,
+              "placedAt": "2026-10-26T04:17:16.9956135\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -110,
+              "stake": 5,
+              "modelProb": 0.693,
+              "absEdge": 0,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "8a67d9858e51",
+              "venue": "DK"
+            }
+          ]
+        }
+      ]
+    },
+    "Kalshi": {
+      "lanes": [
+        {
+          "code": "Flat",
+          "name": "Level Flat",
+          "rule": "$10 every GO",
+          "bank": 1000,
+          "reserved": 30,
+          "available": 970,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171259\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171263\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 49,
+              "placedAt": "2026-10-26T07:05:36.0757217\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 10,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 43,
+              "placedAt": "2026-10-26T07:05:31.6883614\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 10,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 37,
+              "placedAt": "2026-10-26T07:05:20.8377701\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 10,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        },
+        {
+          "code": "Kelly2",
+          "name": "Quarter Cap",
+          "rule": "\u00BC Kelly, max 2% bankroll",
+          "bank": 1000,
+          "reserved": 58.81,
+          "available": 941.19,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171318\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171321\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 50,
+              "placedAt": "2026-10-26T07:05:36.1099202\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 19.21,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 44,
+              "placedAt": "2026-10-26T07:05:31.7231024\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 19.6,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 38,
+              "placedAt": "2026-10-26T07:05:20.8715325\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 20,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        },
+        {
+          "code": "Kelly5",
+          "name": "Quarter Wide",
+          "rule": "\u00BC Kelly, max 5% bankroll",
+          "bank": 1000,
+          "reserved": 105.14,
+          "available": 894.86,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171338\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171341\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 51,
+              "placedAt": "2026-10-26T07:05:36.1106798\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 23.07,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 45,
+              "placedAt": "2026-10-26T07:05:31.7236848\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 48.31,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 39,
+              "placedAt": "2026-10-26T07:05:20.8720639\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 33.76,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        },
+        {
+          "code": "EvProp",
+          "name": "EV Proportional",
+          "rule": "stake \u221D EV, floor 0.5%, cap 2%",
+          "bank": 1000,
+          "reserved": 58.81,
+          "available": 941.19,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171359\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171361\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 52,
+              "placedAt": "2026-10-26T07:05:36.1109845\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 19.21,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 46,
+              "placedAt": "2026-10-26T07:05:31.7238819\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 19.6,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 40,
+              "placedAt": "2026-10-26T07:05:20.8722902\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 20,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        },
+        {
+          "code": "ConfBand",
+          "name": "Confidence Band",
+          "rule": "|p\u22120.5| \u2192 0.5\u20132% of bankroll",
+          "bank": 1000,
+          "reserved": 29.2,
+          "available": 970.8,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171397\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171400\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 53,
+              "placedAt": "2026-10-26T07:05:36.1113966\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 10.25,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 47,
+              "placedAt": "2026-10-26T07:05:31.7241383\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 11.74,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 41,
+              "placedAt": "2026-10-26T07:05:20.8725395\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 7.21,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        },
+        {
+          "code": "EdgeBand",
+          "name": "Edge Band",
+          "rule": "|model\u2212line| \u2192 0.5\u20132% (sport-scaled)",
+          "bank": 1000,
+          "reserved": 31.48,
+          "available": 968.52,
+          "pnl": 0,
+          "settled": 0,
+          "open": 3,
+          "wins": 0,
+          "losses": 0,
+          "maxDrawdown": 0,
+          "equity": [
+            {
+              "t": "2026-10-25T07:05:38.5171417\u002B00:00",
+              "bank": 1000
+            },
+            {
+              "t": "2026-10-26T07:05:38.5171420\u002B00:00",
+              "bank": 1000
+            }
+          ],
+          "tickets": [
+            {
+              "id": 54,
+              "placedAt": "2026-10-26T07:05:36.1118500\u002B00:00",
+              "gameKey": "20261028 COL@SJ",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 2.5,
+              "odds": -163,
+              "stake": 10.77,
+              "modelProb": 0.658,
+              "absEdge": 0.55,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "b5b4b0377626",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 48,
+              "placedAt": "2026-10-26T07:05:31.7245051\u002B00:00",
+              "gameKey": "20261028 CIN@MIA",
+              "sport": "MLS",
+              "side": "OVER",
+              "line": 3.5,
+              "odds": -150,
+              "stake": 15.11,
+              "modelProb": 0.693,
+              "absEdge": 0.76,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "6cf1fd5a695a",
+              "venue": "Kalshi"
+            },
+            {
+              "id": 42,
+              "placedAt": "2026-10-26T07:05:20.8728617\u002B00:00",
+              "gameKey": "20261028 SKC@MIN",
+              "sport": "MLS",
+              "side": "UNDER",
+              "line": 3.5,
+              "odds": -104,
+              "stake": 5.6,
+              "modelProb": 0.576,
+              "absEdge": 0.28,
+              "result": null,
+              "pnl": null,
+              "closeLine": null,
+              "clvPts": null,
+              "group": "5fe8f91e529c",
+              "venue": "Kalshi"
+            }
+          ]
+        }
+      ]
+    }
+  }
+};
+const colors = ['#6cb6ff','#3ecf8e','#e6b450','#d2a8ff','#f07178','#89ddff'];
+let venue = 'DK';
+let selected = null;
+let calOffset = 0;
+let chart;
+
+function venueBlock() {
+  return (DATA.venues && DATA.venues[venue]) || { lanes: [] };
+}
+function lanes() { return venueBlock().lanes || []; }
+function byCode() { return Object.fromEntries(lanes().map(l => [l.code, l])); }
+
+document.getElementById('sub').textContent =
+  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · DK and Kalshi decide independently`;
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-venue]');
+  if (!btn) return;
+  venue = btn.dataset.venue;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.venue === venue));
+  selected = null;
+  document.getElementById('detail').classList.remove('open');
+  renderAll();
+});
+
+function ymdLocal(d) {
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseGameDay(gameKey) {
+  const m = String(gameKey||'').match(/^(\d{8})\b/);
+  return m ? m[1] : null;
+}
+function startOfLocalDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function allTickets() {
+  return lanes().flatMap(l => (l.tickets||[]).map(t => ({ ...t, scheme: l.code })));
+}
+function betsForDay(ymd) {
+  const tickets = allTickets().filter(t => parseGameDay(t.gameKey) === ymd);
+  const filtered = selected ? tickets.filter(t => t.scheme === selected) : tickets;
+  const byGame = new Map();
+  for (const t of filtered) {
+    if (!byGame.has(t.gameKey)) {
+      byGame.set(t.gameKey, {
+        gameKey: t.gameKey, sport: t.sport, side: t.side, line: t.line,
+        result: t.result, stakes: [],
+      });
+    }
+    byGame.get(t.gameKey).stakes.push({ scheme: t.scheme, stake: t.stake, result: t.result });
+  }
+  return [...byGame.values()];
+}
+function renderCalendar() {
+  const today = startOfLocalDay(new Date());
+  const start = new Date(today); start.setDate(start.getDate() + calOffset * 7);
+  const days = [];
+  for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
+  const fmt = d => d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  const laneNote = selected ? ` · ${selected} only` : ` · ${venue} all lanes`;
+  document.getElementById('cal-range').textContent = `${fmt(days[0])} – ${fmt(days[6])}${laneNote}`;
+  const todayYmd = ymdLocal(today);
+  document.getElementById('cal-grid').innerHTML = days.map(d => {
+    const ymd = ymdLocal(d);
+    const bets = betsForDay(ymd);
+    const body = bets.length === 0 ? `<div class="cal-none">No bets</div>` : bets.map(b => {
+      const match = b.gameKey.replace(/^\d{8}\s*/, '');
+      const res = b.result || 'open';
+      const stakeTxt = selected
+        ? `$${Number(b.stakes[0].stake).toFixed(2)}`
+        : `${b.stakes.length} lanes · $${b.stakes.reduce((a,s)=>a+Number(s.stake),0).toFixed(0)} total`;
+      return `<div class="cal-bet"><div class="pick">${b.side} ${Number(b.line).toFixed(1)} <span class="badge ${res}">${res}</span></div>
+        <div>${match}${b.sport?` · ${b.sport}`:''}</div><div class="stake">${stakeTxt}</div></div>`;
+    }).join('');
+    return `<div class="cal-day${ymd===todayYmd?' today':''}${bets.length===0?' empty':''}">
+      <div class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</div>
+      <div class="dom">${d.getDate()}</div>${body}</div>`;
+  }).join('');
+}
+document.getElementById('cal-prev').onclick = () => { calOffset--; renderCalendar(); };
+document.getElementById('cal-next').onclick = () => { calOffset++; renderCalendar(); };
+document.getElementById('cal-today').onclick = () => { calOffset = 0; renderCalendar(); };
+
+function fmtWhen(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function fmtNum(v, digits=2) { return v == null || v === '' ? '—' : Number(v).toFixed(digits); }
+
+function showLane(code) {
+  if (selected === code) { clearLane(); return; }
+  const l = byCode()[code];
+  if (!l) return;
+  selected = code;
+  document.querySelectorAll('.card').forEach(el => el.classList.toggle('active', el.dataset.code === code));
+  document.querySelectorAll('#board-table tbody tr').forEach(el => el.classList.toggle('active', el.dataset.code === code));
+  document.getElementById('detail').classList.add('open');
+  document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
+  document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${l.rule}`;
+  document.getElementById('tickets').innerHTML = l.tickets.length === 0
+    ? `<tr><td colspan="12" class="rule">No tickets yet on ${venue}.</td></tr>`
+    : l.tickets.map(t => {
+        const res = t.result || 'open';
+        const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
+        const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
+        const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
+        return `<tr>
+          <td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
+          <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
+          <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
+          <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
+          <td>$${Number(t.stake).toFixed(2)}</td>
+          <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
+          <td><span class="badge ${res}">${res}</span></td>
+          <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
+      }).join('');
+  renderCalendar();
+}
+function clearLane() {
+  selected = null;
+  document.querySelectorAll('.card.active, #board-table tbody tr.active').forEach(el => el.classList.remove('active'));
+  document.getElementById('detail').classList.remove('open');
+  renderCalendar();
+}
+
+function renderBoard() {
+  const ranked = [...lanes()].sort((a,b) => b.bank - a.bank);
+  document.getElementById('cards').innerHTML = ranked.map((l,i) => `
+    <div class="card" data-code="${l.code}" role="button" tabindex="0">
+      <div class="code">#${i+1} ${l.code}</div>
+      <div class="name">${l.name}</div>
+      <div class="bank ${l.pnl>=0?'pos':'neg'}">$${l.bank.toFixed(2)}</div>
+      <div class="meta">avail $${(l.available??l.bank).toFixed(2)}${l.reserved>0?` · at risk $${l.reserved.toFixed(2)}`:''}</div>
+      <div class="meta">${l.pnl>=0?'+':''}${l.pnl.toFixed(2)} · DD $${l.maxDrawdown.toFixed(2)}${l.open?` · ${l.open} open`:''}</div>
+    </div>`).join('');
+  document.getElementById('table').innerHTML = ranked.map(l => `
+    <tr data-code="${l.code}">
+      <td><strong>${l.code}</strong> ${l.name}</td>
+      <td class="rule">${l.rule}</td>
+      <td>$${l.bank.toFixed(2)}</td>
+      <td>$${(l.reserved||0).toFixed(2)}</td>
+      <td>$${(l.available??l.bank).toFixed(2)}</td>
+      <td class="${l.pnl>=0?'pos':'neg'}">${l.pnl>=0?'+':''}${l.pnl.toFixed(2)}</td>
+      <td>${l.wins}-${l.losses}</td>
+      <td>${l.open}</td>
+      <td>$${l.maxDrawdown.toFixed(2)}</td>
+    </tr>`).join('');
+}
+
+function renderChart() {
+  const datasets = lanes().map((l,i) => ({
+    label: l.code,
+    data: l.equity.map(p => ({ x: p.t, y: p.bank })),
+    borderColor: colors[i % colors.length],
+    backgroundColor: 'transparent',
+    tension: 0.15,
+    pointRadius: 2,
+  }));
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('equity'), {
+    type: 'line',
+    data: { datasets },
+    options: {
+      parsing: false,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        x: { type: 'time', time: { unit: 'day' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
+        y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: venue + ' bankroll', color: '#8b9bb4' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#e7ecf3' } },
+        title: { display: true, text: venue + ' equity — independent of the other tab', color: '#e7ecf3' }
+      }
+    }
+  });
+}
+
+function renderAll() {
+  renderBoard();
+  renderChart();
+  renderCalendar();
+}
+
+document.getElementById('cards').addEventListener('click', e => {
+  const card = e.target.closest('[data-code]');
+  if (card) showLane(card.dataset.code);
+});
+document.getElementById('table').addEventListener('click', e => {
+  const row = e.target.closest('tr[data-code]');
+  if (row) showLane(row.dataset.code);
+});
+document.getElementById('detail-close').addEventListener('click', clearLane);
+
+renderAll();
+</script>
+</body>
+</html>

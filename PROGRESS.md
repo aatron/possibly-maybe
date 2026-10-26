@@ -10,23 +10,24 @@
 | **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
 | **Kill status** | **HOLD PASS** |
 | **Holdout 2024–25** | **62 bets**, CLV **+2.64 pts**, PnL **+16.3u** |
-| **Bankroll seed** | **$1000 paper** (`paper.db`) |
+| **Bankroll seed** | **$1000 × 6 stake lanes** through **2026-12-31** (`paper.db`) |
+| **Stake lanes** | Flat · Kelly2 · Kelly5 · EvProp · ConfBand · EdgeBand |
 
-### Daily paper ritual (Gate 2b)
+### Daily paper ritual (Gate 2b — multi-lane through 2026)
+
+**Preferred:** `/pm-calculate` (see `AGENTS.md`) → `bash scripts/pm-calculate.sh`
+
+Every GO fans out across all six lanes (each sizes from its own $1000 bankroll). Use the printed `paper-go` line as-is. No reloads — lane at ~$0 is OUT.
 
 ```bash
-# after tip / next morning: refresh boxes then slate
-.venv/bin/python -c "..."   # or scripts/fetch_nba_box.py for 2026-27
-dotnet run --project PossiblyMaybe.Cli -c Release -- import-box
-dotnet run --project PossiblyMaybe.Cli -c Release -- slate-nba \$(date -u +%Y%m%d) 1000
-dotnet run --project PossiblyMaybe.Cli -c Release -- slate-mls \$(date -u +%Y%m%d) 1000
+bash scripts/pm-calculate.sh                  # today + tomorrow slate, at-risk, ESPN probe, dashboard
 # for each GO line printed:
-dotnet run --project PossiblyMaybe.Cli -c Release -- paper-bet "KEY" OVER|UNDER LINE -110 STAKE
-# after games: settle <id> W|L|P [closeLine]
-dotnet run --project PossiblyMaybe.Cli -c Release -- paper
+dotnet run --project PossiblyMaybe.Cli -c Release -- paper-go "KEY" OVER|UNDER LINE -110 P ABSEDGE NBA|MLS
+# for each FINAL settle hint (or after games):
+dotnet run --project PossiblyMaybe.Cli -c Release -- settle-go "KEY" W|L|P [closeLine]
 ```
 
-Ask in chat each day for the slate + settles if you want me to run it.
+Open `ui/index.html` for equity curves + leaderboard.
 
 ## Scoring vs PaceEff (same train rule)
 

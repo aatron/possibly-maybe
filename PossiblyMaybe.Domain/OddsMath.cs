@@ -31,6 +31,14 @@ public static class OddsMath
         return 1.0 / decimalOdds;
     }
 
+    /// <summary>American odds implied by paying <paramref name="buyPrice"/> for a $1 binary (Kalshi YES/NO ask).</summary>
+    public static int AmericanFromBuyPrice(double buyPrice)
+    {
+        if (buyPrice is <= 0 or >= 1)
+            throw new ArgumentOutOfRangeException(nameof(buyPrice), "Buy price must be in (0,1).");
+        return DecimalToAmerican(1.0 / buyPrice);
+    }
+
     /// <summary>Two-way multiplicative no-vig: normalize raw implied probs to sum to 1.</summary>
     public static (double ProbA, double ProbB) NoVigTwoWay(int americanA, int americanB)
     {

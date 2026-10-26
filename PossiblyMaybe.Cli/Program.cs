@@ -329,15 +329,48 @@ switch (command)
         Console.WriteLine($"side={(sideHome ? "HOME" : "AWAY")} edge={edge:F2} EV={advice.Ev:P2}  {advice.Reason}");
         return advice.Go ? 0 : 3;
     }
+    case "paper-go":
+    {
+        // Independent DK + Kalshi: paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport>
+        if (args.Length < 8
+            || !double.TryParse(args[3], out var line)
+            || !int.TryParse(args[4], out var odds)
+            || !double.TryParse(args[5], out var modelProb)
+            || !double.TryParse(args[6], out var absEdge))
+        {
+            Console.Error.WriteLine("usage: paper-go <gameKey> <OVER|UNDER|HOME|AWAY> <line> <dkOdds> <modelProb> <absEdge> <sport>");
+            return 1;
+        }
+        var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
+        var (db, path) = await PaperLedger.OpenAsync(paperPath);
+        await using (db)
+        {
+            var (dk, kalshi, kalshiNote) = await PaperLedger.PlaceDualVenueAsync(
+                db, args[1], args[2], line, odds, modelProb, absEdge, args[7]);
+            Console.WriteLine($"PAPER-GO {args[1]} {args[2]} {line} dk@{odds} p={modelProb:F3} edge={absEdge:F2} → {path}");
+            Console.WriteLine($"  DK     placed={dk.Count}" + (dk.Count > 0 ? $" group={dk[0].TicketGroup}" : " (skip/already open/no EV)"));
+            foreach (var r in dk)
+                Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
+            Console.WriteLine($"  Kalshi placed={kalshi.Count}" + (kalshi.Count > 0 ? $" group={kalshi[0].TicketGroup}" : ""));
+            if (kalshiNote is not null)
+                Console.WriteLine($"    {kalshiNote}");
+            foreach (var r in kalshi)
+                Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
+            if (dk.Count == 0 && kalshi.Count == 0)
+                Console.WriteLine("  (nothing placed on either venue)");
+        }
+        return 0;
+    }
     case "paper-bet":
     {
-        // paper-bet <gameKey> <HOME|AWAY> <line> <odds> <stake$> [modelProb]
+        // Legacy single Flat lane: paper-bet <gameKey> <side> <line> <odds> <stake$> [modelProb]
         if (args.Length < 6
             || !double.TryParse(args[3], out var line)
             || !int.TryParse(args[4], out var odds)
             || !double.TryParse(args[5], out var stake))
         {
             Console.Error.WriteLine("usage: paper-bet <gameKey> <HOME|AWAY> <line> <odds> <stake$> [modelProb]");
+            Console.Error.WriteLine("prefer: paper-go <key> <side> <line> <odds> <p> <absEdge> <sport>");
             return 1;
         }
         var modelProb = args.Length > 6 && double.TryParse(args[6], out var mp) ? mp : 0;
@@ -346,7 +379,29 @@ switch (command)
         await using (db)
         {
             var row = await PaperLedger.PlaceAsync(db, args[1], args[2], line, odds, stake, modelProb);
-            Console.WriteLine($"PAPER #{row.Id} {row.GameKey} {row.Side} {row.Line:+0.0;-0.0} @{row.AmericanOdds} ${row.StakeDollars:F2} → {path}");
+            Console.WriteLine($"PAPER #{row.Id} {row.Scheme} {row.GameKey} {row.Side} {row.Line:+0.0;-0.0} @{row.AmericanOdds} ${row.StakeDollars:F2} → {path}");
+        }
+        return 0;
+    }
+    case "settle-go":
+    {
+        // Settle every lane for a game key or ticket group
+        // settle-go <gameKey|group> <W|L|P> [closeLine] [closeOdds]
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("usage: settle-go <gameKey|ticketGroup> <W|L|P> [closeLine] [closeOdds]");
+            return 1;
+        }
+        double? closeLine = args.Length > 3 && double.TryParse(args[3], out var cl) ? cl : null;
+        int? closeOdds = args.Length > 4 && int.TryParse(args[4], out var co) ? co : null;
+        var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
+        var (db, _) = await PaperLedger.OpenAsync(paperPath);
+        await using (db)
+        {
+            var rows = await PaperLedger.SettleGroupAsync(db, args[1], args[2], closeLine, closeOdds);
+            Console.WriteLine($"SETTLED-GO n={rows.Count} {args[1]} → {args[2]}");
+            foreach (var row in rows)
+                Console.WriteLine($"  #{row.Id} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00}");
         }
         return 0;
     }
@@ -365,7 +420,7 @@ switch (command)
         await using (db)
         {
             var row = await PaperLedger.SettleAsync(db, id, args[2], closeLine, closeOdds);
-            Console.WriteLine($"SETTLED #{row.Id} {row.Result} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
+            Console.WriteLine($"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
@@ -375,6 +430,18 @@ switch (command)
         var (db, _) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
             await PaperLedger.PrintStatusAsync(db);
+        return 0;
+    }
+    case "dashboard":
+    {
+        var root = FindRepoRoot();
+        var paperPath = args.Length > 1 ? args[1] : PaperLedger.DefaultDbPath(root);
+        var (db, _) = await PaperLedger.OpenAsync(paperPath);
+        await using (db)
+        {
+            await PaperLedger.MigrateLegacyAsync(db);
+            await PaperLedger.WriteDashboardAsync(db, Path.Combine(root, "ui"));
+        }
         return 0;
     }
     case "ensure-db":
@@ -450,9 +517,13 @@ static void PrintUsage()
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
-          paper-bet <key> <OVER|UNDER|HOME|AWAY> <line> <odds> <$> [p]
-          settle <id> <W|L|P> [closeLine] [closeOdds]         Settle + CLV pts
-          paper [paper.db]           Paper bankroll / CLV status (Gate 2)
+          paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport>
+                                 Independent DK + Kalshi place (each venue EV-gates / sizes alone)
+          settle-go <key|group> <W|L|P> [closeLine] [closeOdds]
+          paper-bet …              Legacy single Flat lane
+          settle <id> <W|L|P> …    Settle one ledger id
+          paper [paper.db]         Leaderboard of all stake lanes
+          dashboard                Write ui/index.html equity + leaderboard
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);

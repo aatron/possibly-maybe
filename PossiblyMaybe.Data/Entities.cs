@@ -145,4 +145,14 @@ public sealed class LedgerEntry
     /// <summary>Spread CLV in points: betLine − closeLine (same side).</summary>
     public double? ClvPts { get; set; }
     public bool IsPaper { get; set; } = true;
+    /// <summary>Stake scheme code: Flat, Kelly2, Kelly5, EvProp, ConfBand, EdgeBand.</summary>
+    public string Scheme { get; set; } = "Flat";
+    /// <summary>Shared id across scheme lanes for one logical pick (settle-all).</summary>
+    public string TicketGroup { get; set; } = "";
+    /// <summary>|modelExp − line| at place time (EdgeBand).</summary>
+    public double AbsEdge { get; set; }
+    /// <summary>NBA / MLS / LIGUE1 / … for EdgeBand scaling.</summary>
+    public string Sport { get; set; } = "";
+    /// <summary>DK or Kalshi — independent $1000×scheme books.</summary>
+    public string Venue { get; set; } = "DK";
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
@@ -16,6 +17,136 @@ public static class PaperLedger
         return (new AppDbContext(options), dbPath);
     }
 
+    /// <summary>Settled equity (seed + realized PnL). Open stakes are still inside this number.</summary>
+    public static async Task<double> EquityAsync(AppDbContext db, string scheme, string venue, CancellationToken ct = default)
+    {
+        venue = PaperVenues.Normalize(venue);
+        var pnl = await db.LedgerEntries.AsNoTracking()
+            .Where(r => r.Scheme == scheme && r.Venue == venue && r.PnL != null)
+            .SumAsync(r => r.PnL!.Value, ct);
+        return StakeTrial.SeedDollars + pnl;
+    }
+
+    /// <summary>Dollars tied up in unsettled tickets.</summary>
+    public static async Task<double> ReservedAsync(AppDbContext db, string scheme, string venue, CancellationToken ct = default)
+    {
+        venue = PaperVenues.Normalize(venue);
+        return await db.LedgerEntries.AsNoTracking()
+            .Where(r => r.Scheme == scheme && r.Venue == venue && r.Result == null)
+            .SumAsync(r => r.StakeDollars, ct);
+    }
+
+    /// <summary>Cash free to size the next bet = equity − open stakes.</summary>
+    public static async Task<double> BankrollAsync(AppDbContext db, string scheme, string venue, CancellationToken ct = default)
+        => Math.Max(0, await EquityAsync(db, scheme, venue, ct) - await ReservedAsync(db, scheme, venue, ct));
+
+    /// <summary>
+    /// Independent dual-venue place: DK and Kalshi each decide from their own odds (EV≥4% via scheme sizer).
+    /// A pick may land on DK only, Kalshi only, both, or neither.
+    /// </summary>
+    public static async Task<(IReadOnlyList<LedgerEntry> Dk, IReadOnlyList<LedgerEntry> Kalshi, string? KalshiNote)> PlaceDualVenueAsync(
+        AppDbContext db,
+        string gameKey,
+        string side,
+        double line,
+        int dkAmericanOdds,
+        double modelProb,
+        double absEdge,
+        string sport,
+        CancellationToken ct = default)
+    {
+        var dk = await PlaceAllSchemesAsync(
+            db, gameKey, side, line, dkAmericanOdds, modelProb, absEdge, sport, PaperVenues.DraftKings, ct);
+
+        IReadOnlyList<LedgerEntry> kalshi = [];
+        string? note = null;
+        var quote = await KalshiQuotes.TryGetTotalAsync(sport, gameKey, side, line, ct);
+        if (quote is null)
+        {
+            note = "Kalshi SKIP — no matching open total market";
+        }
+        else
+        {
+            var ev = OddsMath.ExpectedValue(modelProb, quote.Value.AmericanOdds);
+            if (ev < 0.04)
+            {
+                note =
+                    $"Kalshi SKIP — EV {ev:P1} < 4% at {quote.Value.SideLabel} ask=${quote.Value.BuyPrice:F3} (~{quote.Value.AmericanOdds:+0;-0}) strike={quote.Value.Strike}";
+            }
+            else
+            {
+                kalshi = await PlaceAllSchemesAsync(
+                    db, gameKey, side, quote.Value.Strike, quote.Value.AmericanOdds, modelProb, absEdge, sport,
+                    PaperVenues.Kalshi, ct);
+                note =
+                    kalshi.Count == 0
+                        ? $"Kalshi SKIP — EV ok but all lanes dust/ruined @ {quote.Value.AmericanOdds:+0;-0}"
+                        : $"Kalshi GO — {quote.Value.SideLabel} ask=${quote.Value.BuyPrice:F3} (~{quote.Value.AmericanOdds:+0;-0}) strike={quote.Value.Strike} ticker={quote.Value.MarketTicker}";
+            }
+        }
+
+        return (dk, kalshi, note);
+    }
+
+    /// <summary>Place the same GO across every stake scheme on one venue (each lane sizes from its own bankroll).</summary>
+    public static async Task<IReadOnlyList<LedgerEntry>> PlaceAllSchemesAsync(
+        AppDbContext db,
+        string gameKey,
+        string side,
+        double line,
+        int americanOdds,
+        double modelProb,
+        double absEdge,
+        string sport,
+        string venue = PaperVenues.DraftKings,
+        CancellationToken ct = default)
+    {
+        side = side.ToUpperInvariant();
+        venue = PaperVenues.Normalize(venue);
+        if (side is not ("HOME" or "AWAY" or "OVER" or "UNDER"))
+            throw new ArgumentException("side must be HOME, AWAY, OVER, or UNDER");
+        if (modelProb is < 0 or > 1)
+            throw new ArgumentException("modelProb must be in [0,1]");
+
+        var already = await db.LedgerEntries.AsNoTracking()
+            .AnyAsync(r => r.Result == null && r.Venue == venue && r.GameKey == gameKey, ct);
+        if (already)
+            return [];
+
+        var group = Guid.NewGuid().ToString("N")[..12];
+        var placed = new List<LedgerEntry>();
+        foreach (var scheme in StakeSchemes.All)
+        {
+            var bank = await BankrollAsync(db, scheme.Code, venue, ct);
+            var stake = StakeSchemes.StakeDollars(scheme.Code, modelProb, americanOdds, bank, absEdge, sport);
+            if (stake < 0.50)
+                continue; // skip dust / ruined / no-EV
+
+            var row = new LedgerEntry
+            {
+                PlacedAt = DateTimeOffset.UtcNow,
+                GameKey = gameKey,
+                Market = ChampConfig.Market,
+                Side = side,
+                Line = line,
+                AmericanOdds = americanOdds,
+                StakeDollars = Math.Round(stake, 2),
+                ModelProb = modelProb,
+                IsPaper = true,
+                Scheme = scheme.Code,
+                TicketGroup = group,
+                AbsEdge = absEdge,
+                Sport = sport.ToUpperInvariant(),
+                Venue = venue,
+            };
+            db.LedgerEntries.Add(row);
+            placed.Add(row);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return placed;
+    }
+
     public static async Task<LedgerEntry> PlaceAsync(
         AppDbContext db,
         string gameKey,
@@ -26,6 +157,7 @@ public static class PaperLedger
         double modelProb,
         CancellationToken ct = default)
     {
+        // Legacy single-lane helper → Flat only
         side = side.ToUpperInvariant();
         if (side is not ("HOME" or "AWAY" or "OVER" or "UNDER"))
             throw new ArgumentException("side must be HOME, AWAY, OVER, or UNDER");
@@ -43,6 +175,9 @@ public static class PaperLedger
             StakeDollars = stakeDollars,
             ModelProb = modelProb,
             IsPaper = true,
+            Scheme = StakeSchemes.Flat.Code,
+            TicketGroup = Guid.NewGuid().ToString("N")[..12],
+            Venue = PaperVenues.DraftKings,
         };
         db.LedgerEntries.Add(row);
         await db.SaveChangesAsync(ct);
@@ -63,7 +198,38 @@ public static class PaperLedger
 
         var row = await db.LedgerEntries.FindAsync([id], ct)
             ?? throw new InvalidOperationException($"ledger id {id} not found");
+        ApplySettle(row, result, closeLine, closeAmerican);
+        await db.SaveChangesAsync(ct);
+        return row;
+    }
 
+    /// <summary>Settle every scheme lane for a ticket group or game key.</summary>
+    public static async Task<IReadOnlyList<LedgerEntry>> SettleGroupAsync(
+        AppDbContext db,
+        string groupOrGameKey,
+        string result,
+        double? closeLine,
+        int? closeAmerican,
+        CancellationToken ct = default)
+    {
+        result = result.ToUpperInvariant();
+        if (result is not ("W" or "L" or "P"))
+            throw new ArgumentException("result must be W, L, or P");
+
+        var rows = await db.LedgerEntries
+            .Where(r => r.Result == null && (r.TicketGroup == groupOrGameKey || r.GameKey == groupOrGameKey))
+            .ToListAsync(ct);
+        if (rows.Count == 0)
+            throw new InvalidOperationException($"no open tickets for '{groupOrGameKey}'");
+
+        foreach (var row in rows)
+            ApplySettle(row, result, closeLine, closeAmerican);
+        await db.SaveChangesAsync(ct);
+        return rows;
+    }
+
+    static void ApplySettle(LedgerEntry row, string result, double? closeLine, int? closeAmerican)
+    {
         row.Result = result;
         row.CloseLine = closeLine;
         row.CloseAmerican = closeAmerican;
@@ -75,37 +241,550 @@ public static class PaperLedger
         };
         if (closeLine is { } cl)
         {
-            // OVER: higher close = better; UNDER/ATS home-style: lower line magnitude rules differ
             row.ClvPts = row.Side is "OVER" ? cl - row.Line
                 : row.Side is "UNDER" ? row.Line - cl
-                : row.Line - cl; // HOME/AWAY spread: betLine − closeLine
+                : row.Line - cl;
         }
-
-        await db.SaveChangesAsync(ct);
-        return row;
     }
 
     public static async Task PrintStatusAsync(AppDbContext db, CancellationToken ct = default)
     {
-        var rows = await db.LedgerEntries.AsNoTracking().OrderBy(x => x.Id).ToListAsync(ct);
-        var settled = rows.Where(r => r.Result is not null).ToList();
-        var open = rows.Count - settled.Count;
-        var pnl = settled.Sum(r => r.PnL ?? 0);
-        var clv = settled.Where(r => r.ClvPts.HasValue).Select(r => r.ClvPts!.Value).ToList();
-        var wins = settled.Count(r => r.Result == "W");
-        var bank = ChampConfig.BankrollSeed + pnl;
-
-        Console.WriteLine($"Paper bankroll: ${bank:F2} (seed {ChampConfig.BankrollSeed:F0} + PnL {pnl:+0.00;-0.00})");
-        Console.WriteLine($"Tickets: {rows.Count}  open={open}  settled={settled.Count}  W={wins} L={settled.Count(r => r.Result == "L")} P={settled.Count(r => r.Result == "P")}");
-        if (clv.Count > 0)
-            Console.WriteLine($"Mean spread CLV: {clv.Average():+0.00;-0.00} pts (n={clv.Count})");
-        Console.WriteLine($"Gate 2b: need ~1 month live paper; champ={ChampConfig.Market}/{ChampConfig.Model} edge≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0}");
-        foreach (var r in rows.TakeLast(15))
+        Console.WriteLine($"Stake trial → {StakeTrial.HorizonEnd:yyyy-MM-dd}  seed ${StakeTrial.SeedDollars:F0}/lane/venue");
+        foreach (var venue in PaperVenues.All)
         {
-            var res = r.Result ?? "OPEN";
-            var clvS = r.ClvPts is { } c ? $" clv={c:+0.0;-0.0}" : "";
-            var pnlS = r.PnL is { } p ? $" pnl={p:+0.00;-0.00}" : "";
-            Console.WriteLine($"  #{r.Id} {r.PlacedAt:yyyy-MM-dd} {r.GameKey} {r.Side} {r.Line:+0.0;-0.0} @{r.AmericanOdds} ${r.StakeDollars:F2} → {res}{pnlS}{clvS}");
+            Console.WriteLine($"--- {venue} leaderboard ---");
+            var board = new List<(string Code, string Name, double Equity, double Reserved, double Avail, int N, int Open)>();
+            foreach (var s in StakeSchemes.All)
+            {
+                var rows = await db.LedgerEntries.AsNoTracking()
+                    .Where(r => r.Scheme == s.Code && r.Venue == venue).ToListAsync(ct);
+                var settled = rows.Where(r => r.Result is not null).ToList();
+                var openRows = rows.Where(r => r.Result is null).ToList();
+                var equity = StakeTrial.SeedDollars + settled.Sum(r => r.PnL ?? 0);
+                var reserved = openRows.Sum(r => r.StakeDollars);
+                board.Add((s.Code, s.DisplayName, equity, reserved, Math.Max(0, equity - reserved), settled.Count, openRows.Count));
+            }
+
+            foreach (var b in board.OrderByDescending(x => x.Equity))
+                Console.WriteLine(
+                    $"  {b.Code,-10} {b.Name,-18} equity=${b.Equity:F2}  at-risk=${b.Reserved:F2}  avail=${b.Avail:F2}  settled={b.N}  open={b.Open}");
+        }
+
+        var open = (await db.LedgerEntries.AsNoTracking()
+                .Where(r => r.Result == null)
+                .ToListAsync(ct))
+            .OrderBy(r => r.Id)
+            .ToList();
+        Console.WriteLine($"--- open tickets ({open.Count}) ---");
+        foreach (var g in open.GroupBy(r => r.Venue + "|" + r.TicketGroup + "|" + r.GameKey).TakeLast(30))
+        {
+            var sample = g.First();
+            var stakes = string.Join(" ", g.Select(r => $"{r.Scheme}=${r.StakeDollars:F2}"));
+            Console.WriteLine(
+                $"  [{sample.Venue}] {sample.GameKey} {sample.Side} {sample.Line} @{sample.AmericanOdds}  group={sample.TicketGroup}  {stakes}");
         }
     }
+
+    public static async Task MigrateLegacyAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var legacy = await db.LedgerEntries
+            .Where(r => r.Scheme == null || r.Scheme == "" || r.Scheme == "Flat")
+            .ToListAsync(ct);
+        // Existing $20 MLS opens were ~2% of $1000 → tag Kelly2
+        foreach (var r in legacy.Where(r => Math.Abs(r.StakeDollars - 20) < 0.01 && r.Result == null))
+        {
+            r.Scheme = StakeSchemes.Kelly2.Code;
+            if (string.IsNullOrEmpty(r.TicketGroup))
+                r.TicketGroup = Guid.NewGuid().ToString("N")[..12];
+            if (string.IsNullOrEmpty(r.Sport))
+                r.Sport = "MLS";
+        }
+
+        foreach (var r in await db.LedgerEntries.Where(r => r.Venue == null || r.Venue == "").ToListAsync(ct))
+            r.Venue = PaperVenues.DraftKings;
+
+        await db.SaveChangesAsync(ct);
+        await FanOutOpenTicketsAsync(db, ct);
+    }
+
+    /// <summary>
+    /// Within each venue, every open GO must exist on every scheme lane.
+    /// Does not copy DK tickets onto Kalshi (venues decide independently).
+    /// </summary>
+    public static async Task FanOutOpenTicketsAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var open = await db.LedgerEntries.Where(r => r.Result == null).ToListAsync(ct);
+        foreach (var game in open
+                     .GroupBy(r => PaperVenues.Normalize(r.Venue) + "\0" + r.GameKey)
+                     .OrderBy(g => g.Min(x => x.Id)))
+        {
+            var sample = game.OrderBy(r => r.Id).First();
+            var venue = PaperVenues.Normalize(sample.Venue);
+            var group = game.Select(r => r.TicketGroup).FirstOrDefault(g => !string.IsNullOrEmpty(g))
+                        ?? Guid.NewGuid().ToString("N")[..12];
+            foreach (var r in game)
+            {
+                r.Venue = venue;
+                if (r.TicketGroup != group)
+                    r.TicketGroup = group;
+            }
+
+            var have = game.Select(r => r.Scheme).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var scheme in StakeSchemes.All)
+            {
+                if (have.Contains(scheme.Code))
+                    continue;
+
+                var bank = await BankrollAsync(db, scheme.Code, venue, ct);
+                var stake = StakeSchemes.StakeDollars(
+                    scheme.Code, sample.ModelProb, sample.AmericanOdds, bank, sample.AbsEdge, sample.Sport);
+                if (stake < 0.50)
+                    continue;
+
+                db.LedgerEntries.Add(new LedgerEntry
+                {
+                    PlacedAt = sample.PlacedAt,
+                    GameKey = sample.GameKey,
+                    Market = sample.Market,
+                    Side = sample.Side,
+                    Line = sample.Line,
+                    AmericanOdds = sample.AmericanOdds,
+                    StakeDollars = Math.Round(stake, 2),
+                    ModelProb = sample.ModelProb,
+                    IsPaper = true,
+                    Scheme = scheme.Code,
+                    TicketGroup = group,
+                    AbsEdge = sample.AbsEdge,
+                    Sport = sample.Sport,
+                    Venue = venue,
+                });
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    public static async Task WriteDashboardAsync(AppDbContext db, string uiDir, CancellationToken ct = default)
+    {
+        Directory.CreateDirectory(uiDir);
+        var rows = (await db.LedgerEntries.AsNoTracking().ToListAsync(ct))
+            .OrderBy(r => r.PlacedAt).ThenBy(r => r.Id)
+            .ToList();
+
+        var venues = new Dictionary<string, object>();
+        foreach (var venue in PaperVenues.All)
+            venues[venue] = BuildVenuePayload(rows.Where(r => PaperVenues.Normalize(r.Venue) == venue).ToList());
+
+        var json = JsonSerializer.Serialize(new
+        {
+            generatedAt = DateTimeOffset.UtcNow.ToString("o"),
+            horizonEnd = StakeTrial.HorizonEnd.ToString("yyyy-MM-dd"),
+            seed = StakeTrial.SeedDollars,
+            venues,
+        }, new JsonSerializerOptions { WriteIndented = true });
+
+        var jsonPath = Path.Combine(uiDir, "data.json");
+        await File.WriteAllTextAsync(jsonPath, json, ct);
+        var htmlPath = Path.Combine(uiDir, "index.html");
+        await File.WriteAllTextAsync(htmlPath, DashboardHtml(json), ct);
+        Console.WriteLine($"Dashboard → {htmlPath}");
+        Console.WriteLine($"Data      → {jsonPath}");
+        Console.WriteLine("Open ui/index.html — tabs: DraftKings | Kalshi (re-run `dashboard` after settles).");
+    }
+
+    static object BuildVenuePayload(List<LedgerEntry> rows)
+    {
+        var lanes = new List<object>();
+        foreach (var s in StakeSchemes.All)
+        {
+            var mine = rows.Where(r => r.Scheme == s.Code).ToList();
+            double bank = StakeTrial.SeedDollars;
+            var equity = new List<object> { new { t = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"), bank } };
+            foreach (var r in mine.Where(r => r.Result != null).OrderBy(r => r.PlacedAt).ThenBy(r => r.Id))
+            {
+                bank += r.PnL ?? 0;
+                equity.Add(new { t = r.PlacedAt.ToString("o"), bank = Math.Round(bank, 2) });
+            }
+
+            if (equity.Count == 1)
+                equity.Add(new { t = DateTimeOffset.UtcNow.ToString("o"), bank = StakeTrial.SeedDollars });
+
+            var settled = mine.Where(r => r.Result != null).ToList();
+            var openRows = mine.Where(r => r.Result == null).ToList();
+            var reserved = openRows.Sum(r => r.StakeDollars);
+            var peak = StakeTrial.SeedDollars;
+            var maxDd = 0.0;
+            var run = StakeTrial.SeedDollars;
+            foreach (var r in settled.OrderBy(r => r.PlacedAt).ThenBy(r => r.Id))
+            {
+                run += r.PnL ?? 0;
+                peak = Math.Max(peak, run);
+                maxDd = Math.Max(maxDd, peak - run);
+            }
+
+            var tickets = mine
+                .OrderByDescending(r => r.PlacedAt).ThenByDescending(r => r.Id)
+                .Select(r => new
+                {
+                    id = r.Id,
+                    placedAt = r.PlacedAt.ToString("o"),
+                    gameKey = r.GameKey,
+                    sport = r.Sport,
+                    side = r.Side,
+                    line = r.Line,
+                    odds = r.AmericanOdds,
+                    stake = Math.Round(r.StakeDollars, 2),
+                    modelProb = r.ModelProb,
+                    absEdge = r.AbsEdge,
+                    result = r.Result,
+                    pnl = r.PnL is { } p ? Math.Round(p, 2) : (double?)null,
+                    closeLine = r.CloseLine,
+                    clvPts = r.ClvPts is { } c ? Math.Round(c, 2) : (double?)null,
+                    group = r.TicketGroup,
+                    venue = r.Venue,
+                })
+                .ToList();
+
+            lanes.Add(new
+            {
+                code = s.Code,
+                name = s.DisplayName,
+                rule = s.Rule,
+                bank = Math.Round(bank, 2),
+                reserved = Math.Round(reserved, 2),
+                available = Math.Round(Math.Max(0, bank - reserved), 2),
+                pnl = Math.Round(bank - StakeTrial.SeedDollars, 2),
+                settled = settled.Count,
+                open = openRows.Count,
+                wins = settled.Count(r => r.Result == "W"),
+                losses = settled.Count(r => r.Result == "L"),
+                maxDrawdown = Math.Round(maxDd, 2),
+                equity,
+                tickets,
+            });
+        }
+
+        return new { lanes };
+    }
+
+    static string DashboardHtml(string embeddedJson) => $$"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PossiblyMaybe — Stake lanes</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+  :root { --bg:#0f1419; --panel:#1a222d; --ink:#e7ecf3; --muted:#8b9bb4; --line:#2a3544; --up:#3ecf8e; --down:#f07178; --accent:#6cb6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; background: radial-gradient(1200px 600px at 10% -10%, #1c2a3a, var(--bg)); color: var(--ink); }
+  header { padding: 1.5rem 2rem 0.5rem; }
+  header h1 { margin:0; font-size:1.4rem; letter-spacing:0.02em; }
+  header p { margin:0.35rem 0 0; color:var(--muted); font-size:0.95rem; }
+  .tabs { display:flex; gap:0.4rem; padding: 0.75rem 2rem 0; }
+  .tab { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:8px 8px 0 0; padding:0.45rem 1rem; cursor:pointer; font:inherit; }
+  .tab.active { color:var(--ink); border-color:var(--accent); background:var(--panel); }
+  main { padding: 1rem 2rem 3rem; display:grid; gap:1.25rem; }
+  .board { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:0.75rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem; cursor:pointer; }
+  .card:hover { border-color: var(--accent); }
+  .card.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .card .code { font-size:0.75rem; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; }
+  .card .name { font-weight:600; margin-top:0.15rem; }
+  .card .bank { font-size:1.35rem; margin-top:0.4rem; font-variant-numeric: tabular-nums; }
+  .card .meta { color:var(--muted); font-size:0.8rem; margin-top:0.25rem; }
+  .pos { color:var(--up); } .neg { color:var(--down); }
+  .chart-wrap { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:1rem; }
+  table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+  th, td { text-align:left; padding:0.55rem 0.6rem; border-bottom:1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { color:var(--muted); font-weight:500; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
+  .rule { color:var(--muted); font-size:0.8rem; }
+  #board-table tbody tr { cursor:pointer; }
+  #board-table tbody tr:hover td { background: rgba(108,182,255,0.06); }
+  #board-table tbody tr.active td { background: rgba(108,182,255,0.12); }
+  #detail { display:none; }
+  #detail.open { display:block; }
+  .detail-head { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; }
+  .detail-head h2 { margin:0; font-size:1.05rem; font-weight:600; }
+  .detail-close { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.7rem; cursor:pointer; font:inherit; }
+  .ticket-scroll { max-height: 22rem; overflow:auto; }
+  .badge { display:inline-block; min-width:1.6rem; text-align:center; padding:0.1rem 0.35rem; border-radius:4px; font-size:0.75rem; font-weight:600; }
+  .badge.open { background:#2a3544; color:var(--muted); }
+  .badge.W { background:rgba(62,207,142,0.2); color:var(--up); }
+  .badge.L { background:rgba(240,113,120,0.2); color:var(--down); }
+  .badge.P { background:rgba(230,180,80,0.2); color:#e6b450; }
+  .cal-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.85rem; flex-wrap:wrap; }
+  .cal-head h2 { margin:0; font-size:1.05rem; font-weight:600; }
+  .cal-nav { display:flex; gap:0.4rem; align-items:center; }
+  .cal-nav button { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.65rem; cursor:pointer; font:inherit; }
+  .cal-grid { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap:0.5rem; }
+  @media (max-width: 900px) { .cal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .cal-day { background:rgba(0,0,0,0.18); border:1px solid var(--line); border-radius:8px; padding:0.55rem 0.6rem; min-height:7.5rem; }
+  .cal-day.today { border-color: var(--accent); }
+  .cal-day.empty { opacity:0.55; }
+  .cal-day .dow { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .cal-day .dom { font-size:1.05rem; font-weight:600; margin:0.1rem 0 0.45rem; }
+  .cal-bet { font-size:0.78rem; line-height:1.25; padding:0.35rem 0; border-top:1px solid var(--line); }
+  .cal-bet .pick { font-weight:600; }
+  .cal-bet .stake { color:var(--muted); }
+  .cal-none { color:var(--muted); font-size:0.78rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stake lane leaderboard</h1>
+  <p id="sub">Loading…</p>
+</header>
+<div class="tabs" id="tabs">
+  <button type="button" class="tab active" data-venue="DK">DraftKings</button>
+  <button type="button" class="tab" data-venue="Kalshi">Kalshi</button>
+</div>
+<main>
+  <section class="board" id="cards"></section>
+  <section class="chart-wrap" id="calendar">
+    <div class="cal-head">
+      <div>
+        <h2>Bet calendar</h2>
+        <div class="hint rule" id="cal-range">Next 7 days</div>
+      </div>
+      <div class="cal-nav">
+        <button type="button" id="cal-prev">Prev</button>
+        <button type="button" id="cal-today">This week</button>
+        <button type="button" id="cal-next">Next</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </section>
+  <section class="chart-wrap">
+    <canvas id="equity" height="120"></canvas>
+  </section>
+  <section class="chart-wrap">
+    <table id="board-table">
+      <thead>
+        <tr><th>Lane</th><th>Rule</th><th>Equity</th><th>At risk</th><th>Available</th><th>PnL</th><th>W-L</th><th>Open</th><th>Max DD</th></tr>
+      </thead>
+      <tbody id="table"></tbody>
+    </table>
+  </section>
+  <section class="chart-wrap" id="detail">
+    <div class="detail-head">
+      <div>
+        <h2 id="detail-title">Tickets</h2>
+        <div class="hint rule" id="detail-hint"></div>
+      </div>
+      <button type="button" class="detail-close" id="detail-close">Close</button>
+    </div>
+    <div class="ticket-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>When</th><th>Game</th><th>Side</th><th>Line</th><th>Odds</th>
+            <th>Stake</th><th>p</th><th>Edge</th><th>Result</th><th>PnL</th><th>CLV</th>
+          </tr>
+        </thead>
+        <tbody id="tickets"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+const DATA = {{embeddedJson}};
+const colors = ['#6cb6ff','#3ecf8e','#e6b450','#d2a8ff','#f07178','#89ddff'];
+let venue = 'DK';
+let selected = null;
+let calOffset = 0;
+let chart;
+
+function venueBlock() {
+  return (DATA.venues && DATA.venues[venue]) || { lanes: [] };
+}
+function lanes() { return venueBlock().lanes || []; }
+function byCode() { return Object.fromEntries(lanes().map(l => [l.code, l])); }
+
+document.getElementById('sub').textContent =
+  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · DK and Kalshi decide independently`;
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-venue]');
+  if (!btn) return;
+  venue = btn.dataset.venue;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.venue === venue));
+  selected = null;
+  document.getElementById('detail').classList.remove('open');
+  renderAll();
+});
+
+function ymdLocal(d) {
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseGameDay(gameKey) {
+  const m = String(gameKey||'').match(/^(\d{8})\b/);
+  return m ? m[1] : null;
+}
+function startOfLocalDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function allTickets() {
+  return lanes().flatMap(l => (l.tickets||[]).map(t => ({ ...t, scheme: l.code })));
+}
+function betsForDay(ymd) {
+  const tickets = allTickets().filter(t => parseGameDay(t.gameKey) === ymd);
+  const filtered = selected ? tickets.filter(t => t.scheme === selected) : tickets;
+  const byGame = new Map();
+  for (const t of filtered) {
+    if (!byGame.has(t.gameKey)) {
+      byGame.set(t.gameKey, {
+        gameKey: t.gameKey, sport: t.sport, side: t.side, line: t.line,
+        result: t.result, stakes: [],
+      });
+    }
+    byGame.get(t.gameKey).stakes.push({ scheme: t.scheme, stake: t.stake, result: t.result });
+  }
+  return [...byGame.values()];
+}
+function renderCalendar() {
+  const today = startOfLocalDay(new Date());
+  const start = new Date(today); start.setDate(start.getDate() + calOffset * 7);
+  const days = [];
+  for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
+  const fmt = d => d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  const laneNote = selected ? ` · ${selected} only` : ` · ${venue} all lanes`;
+  document.getElementById('cal-range').textContent = `${fmt(days[0])} – ${fmt(days[6])}${laneNote}`;
+  const todayYmd = ymdLocal(today);
+  document.getElementById('cal-grid').innerHTML = days.map(d => {
+    const ymd = ymdLocal(d);
+    const bets = betsForDay(ymd);
+    const body = bets.length === 0 ? `<div class="cal-none">No bets</div>` : bets.map(b => {
+      const match = b.gameKey.replace(/^\d{8}\s*/, '');
+      const res = b.result || 'open';
+      const stakeTxt = selected
+        ? `$${Number(b.stakes[0].stake).toFixed(2)}`
+        : `${b.stakes.length} lanes · $${b.stakes.reduce((a,s)=>a+Number(s.stake),0).toFixed(0)} total`;
+      return `<div class="cal-bet"><div class="pick">${b.side} ${Number(b.line).toFixed(1)} <span class="badge ${res}">${res}</span></div>
+        <div>${match}${b.sport?` · ${b.sport}`:''}</div><div class="stake">${stakeTxt}</div></div>`;
+    }).join('');
+    return `<div class="cal-day${ymd===todayYmd?' today':''}${bets.length===0?' empty':''}">
+      <div class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</div>
+      <div class="dom">${d.getDate()}</div>${body}</div>`;
+  }).join('');
+}
+document.getElementById('cal-prev').onclick = () => { calOffset--; renderCalendar(); };
+document.getElementById('cal-next').onclick = () => { calOffset++; renderCalendar(); };
+document.getElementById('cal-today').onclick = () => { calOffset = 0; renderCalendar(); };
+
+function fmtWhen(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function fmtNum(v, digits=2) { return v == null || v === '' ? '—' : Number(v).toFixed(digits); }
+
+function showLane(code) {
+  if (selected === code) { clearLane(); return; }
+  const l = byCode()[code];
+  if (!l) return;
+  selected = code;
+  document.querySelectorAll('.card').forEach(el => el.classList.toggle('active', el.dataset.code === code));
+  document.querySelectorAll('#board-table tbody tr').forEach(el => el.classList.toggle('active', el.dataset.code === code));
+  document.getElementById('detail').classList.add('open');
+  document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
+  document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${l.rule}`;
+  document.getElementById('tickets').innerHTML = l.tickets.length === 0
+    ? `<tr><td colspan="12" class="rule">No tickets yet on ${venue}.</td></tr>`
+    : l.tickets.map(t => {
+        const res = t.result || 'open';
+        const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
+        const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
+        const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
+        return `<tr>
+          <td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
+          <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
+          <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
+          <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
+          <td>$${Number(t.stake).toFixed(2)}</td>
+          <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
+          <td><span class="badge ${res}">${res}</span></td>
+          <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
+      }).join('');
+  renderCalendar();
+}
+function clearLane() {
+  selected = null;
+  document.querySelectorAll('.card.active, #board-table tbody tr.active').forEach(el => el.classList.remove('active'));
+  document.getElementById('detail').classList.remove('open');
+  renderCalendar();
+}
+
+function renderBoard() {
+  const ranked = [...lanes()].sort((a,b) => b.bank - a.bank);
+  document.getElementById('cards').innerHTML = ranked.map((l,i) => `
+    <div class="card" data-code="${l.code}" role="button" tabindex="0">
+      <div class="code">#${i+1} ${l.code}</div>
+      <div class="name">${l.name}</div>
+      <div class="bank ${l.pnl>=0?'pos':'neg'}">$${l.bank.toFixed(2)}</div>
+      <div class="meta">avail $${(l.available??l.bank).toFixed(2)}${l.reserved>0?` · at risk $${l.reserved.toFixed(2)}`:''}</div>
+      <div class="meta">${l.pnl>=0?'+':''}${l.pnl.toFixed(2)} · DD $${l.maxDrawdown.toFixed(2)}${l.open?` · ${l.open} open`:''}</div>
+    </div>`).join('');
+  document.getElementById('table').innerHTML = ranked.map(l => `
+    <tr data-code="${l.code}">
+      <td><strong>${l.code}</strong> ${l.name}</td>
+      <td class="rule">${l.rule}</td>
+      <td>$${l.bank.toFixed(2)}</td>
+      <td>$${(l.reserved||0).toFixed(2)}</td>
+      <td>$${(l.available??l.bank).toFixed(2)}</td>
+      <td class="${l.pnl>=0?'pos':'neg'}">${l.pnl>=0?'+':''}${l.pnl.toFixed(2)}</td>
+      <td>${l.wins}-${l.losses}</td>
+      <td>${l.open}</td>
+      <td>$${l.maxDrawdown.toFixed(2)}</td>
+    </tr>`).join('');
+}
+
+function renderChart() {
+  const datasets = lanes().map((l,i) => ({
+    label: l.code,
+    data: l.equity.map(p => ({ x: p.t, y: p.bank })),
+    borderColor: colors[i % colors.length],
+    backgroundColor: 'transparent',
+    tension: 0.15,
+    pointRadius: 2,
+  }));
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('equity'), {
+    type: 'line',
+    data: { datasets },
+    options: {
+      parsing: false,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        x: { type: 'time', time: { unit: 'day' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
+        y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: venue + ' bankroll', color: '#8b9bb4' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#e7ecf3' } },
+        title: { display: true, text: venue + ' equity — independent of the other tab', color: '#e7ecf3' }
+      }
+    }
+  });
+}
+
+function renderAll() {
+  renderBoard();
+  renderChart();
+  renderCalendar();
+}
+
+document.getElementById('cards').addEventListener('click', e => {
+  const card = e.target.closest('[data-code]');
+  if (card) showLane(card.dataset.code);
+});
+document.getElementById('table').addEventListener('click', e => {
+  const row = e.target.closest('tr[data-code]');
+  if (row) showLane(row.dataset.code);
+});
+document.getElementById('detail-close').addEventListener('click', clearLane);
+
+renderAll();
+</script>
+</body>
+</html>
+""";
 }

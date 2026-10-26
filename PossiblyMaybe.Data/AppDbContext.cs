@@ -52,7 +52,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Market).HasMaxLength(16).IsRequired();
             e.Property(x => x.Side).HasMaxLength(8).IsRequired();
             e.Property(x => x.Result).HasMaxLength(4);
+            e.Property(x => x.Scheme).HasMaxLength(16).IsRequired();
+            e.Property(x => x.TicketGroup).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Sport).HasMaxLength(16);
+            e.Property(x => x.Venue).HasMaxLength(16).IsRequired();
             e.HasIndex(x => x.PlacedAt);
+            e.HasIndex(x => x.Scheme);
+            e.HasIndex(x => x.TicketGroup);
+            e.HasIndex(x => new { x.Venue, x.Scheme });
         });
 
         modelBuilder.Entity<GameBox>(e =>
@@ -91,5 +98,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             .Options;
         await using var db = new AppDbContext(options);
         await db.Database.EnsureCreatedAsync(ct);
+        await PatchLedgerColumnsAsync(db, ct);
+    }
+
+    /// <summary>EnsureCreated never ALTERs — add multi-scheme columns if missing.</summary>
+    static async Task PatchLedgerColumnsAsync(AppDbContext db, CancellationToken ct)
+    {
+        foreach (var sql in new[]
+                 {
+                     "ALTER TABLE LedgerEntries ADD COLUMN Scheme TEXT NOT NULL DEFAULT 'Flat'",
+                     "ALTER TABLE LedgerEntries ADD COLUMN TicketGroup TEXT NOT NULL DEFAULT ''",
+                     "ALTER TABLE LedgerEntries ADD COLUMN AbsEdge REAL NOT NULL DEFAULT 0",
+                     "ALTER TABLE LedgerEntries ADD COLUMN Sport TEXT NOT NULL DEFAULT ''",
+                     "ALTER TABLE LedgerEntries ADD COLUMN Venue TEXT NOT NULL DEFAULT 'DK'",
+                 })
+        {
+            try { await db.Database.ExecuteSqlRawAsync(sql, ct); }
+            catch { /* duplicate column on re-run */ }
+        }
     }
 }

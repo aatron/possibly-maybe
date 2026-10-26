@@ -57,7 +57,7 @@ public static class DailySlate
             var key = $"{yyyymmdd} {g.Away}@{g.Home}";
             Console.WriteLine(
                 $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F1} edge={edge:F1} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
-            Console.WriteLine($"    paper-bet \"{key}\" {side} {line.Value} {juice} {advice.StakeFraction * bankroll:F2} {p:F3}");
+            Console.WriteLine($"    paper-go \"{key}\" {side} {line.Value} {juice} {p:F3} {Math.Abs(edge):F2} NBA");
         }
 
         Console.WriteLine(gos == 0
@@ -116,7 +116,7 @@ public static class DailySlate
             var key = $"{yyyymmdd} {g.Away}@{g.Home}";
             Console.WriteLine(
                 $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F2} edge={edge:+0.2;-0.2} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
-            Console.WriteLine($"    paper-bet \"{key}\" {side} {line.Value} {juice} {advice.StakeFraction * bankroll:F2} {p:F3}");
+            Console.WriteLine($"    paper-go \"{key}\" {side} {line.Value} {juice} {p:F3} {Math.Abs(edge):F2} MLS");
         }
 
         Console.WriteLine(gos == 0
@@ -228,7 +228,9 @@ public static class DailySlate
             {
                 foreach (var o in odds.EnumerateArray())
                 {
-                    if (o.TryGetProperty("overUnder", out var ou) && ou.TryGetDouble(out var v))
+                    if (o.TryGetProperty("overUnder", out var ou)
+                        && ou.ValueKind is JsonValueKind.Number
+                        && ou.TryGetDouble(out var v))
                     {
                         total = v;
                         break;
