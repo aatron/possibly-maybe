@@ -2,7 +2,7 @@
 
 NBA-first betting lab: find a real edge (CLV), then take small advised bets. Money first; UI/Azure only after gates pass. See [`PLAN.md`](PLAN.md) and [`PROGRESS.md`](PROGRESS.md).
 
-**Current money path (Gate 2 paper):** NBA **totals** — 40% open + 60% scoring EMA, `|exp−line|≥3.5`, EV≥4%. `advise-ou` → `paper-bet` OVER/UNDER → `settle` → `paper`. Holdout **+8.4u / 320 bets** (2024–25). No real cash until Gate 2b.
+**Current money path (Gate 2 paper):** NBA **totals PaceEff** — 50% open + 50% pace×ORtg, `|exp−line|≥6`, EV≥4%. Holdout **+16.3u / 62 bets** (2024–25). Rollback baseline: commit `7be68f0`. No real cash until Gate 2b.
 
 Methodology reference: *Introduction to Statistical Learning* (ISLP). This README defines the **math we actually use** — a small ISLP subset plus betting math — not every chapter of the book.
 

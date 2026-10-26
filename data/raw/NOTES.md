@@ -2,6 +2,21 @@
 
 Download date: **2026-10-25** (manual Kaggle zips from ~/Downloads + sportsdataverse curl).
 
+## Box / pace (free)
+
+- `nba_box/box_games.csv` — built by `scripts/fetch_nba_box.py` (Kaggle B + nba_api). ~50k games.
+- Rebuild: `python3 -m venv .venv && .venv/bin/pip install nba_api pandas && .venv/bin/python scripts/fetch_nba_box.py`
+
+## Other sports (download these)
+
+See `NOTES_NFL.md` / `NOTES_MLB.md` if present. Kaggle (login required):
+
+| Sport | URL |
+|---|---|
+| NFL history | https://www.kaggle.com/datasets/tobycrabtree/nfl-scores-and-betting-data |
+| NFL open/close | https://www.kaggle.com/datasets/minmaxer/nfl-odds-2026 |
+| MLB 2025 open/close | https://www.kaggle.com/datasets/minmaxer/mlb-closing-odds-2025 |
+
 ## Status summary
 
 | ID | Source | Status | Path |
@@ -98,6 +113,12 @@ Downloaded 2026-10-25 from sportsdataverse `espn_nba_schedules` release into `es
 
 ---
 
+## Other sports — pending downloads
+
+- **NFL:** see [`NOTES_NFL.md`](NOTES_NFL.md) (Kaggle login required for open/close; nflverse close-only fallback).
+
+---
+
 ## Git
 
-**All raw datasets stay local** (`data/raw/**` gitignored). Only this `NOTES.md` is tracked. Re-download from the URLs above (or unpack zips into the paths in the status table) on each machine. Generated `*.db` is also gitignored.
+**All raw datasets stay local** (`data/raw/**` gitignored). Only `NOTES*.md` is tracked. Re-download from the URLs above (or unpack zips into the paths in the status table) on each machine. Generated `*.db` is also gitignored.

@@ -71,6 +71,26 @@ public sealed class RefereeAssignment
     public bool DonaghyExcludeFromFit { get; set; }
 }
 
+/// <summary>Team box inputs for pace / ORtg / DRtg (one row per game).</summary>
+public sealed class GameBox
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+    public Game? Game { get; set; }
+    public double FgaHome { get; set; }
+    public double OrebHome { get; set; }
+    public double TovHome { get; set; }
+    public double FtaHome { get; set; }
+    public double PtsHome { get; set; }
+    public double Fg3aHome { get; set; }
+    public double FgaAway { get; set; }
+    public double OrebAway { get; set; }
+    public double TovAway { get; set; }
+    public double FtaAway { get; set; }
+    public double PtsAway { get; set; }
+    public double Fg3aAway { get; set; }
+}
+
 /// <summary>Paper/real ticket. Lives in paper.db (not the import warehouse).</summary>
 public sealed class LedgerEntry
 {

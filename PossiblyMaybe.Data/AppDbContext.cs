@@ -8,6 +8,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<OddsSnapshot> OddsSnapshots => Set<OddsSnapshot>();
     public DbSet<RefereeAssignment> RefereeAssignments => Set<RefereeAssignment>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+    public DbSet<GameBox> GameBoxes => Set<GameBox>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Side).HasMaxLength(8).IsRequired();
             e.Property(x => x.Result).HasMaxLength(4);
             e.HasIndex(x => x.PlacedAt);
+        });
+
+        modelBuilder.Entity<GameBox>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.Game).WithMany().HasForeignKey(x => x.GameId);
+            e.HasIndex(x => x.GameId).IsUnique();
         });
     }
 

@@ -83,6 +83,13 @@ switch (command)
         await Gate0Importer.ImportTotalsOnlyAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-box":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await Gate0Importer.ImportBoxOnlyAsync(ResolveRawRoot(), dbPath);
+        return 0;
+    }
     case "sweep-totals":
     {
         var repoRoot = FindRepoRoot();
@@ -261,7 +268,8 @@ static void PrintUsage()
           backtest [dbPath]          ML / spread / combo walk-forward report
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
-          sweep-totals [db]          O/U soft-spot sweep (holdout 2024-25)
+          import-box [db]            Load pace box (nba_box/box_games.csv)
+          sweep-totals [db]          O/U sweep Scoring vs PaceEff (holdout 2024-25)
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
           paper-bet <key> <OVER|UNDER|HOME|AWAY> <line> <odds> <$> [p]

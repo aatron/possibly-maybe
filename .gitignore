@@ -38,6 +38,7 @@ ScaffoldingReadMe.txt
 
 # dotenv environment variables file
 .env
+.venv/
 
 # Others
 ~$*
@@ -63,4 +64,4 @@ nunit-*.xml
 *.db-shm
 *.db-wal
 data/raw/**
-!data/raw/NOTES.md
+!data/raw/NOTES*.md

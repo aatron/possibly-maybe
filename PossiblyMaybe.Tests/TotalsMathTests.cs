@@ -20,4 +20,16 @@ public class TotalsMathTests
         var exp = book.ExpectedTotal("AAA", "BBB");
         await Assert.That(exp).IsGreaterThan(200);
     }
+
+    [Test]
+    public async Task Possessions_and_pace_book()
+    {
+        var poss = PaceEfficiencyBook.Possessions(fga: 90, oreb: 10, tov: 12, fta: 20);
+        await Assert.That(poss).IsEqualTo(90 - 10 + 12 + 0.44 * 20).Within(1e-9);
+        var book = new PaceEfficiencyBook(alpha: 1.0);
+        book.Update("AAA", "BBB", 90, 10, 12, 20, 120, 35, 85, 8, 14, 18, 100, 30);
+        var exp = book.ExpectedTotal("AAA", "BBB");
+        await Assert.That(exp).IsGreaterThan(180);
+        await Assert.That(exp).IsLessThan(260);
+    }
 }

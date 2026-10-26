@@ -4,47 +4,51 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-10-25 (TOTALS = primary money path) |
+| **Last updated** | 2026-10-25 (PaceEff totals beat Scoring) |
+| **Rollback** | `git checkout 7be68f0` — prior Scoring champ (w=0.4, edge≥3.5, hold +8.4u / 320) |
 | **Current gate** | **2** live paper |
-| **Champ** | **NBA TOTALS (O/U)** · 40% open + 60% scoring EMA · `|exp−line|≥3.5` · EV≥4% |
+| **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
 | **Kill status** | **HOLD PASS** |
-| **Holdout 2024–25** | **320 bets**, CLV **+1.91 pts**, PnL **+8.4u** flat 1u |
-| **Next action** | Paper every GO with `advise-ou` → `paper-bet` → `settle`; Gate 2b ~1 month |
+| **Holdout 2024–25** | **62 bets**, CLV **+2.64 pts**, PnL **+16.3u** |
 | **Bankroll seed** | $1000 paper |
 
-## Why totals (not “obvious moneylines”)
+## Scoring vs PaceEff (same train rule)
 
-Favorites that “should win” are priced at −300/−500; being right most nights still loses after vig. Soft spot = **totals**, where scoring pace disagrees with the posted number by ≥3 points.
+| Model | Champ (train) | Holdout bets | Holdout PnL | Holdout CLV |
+|---|---|---|---|---|
+| Scoring (old) | w=0.4 edge=3.5 | 320 | +8.4u | +1.91 |
+| **PaceEff (new)** | w=0.5 edge=6.0 | **62** | **+16.3u** | **+2.64** |
 
-## Champ rule
+PaceEff wins on **dollars** (same flat 1u); fewer tickets (higher bar). Volume-friendly PaceEff alt: w=0.6 edge=3.5 → hold +11.5u / 147 bets.
 
-1. Maintain team points-for / points-against EMA (`ScoringBook`).
-2. `modelExp = ExpectedTotal(home, away)`; `exp = 0.4*openTotal + 0.6*modelExp`.
-3. Bet **OVER** if `exp−open ≥ 3.5` and EV≥4%; **UNDER** if `open−exp ≥ 3.5` and EV≥4%.
-4. Stake: ¼ Kelly, ≤2% bankroll. Log close total for CLV.
+## Data added
+
+- `data/raw/nba_box/box_games.csv` — B box + `nba_api` LeagueGameFinder (2021–26), gitignored
+- CLI: `import-box`, `sweep-totals` compares Scoring vs PaceEff
+- Script: `scripts/fetch_nba_box.py` (needs `.venv` + nba_api)
+
+## Still missing (not in champ yet)
+
+Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, rest/B2B in totals path.
+
+## Other sports
+
+See `data/raw/NOTES_NFL.md` / `NOTES_MLB.md` (subagents) — **you must download Kaggle zips** (auth).
+
+### Kaggle URLs to download
+
+**NFL**
+- https://www.kaggle.com/datasets/tobycrabtree/nfl-scores-and-betting-data
+- https://www.kaggle.com/datasets/minmaxer/nfl-odds-2026 (open/close — prefer)
+
+**MLB**
+- https://www.kaggle.com/datasets/minmaxer/mlb-closing-odds-2025
+
+Put under `data/raw/kaggle/` like NBA.
+
+## Nightly
 
 ```bash
-dotnet run --project PossiblyMaybe.Cli -- sweep-totals
-dotnet run --project PossiblyMaybe.Cli -- advise-ou <modelExp> <openTotal>
+dotnet run --project PossiblyMaybe.Cli -- advise-ou <paceModelExp> <openTotal>
 dotnet run --project PossiblyMaybe.Cli -- paper-bet "DATE AWAY@HOME" OVER|UNDER <total> -110 <stake$>
 ```
-
-## Secondary (low volume)
-
-Selective ATS (`advise-ats`) still exists (~19 holdout bets). Not the money engine.
-
-## Props / rebounds
-
-No historical open→close prop lines in raw data yet. Next acquisition after Gate 2b totals paper is stable.
-
-## Gate checklist
-
-| Gate | Status |
-|---|---|
-| 0 | passed |
-| 1 ML | failed |
-| 1 ATS selective | thin pass (niche) |
-| 1 TOTALS volume | **PASS** (primary) |
-| 2 Live paper | **open** |
-| 2b Trust month | pending |
-| 3 Real tiny bets | locked until 2b |

@@ -425,6 +425,79 @@ public static class Gate0Importer
         Console.WriteLine($"TOTAL snapshots: {n}");
     }
 
+    /// <summary>Load pace/box rows from data/raw/nba_box/box_games.csv into existing DB.</summary>
+    public static async Task ImportBoxOnlyAsync(string rawRoot, string dbPath, CancellationToken ct = default)
+    {
+        if (!File.Exists(dbPath))
+            throw new FileNotFoundException($"DB not found: {dbPath}. Run import first.");
+        var boxPath = Path.Combine(rawRoot, "nba_box", "box_games.csv");
+        if (!File.Exists(boxPath))
+            throw new FileNotFoundException($"Missing {boxPath}. Build with scripts/fetch_nba_box.py");
+
+        var cs = $"Data Source={dbPath}";
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(cs).Options;
+        await using var db = new AppDbContext(options);
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "GameBoxes" (
+              "Id" INTEGER NOT NULL CONSTRAINT "PK_GameBoxes" PRIMARY KEY AUTOINCREMENT,
+              "GameId" INTEGER NOT NULL,
+              "FgaHome" REAL NOT NULL, "OrebHome" REAL NOT NULL, "TovHome" REAL NOT NULL, "FtaHome" REAL NOT NULL,
+              "PtsHome" REAL NOT NULL, "Fg3aHome" REAL NOT NULL,
+              "FgaAway" REAL NOT NULL, "OrebAway" REAL NOT NULL, "TovAway" REAL NOT NULL, "FtaAway" REAL NOT NULL,
+              "PtsAway" REAL NOT NULL, "Fg3aAway" REAL NOT NULL,
+              CONSTRAINT "FK_GameBoxes_Games_GameId" FOREIGN KEY ("GameId") REFERENCES "Games" ("Id") ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_GameBoxes_GameId" ON "GameBoxes" ("GameId");
+            """, ct);
+
+        await db.GameBoxes.ExecuteDeleteAsync(ct);
+        var gamesByKey = await db.Games.AsNoTracking()
+            .ToDictionaryAsync(g => g.SourceKey, g => g, StringComparer.Ordinal, ct);
+
+        using var reader = new StreamReader(boxPath);
+        var header = await reader.ReadLineAsync(ct) ?? "";
+        var cols = SplitCsv(header);
+        int I(string n) => Idx(cols, n);
+        var boxes = new List<GameBox>(65536);
+        var matched = 0;
+        while (await reader.ReadLineAsync(ct) is { } line)
+        {
+            var c = SplitCsv(line);
+            if (c.Length < 19) continue;
+            if (!DateOnly.TryParse(c[I("date")], CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+                continue;
+            var home = TeamCodes.TryNormalize(c[I("home")]);
+            var away = TeamCodes.TryNormalize(c[I("away")]);
+            if (home is null || away is null) continue;
+            if (!gamesByKey.TryGetValue(TeamCodes.GameKey(date, home, away), out var g)) continue;
+            if (!TryParseDouble(c[I("fga_h")], out var fgaH)) continue;
+            matched++;
+            boxes.Add(new GameBox
+            {
+                GameId = g.Id,
+                FgaHome = fgaH,
+                OrebHome = ParseD(c, I("oreb_h")),
+                TovHome = ParseD(c, I("tov_h")),
+                FtaHome = ParseD(c, I("fta_h")),
+                PtsHome = ParseD(c, I("pts_h")),
+                Fg3aHome = ParseD(c, I("fg3a_h")),
+                FgaAway = ParseD(c, I("fga_a")),
+                OrebAway = ParseD(c, I("oreb_a")),
+                TovAway = ParseD(c, I("tov_a")),
+                FtaAway = ParseD(c, I("fta_a")),
+                PtsAway = ParseD(c, I("pts_a")),
+                Fg3aAway = ParseD(c, I("fg3a_a")),
+            });
+        }
+
+        db.GameBoxes.AddRange(boxes);
+        await db.SaveChangesAsync(ct);
+        Console.WriteLine($"GameBoxes: {boxes.Count} matched (csv hits on games={matched})");
+    }
+
+    private static double ParseD(string[] c, int i)
+        => i >= 0 && i < c.Length && TryParseDouble(c[i], out var v) ? v : 0;
+
     private static async Task ImportTotalsFromBAsync(
         AppDbContext db, string sqlitePath, Dictionary<string, Game> gamesByKey, CancellationToken ct)
     {

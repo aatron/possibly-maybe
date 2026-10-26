@@ -63,3 +63,72 @@ public sealed class ScoringBook
     private (double For, double Against) Get(string team)
         => _t.TryGetValue(team, out var v) ? v : (_leagueInit / 2, _leagueInit / 2);
 }
+
+/// <summary>
+/// Industry-standard totals skeleton: pace × efficiency (ORtg/DRtg).
+/// Possessions ≈ FGA − OREB + TOV + 0.44·FTA.
+/// </summary>
+public sealed class PaceEfficiencyBook
+{
+    private readonly Dictionary<string, (double Pace, double Ortg, double Drtg, double ThreeRate)> _t =
+        new(StringComparer.Ordinal);
+    private readonly double _alpha;
+    private readonly double _initPace;
+    private readonly double _initOrtg;
+
+    public PaceEfficiencyBook(double alpha = 0.15, double initPace = 100, double initOrtg = 110)
+    {
+        _alpha = alpha;
+        _initPace = initPace;
+        _initOrtg = initOrtg;
+    }
+
+    public static double Possessions(double fga, double oreb, double tov, double fta)
+        => fga - oreb + tov + 0.44 * fta;
+
+    public double ExpectedTotal(string home, string away)
+    {
+        var h = Get(home);
+        var a = Get(away);
+        var pace = 0.5 * (h.Pace + a.Pace);
+        var homePts = pace * (h.Ortg + a.Drtg) / 200.0;
+        var awayPts = pace * (a.Ortg + h.Drtg) / 200.0;
+        return homePts + awayPts;
+    }
+
+    /// <summary>Optional style lever: home 3PAr vs away (positive ⇒ more threes / higher variance scoring).</summary>
+    public double ThreeRateEdge(string home, string away)
+        => Get(home).ThreeRate - Get(away).ThreeRate;
+
+    public void Update(
+        string home, string away,
+        double fgaH, double orebH, double tovH, double ftaH, double ptsH, double fg3aH,
+        double fgaA, double orebA, double tovA, double ftaA, double ptsA, double fg3aA)
+    {
+        var possH = Math.Max(1, Possessions(fgaH, orebH, tovH, ftaH));
+        var possA = Math.Max(1, Possessions(fgaA, orebA, tovA, ftaA));
+        var pace = 0.5 * (possH + possA);
+        var ortgH = 100.0 * ptsH / possH;
+        var ortgA = 100.0 * ptsA / possA;
+        var drtgH = 100.0 * ptsA / possH; // points allowed per own possession approx
+        var drtgA = 100.0 * ptsH / possA;
+        var threeH = fgaH > 0 ? fg3aH / fgaH : 0.35;
+        var threeA = fgaA > 0 ? fg3aA / fgaA : 0.35;
+
+        var h = Get(home);
+        var a = Get(away);
+        _t[home] = (
+            (1 - _alpha) * h.Pace + _alpha * pace,
+            (1 - _alpha) * h.Ortg + _alpha * ortgH,
+            (1 - _alpha) * h.Drtg + _alpha * drtgH,
+            (1 - _alpha) * h.ThreeRate + _alpha * threeH);
+        _t[away] = (
+            (1 - _alpha) * a.Pace + _alpha * pace,
+            (1 - _alpha) * a.Ortg + _alpha * ortgA,
+            (1 - _alpha) * a.Drtg + _alpha * drtgA,
+            (1 - _alpha) * a.ThreeRate + _alpha * threeA);
+    }
+
+    private (double Pace, double Ortg, double Drtg, double ThreeRate) Get(string team)
+        => _t.TryGetValue(team, out var v) ? v : (_initPace, _initOrtg, _initOrtg, 0.35);
+}
