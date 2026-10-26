@@ -32,4 +32,11 @@ public class TotalsMathTests
         await Assert.That(exp).IsGreaterThan(180);
         await Assert.That(exp).IsLessThan(260);
     }
+
+    [Test]
+    public async Task Efg_prior_key_and_adj()
+    {
+        await Assert.That(EfgPriorMath.PriorFileKey(2025)).IsEqualTo("2023_24");
+        await Assert.That(EfgPriorMath.AdjPts(0.55, 0.55, 0.54)).IsEqualTo(2.0).Within(1e-9);
+    }
 }
