@@ -63,5 +63,12 @@ nunit-*.xml
 *-wal
 *.db-shm
 *.db-wal
+*.parquet
 data/raw/**
 !data/raw/NOTES*.md
+# Never commit Kaggle dumps even if misplaced outside data/raw
+**/football_odds_movements*/**
+**/archive*.zip
+
+# Large analytics dumps (belt+suspenders; data/raw already ignored)
+*.parquet

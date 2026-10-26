@@ -1,7 +1,18 @@
-# MLS Gate 0 raw data — pending downloads
+# MLS Gate 0 raw data
 
-Kaggle requires login. Fetch manually into `data/raw/` (gitignored); do not commit the CSVs.
-**US retail books (DraftKings, FanDuel, and peers) post MLS** — 1X2 / moneyline, Asian handicap (spread), and goal totals — so a pack is tradeable once data is in.
+**US retail books (DraftKings, FanDuel, and peers) post MLS.**  
+All large files stay under `data/raw/` (**gitignored** — never commit the 500MB+ zip or parquets).
+
+## Status (2026-10-25)
+
+| Source | Status | Path |
+|---|---|---|
+| Kaggle football-odds-movements | **In** (parquet only; CSV tick dumps **not** extracted) | `kaggle/football_odds_movements_2018_2026/` |
+| MLS slice | **3507** matches | `mls/mls_matches.parquet` |
+| football-data USA.csv | **In** | `mls/USA.csv` |
+| ASA games + xG | **In** | `mls/asa_*.json` |
+
+Zip source: `~/Downloads/archive(8).zip` (~517MB). Uncompressed CSVs are multi‑GB — we keep **parquet** (~128MB extracted).
 
 ## Soft vs NBA / NFL / MLB (retail)
 
