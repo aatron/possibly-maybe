@@ -69,7 +69,7 @@ public static class DailySlate
     {
         var (xgBook, goalsBook, seenXg) = await BuildMlsBooksAsync(dbPath, ct);
         var games = await FetchMlsScoreboardAsync(yyyymmdd, ct);
-        Console.WriteLine($"######## MLS SLATE {yyyymmdd} bankroll=${bankroll:F0} paper xG ########");
+        Console.WriteLine($"######## MLS SLATE {yyyymmdd} bankroll=${bankroll:F0} paper {MlsChampConfig.Model} ########");
         Console.WriteLine($"Gate: w={MlsChampConfig.MarketWeight} |exp−line|≥{MlsChampConfig.MinAbsTotalEdge} EV≥{MlsChampConfig.MinEv:P0}");
         if (games.Count == 0)
         {
@@ -148,7 +148,7 @@ public static class DailySlate
         return pace;
     }
 
-    private static async Task<(ScoringBook Xg, ScoringBook Goals, HashSet<string> SeenXg)> BuildMlsBooksAsync(
+    private static async Task<(DixonColesBook Xg, DixonColesBook Goals, HashSet<string> SeenXg)> BuildMlsBooksAsync(
         string dbPath, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
@@ -162,8 +162,8 @@ public static class DailySlate
         try { xg = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
         catch { /* */ }
 
-        var xgBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
-        var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var xgBook = new DixonColesBook(alpha: MlsChampConfig.DcAlpha);
+        var goalsBook = new DixonColesBook(alpha: MlsChampConfig.DcAlpha);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var g in games)
         {

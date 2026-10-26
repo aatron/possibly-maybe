@@ -7,12 +7,14 @@ namespace PossiblyMaybe.Cli.Backtest;
 /// <summary>
 /// Goals-EMA totals for any soccer Sport code (EFL Championship, Liga MX, …).
 /// Holdout locked: train seasons &lt; holdout; skip seasons after holdout.
+/// Optional Dixon–Coles att-def EMA via useDixonColes.
 /// </summary>
 public static class SoccerLeagueTotalsBacktest
 {
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, string sport, string holdoutSeason, double marketWeight, double minEv, double minAbsEdge,
-        bool usePlatt = false, CancellationToken ct = default)
+        bool usePlatt = false, bool useDixonColes = false, double dcAlpha = 0.12,
+        CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -26,6 +28,7 @@ public static class SoccerLeagueTotalsBacktest
         var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
         var goalsBook = new ScoringBook(alpha: 0.18, leagueInit: 2.7);
+        var dcBook = useDixonColes ? new DixonColesBook(alpha: dcAlpha) : null;
         OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc($"{sport}_train");
         var hold = new Acc($"{sport}_holdout_{holdoutSeason}");
@@ -36,6 +39,7 @@ public static class SoccerLeagueTotalsBacktest
             if (string.CompareOrdinal(season, holdoutSeason) > 0)
             {
                 goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
                 continue;
             }
 
@@ -46,7 +50,8 @@ public static class SoccerLeagueTotalsBacktest
             if (open?.Line is not { } line || close?.Line is not { } closeLine) continue;
             if (Math.Abs(line - closeLine) < 0.25) continue;
 
-            var modelExp = goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var modelExp = dcBook?.ExpectedTotal(g.HomeTeam, g.AwayTeam)
+                ?? goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
             var acc = season == holdoutSeason ? hold : train;
@@ -75,6 +80,7 @@ public static class SoccerLeagueTotalsBacktest
             acc.AddGame();
             platt?.Observe(modelExp, line, ou);
             goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
         }
 
         return (train.ToResult(), hold.ToResult());
@@ -89,7 +95,7 @@ public static class SoccerLeagueTotalsBacktest
         foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, usePlatt: false, ct);
+            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge, usePlatt: false, ct: ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1} ll={ho.LogLoss:F4} br={ho.Brier:F4}");
@@ -122,12 +128,51 @@ public static class SoccerLeagueTotalsBacktest
             await ComparePlattAsync(dbPath, sport, holdoutSeason, best.W, 0.04, best.Edge, ct);
     }
 
+    /// <summary>Train-only w/edge/α sweep for Dixon–Coles EMA; holdout scored once for winner.</summary>
+    public static async Task SweepDixonColesAsync(
+        string dbPath, string sport, string holdoutSeason, CancellationToken ct = default)
+    {
+        Console.WriteLine($"######## {sport} TOTALS (Dixon–Coles / Poisson att-def EMA) ########");
+        Console.WriteLine($"Holdout locked: {holdoutSeason} (train earlier; skip later seasons)");
+        var rows = new List<(double W, double Edge, double Alpha, Gate1aResult Train, Gate1aResult Hold)>();
+        foreach (var alpha in new[] { 0.06, 0.12, 0.18, 0.25 })
+        foreach (var w in new[] { 0.4, 0.5, 0.6, 0.7, 0.85 })
+        foreach (var edge in new[] { 0.25, 0.35, 0.5, 0.75, 1.0 })
+        {
+            var (tr, ho) = await RunAsync(dbPath, sport, holdoutSeason, w, 0.04, edge,
+                usePlatt: false, useDixonColes: true, dcAlpha: alpha, ct: ct);
+            rows.Add((w, edge, alpha, tr, ho));
+            Console.WriteLine(
+                $"α={alpha:F2} w={w:F2} edge={edge:F2}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");
+        }
+
+        var eligible = rows
+            .Where(r => r.Train.MeanClv > 0 && r.Train.PaperPnlUnits > 0 && r.Train.Bets is >= 80 and <= 2000)
+            .OrderByDescending(r => r.Train.PaperPnlUnits)
+            .ToList();
+        if (eligible.Count == 0)
+        {
+            Console.WriteLine($"KILL: HOLD FAIL — no {sport} DC train config in band.");
+            return;
+        }
+
+        var best = eligible[0];
+        Console.WriteLine($"=== {sport} DC CHAMP α={best.Alpha:F2} w={best.W:F2} edge={best.Edge:F2} ===");
+        Console.WriteLine($"TRAIN  n={best.Train.Bets} clv={best.Train.MeanClv:F3} hit={best.Train.HitRate:P1} pnl={best.Train.PaperPnlUnits:F1}");
+        Console.WriteLine(
+            $"HOLDOUT n={best.Hold.Bets} clv={best.Hold.MeanClv:F3} hit={best.Hold.HitRate:P1} pnl={best.Hold.PaperPnlUnits:F1}");
+        var pass = best.Hold.PaperPnlUnits > 0 && best.Hold.MeanClv > 0 && best.Hold.Bets >= 40;
+        Console.WriteLine(pass
+            ? $"KILL: HOLD PASS — {sport} DC totals soft spot (paper)."
+            : $"KILL: HOLD FAIL — {sport} DC not money yet.");
+    }
+
     private static async Task ComparePlattAsync(
         string dbPath, string sport, string holdoutSeason,
         double w, double minEv, double edge, CancellationToken ct)
     {
-        var (_, baseHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: false, ct);
-        var (_, platHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: true, ct);
+        var (_, baseHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: false, ct: ct);
+        var (_, platHold) = await RunAsync(dbPath, sport, holdoutSeason, w, minEv, edge, usePlatt: true, ct: ct);
         Console.WriteLine($"=== {sport} PLATT vs BASE @ w={w:F2} edge={edge:F2} ===");
         Console.WriteLine(
             $"BASE  n={baseHold.Bets} clv={baseHold.MeanClv:F3} pnl={baseHold.PaperPnlUnits:F1} ll={baseHold.LogLoss:F4} br={baseHold.Brier:F4}");

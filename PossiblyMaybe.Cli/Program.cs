@@ -177,6 +177,23 @@ switch (command)
         await SoccerLeagueTotalsBacktest.SweepAsync(dbPath, args[1].ToUpperInvariant(), args[2]);
         return 0;
     }
+    case "sweep-soccer-dc":
+    {
+        // sweep-soccer-dc <SPORT> <holdoutSeason> [db]  — Dixon–Coles att-def EMA
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("usage: sweep-soccer-dc <SPORT> <holdoutSeason> [db]");
+            return 1;
+        }
+        var repoRoot = FindRepoRoot();
+        var sport = args[1].ToUpperInvariant();
+        var dbPath = args.Length > 3 ? args[3] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (sport == "MLS")
+            await MlsTotalsBacktest.SweepDixonColesAsync(dbPath);
+        else
+            await SoccerLeagueTotalsBacktest.SweepDixonColesAsync(dbPath, sport, args[2]);
+        return 0;
+    }
     case "advise":
     case "advise-ou":
     {
@@ -413,6 +430,7 @@ static void PrintUsage()
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go

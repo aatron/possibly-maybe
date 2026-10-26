@@ -22,6 +22,22 @@ public class TotalsMathTests
     }
 
     [Test]
+    public async Task DixonColesBook_expected_total_moves_with_goals()
+    {
+        var book = new DixonColesBook(alpha: 1.0, leagueAvgGoals: 1.35, homeAdv: 1.25);
+        var before = book.ExpectedTotal("AAA", "BBB");
+        await Assert.That(before).IsEqualTo(1.35 * 1.25 + 1.35).Within(1e-9);
+        book.Update("AAA", "BBB", 4, 3);
+        var after = book.ExpectedTotal("AAA", "BBB");
+        await Assert.That(after).IsGreaterThan(before);
+        await Assert.That(after).IsGreaterThan(5.0);
+        await Assert.That(after).IsLessThan(10.0); // α=1 + √-split ≈ recovers 4+3
+        var (lh, la) = book.ExpectedLambdas("AAA", "BBB");
+        await Assert.That(lh + la).IsEqualTo(after).Within(1e-9);
+        await Assert.That(lh).IsGreaterThan(la);
+    }
+
+    [Test]
     public async Task Possessions_and_pace_book()
     {
         var poss = PaceEfficiencyBook.Possessions(fga: 90, oreb: 10, tov: 12, fta: 20);
