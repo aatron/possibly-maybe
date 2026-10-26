@@ -55,3 +55,12 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Local DB + all Gate 0 raw datasets (never commit; see data/raw/NOTES.md)
+*.db
+*-shm
+*-wal
+*.db-shm
+*.db-wal
+data/raw/**
+!data/raw/NOTES.md
