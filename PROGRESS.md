@@ -4,13 +4,29 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-10-25 (PaceEffEfg tracking FAIL; PaceEff stays champ) |
+| **Last updated** | 2026-10-26 (Gate 2b paper month live; slate-nba/mls) |
 | **Rollback** | `git checkout 7be68f0` — prior Scoring champ (w=0.4, edge≥3.5, hold +8.4u / 320) |
-| **Current gate** | **2** live paper |
+| **Current gate** | **2b** live paper month ($1000) — **paper only** until month CLV/PnL trust |
 | **Champ** | **NBA TOTALS PaceEff** · 50% open + 50% pace×ORtg · `|exp−line|≥6` · EV≥4% |
 | **Kill status** | **HOLD PASS** |
 | **Holdout 2024–25** | **62 bets**, CLV **+2.64 pts**, PnL **+16.3u** |
-| **Bankroll seed** | $1000 paper |
+| **Bankroll seed** | **$1000 paper** (`paper.db`) |
+
+### Daily paper ritual (Gate 2b)
+
+```bash
+# after tip / next morning: refresh boxes then slate
+.venv/bin/python -c "..."   # or scripts/fetch_nba_box.py for 2026-27
+dotnet run --project PossiblyMaybe.Cli -c Release -- import-box
+dotnet run --project PossiblyMaybe.Cli -c Release -- slate-nba \$(date -u +%Y%m%d) 1000
+dotnet run --project PossiblyMaybe.Cli -c Release -- slate-mls \$(date -u +%Y%m%d) 1000
+# for each GO line printed:
+dotnet run --project PossiblyMaybe.Cli -c Release -- paper-bet "KEY" OVER|UNDER LINE -110 STAKE
+# after games: settle <id> W|L|P [closeLine]
+dotnet run --project PossiblyMaybe.Cli -c Release -- paper
+```
+
+Ask in chat each day for the slate + settles if you want me to run it.
 
 ## Scoring vs PaceEff (same train rule)
 
@@ -49,8 +65,29 @@ Injuries/lineups, four factors beyond 3PAr stored on book, shot-zone matchups, r
 | **NBA totals** | yes | PaceEff | 2024–25 | **PASS** (+16.3u / 62) — primary money |
 | **NBA + tracking eFG** | yes (prior-szn pt_shot) | PaceEffEfg | 2024–25 | **FAIL** vs PaceEff (+6.2u/74 &lt; +16.3u/62) |
 | **MLS totals** | **3506** + ASA xG | xG EMA × market | **2025** | **PASS** (+12.2u / 93, CLV +0.18) — paper |
+| **EFL Championship OU** | 2026 open/close | goals EMA | **2024-2025** | **FAIL** (champ hold −0.5u / 54) |
+| **Liga MX OU** | 1424 open/close | goals EMA | **2024-2025** | **FAIL** (hold +2.0u / 21, CLV +0.23 — n&lt;40) |
+| **Ligue 1 OU** | 1483 open/close | goals EMA | **2024-2025** | **PASS** (+8.4u / 49, CLV +0.03) — paper |
+| **La Liga OU** | 1650 open/close | goals EMA | **2024-2025** | **FAIL** (hold −5.0u / 28, CLV −0.10) |
+| **Serie A OU** | 1731 open/close | goals EMA | **2024-2025** | **FAIL** (hold −8.5u / 40, CLV +0.09) |
+| **Cricket / AFL / Darts** | outcomes free; **no free DK open→close** | — | — | **NO Gate 0** |
+| **TWA–Tokyo** | = **WTA Pan Pacific (Tokyo)** (WTA misread) | tennis open/close exists (Valuebet) | — | **No Gate 0 for one event**; full WTA/ATP pack later if prioritized |
+| **TT Elite Series** | results free; no free O→C | — | — | **NO Gate 0** |
+| **Boxing** | small-n + no free O→C | — | — | **NO Gate 0** |
+| **Japan B.League Premier** | boxes partial; no free O→C; Premier=2026–27 regime break | — | — | **NO Gate 0** |
+| **Colombia Primera A** | scores free; **no free open→close** in our dumps | — | — | **NO Gate 0** |
+
+### $1000-per-sport holdout (flat 1u=$10) — PASS only
+
+| Sport | Holdout PnL | On $1000 |
+|---|---|---|
+| NBA PaceEff | +16.3u | **+$163** |
+| MLS xG | +12.2u | **+$122** |
+| Ligue 1 goals EMA | +8.4u | **+$84** |
+
+**Shared $1000 soft-spot book (all PASS tickets, 1u=$10):** +16.3+12.2+8.4 = **+36.9u → +$369** on those holdout samples (different calendars — not one simultaneous year).
 | **MLB totals** | 2290 games + SP prior FIP + Savant 3yr PF | SP FIP × home PF × market | Sep–Nov 2025 | **FAIL** (champ w=0.4 edge=0.5: train +18.4u / 473; hold **+1.4u / 100**, CLV **−0.03** — PnL>0 but CLV≤0) |
-| **NFL totals** | 6502 close + 92 open/close + pregame EPA CSV | EPA + roof/wind | 2024 | **PASS** (hold +7.1u / 33; CLV 0 — provisional) |
+| **NFL totals** | 6502 close + **450 ESPN** + 92 minmaxer OU open/close + EPA | EPA + roof/wind | 2024 | **FAIL** (real OpenClose: no train config with PnL>0 in band; prior +7.1u was CloseOnly mirage) |
 
 CLI: `import-mlb` / `import-nfl` / `import-mls` / `sweep-mlb` / `sweep-nfl` / `sweep-mls`
 

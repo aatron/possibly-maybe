@@ -19,8 +19,9 @@ Gate: both **HOLD FAIL** — do not real-bet. NBA champ untouched.
 | Close totals + scores (~7.5k) | `data/raw/nfl/nflverse_games.csv` | yes |
 | Roof / wind / temp / rest | same → `NflGameContext` | yes (adj on scoring EMA) |
 | Spreadspoke close history | `data/raw/kaggle/nfl_scores_and_betting/` | backbone / unused extras |
-| Open/close (**~92**, 2026 only) | `data/raw/kaggle/nfl_odds_2026/` | thin CLV overlay |
-| Sweep | `sweep-nfl` — scoring + roof/wind; hold 2024 **−0.6u / 14** | |
+| Open/close ESPN BET (**450**, 2023–24) | `data/raw/espn_nfl_ou/espn_nfl_ou_open_close.csv` | yes (`import-nfl`) |
+| Open/close minmaxer (**~92**, 2026) | `data/raw/kaggle/nfl_odds_2026/` | overlay |
+| Sweep | `sweep-nfl` — EPA + roof/wind; with real OpenClose → **HOLD FAIL** (no train PnL>0 in band) | |
 
 ## Missing vs industry soft-spot models
 

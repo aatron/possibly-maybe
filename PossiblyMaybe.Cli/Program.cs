@@ -111,6 +111,19 @@ switch (command)
         await MultiSportImporter.ImportMlsAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-soccer":
+    {
+        // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("usage: import-soccer <SPORT> <folder> [db]  (folder under data/raw/soccer/)");
+            return 1;
+        }
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 3 ? args[3] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await MultiSportImporter.ImportSoccerLeagueAsync(ResolveRawRoot(), dbPath, args[1].ToUpperInvariant(), args[2]);
+        return 0;
+    }
     case "sweep-totals":
     {
         var repoRoot = FindRepoRoot();
@@ -145,6 +158,19 @@ switch (command)
         await MlsTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
+    case "sweep-soccer":
+    {
+        // sweep-soccer <SPORT> <holdoutSeason> [db]  e.g. sweep-soccer EFL 2024-2025
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("usage: sweep-soccer <SPORT> <holdoutSeason> [db]");
+            return 1;
+        }
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 3 ? args[3] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await SoccerLeagueTotalsBacktest.SweepAsync(dbPath, args[1].ToUpperInvariant(), args[2]);
+        return 0;
+    }
     case "advise":
     case "advise-ou":
     {
@@ -172,6 +198,72 @@ switch (command)
         var advice = BetDecider.Advise(p, juice, bankroll, ChampConfig.MinEv);
         Console.WriteLine(advice.Go ? "GO" : "NO-GO");
         Console.WriteLine($"side={(betOver ? "OVER" : "UNDER")} total={openTotal:F1} edge={edge:F2} EV={advice.Ev:P2}");
+        Console.WriteLine($"stakeFrac={advice.StakeFraction:P2}  {advice.Reason}");
+        return advice.Go ? 0 : 3;
+    }
+    case "slate":
+    case "slate-nba":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        var date = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 2 && double.TryParse(args[^1], out var b) ? b : ChampConfig.BankrollSeed;
+        // allow: slate-nba [date] [db] [bank] — keep it simple: slate-nba [yyyymmdd] [bank]
+        if (args.Length > 1 && args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            dbPath = args[1];
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunNbaAsync(dbPath, date, bank);
+        return 0;
+    }
+    case "slate-mls":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        var date = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 2 && double.TryParse(args[2], out var b) ? b : MlsChampConfig.BankrollSeed;
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunMlsAsync(dbPath, date, bank);
+        return 0;
+    }
+    case "advise-mls":
+    {
+        // Paper MLS champ: advise-mls <modelExpectedGoals> <openTotal> [juice=-110] [bankroll]
+        if (args.Length < 3
+            || !double.TryParse(args[1], out var modelExp)
+            || !double.TryParse(args[2], out var openTotal))
+        {
+            Console.Error.WriteLine("usage: advise-mls <modelExpectedGoals> <openTotal> [juice=-110] [bankroll]");
+            Console.Error.WriteLine(
+                $"MLS paper: w={MlsChampConfig.MarketWeight} |exp-line|>={MlsChampConfig.MinAbsTotalEdge} EV>={MlsChampConfig.MinEv:P0}");
+            return 1;
+        }
+        var juice = args.Length > 3 && int.TryParse(args[3], out var j) ? j : -110;
+        var bankroll = args.Length > 4 && double.TryParse(args[4], out var b) ? b : MlsChampConfig.BankrollSeed;
+        var exp = MlsChampConfig.MarketWeight * openTotal + (1 - MlsChampConfig.MarketWeight) * modelExp;
+        var edge = exp - openTotal;
+        if (Math.Abs(edge) < MlsChampConfig.MinAbsTotalEdge)
+        {
+            Console.WriteLine("NO-GO");
+            Console.WriteLine($"edge={edge:F2} goals < min {MlsChampConfig.MinAbsTotalEdge}");
+            return 3;
+        }
+        var betOver = edge > 0;
+        var p = betOver
+            ? TotalsMath.OverProb(exp, openTotal, sharpness: 1.2)
+            : 1 - TotalsMath.OverProb(exp, openTotal, sharpness: 1.2);
+        var advice = BetDecider.Advise(p, juice, bankroll, MlsChampConfig.MinEv);
+        Console.WriteLine(advice.Go ? "GO" : "NO-GO");
+        Console.WriteLine($"sport=MLS side={(betOver ? "OVER" : "UNDER")} total={openTotal:F1} edge={edge:F2} EV={advice.Ev:P2}");
         Console.WriteLine($"stakeFrac={advice.StakeFraction:P2}  {advice.Reason}");
         return advice.Go ? 0 : 3;
     }
@@ -315,7 +407,10 @@ static void PrintUsage()
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db]          NBA O/U Scoring vs PaceEff vs PaceEffEfg
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
+          slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
+          advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
           paper-bet <key> <OVER|UNDER|HOME|AWAY> <line> <odds> <$> [p]
           settle <id> <W|L|P> [closeLine] [closeOdds]         Settle + CLV pts

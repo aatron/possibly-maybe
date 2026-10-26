@@ -41,7 +41,7 @@ def main() -> None:
             w.writerow(list(r) + ["B"])
     print("B", len(rows))
 
-    for season in ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]:
+    for season in ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26", "2026-27"]:
         print("fetch", season, flush=True)
         gf = leaguegamefinder.LeagueGameFinder(
             season_nullable=season, season_type_nullable="Regular Season", league_id_nullable="00"
@@ -56,7 +56,7 @@ def main() -> None:
     def norm(t: str) -> str:
         return t.strip().upper()
 
-    for season in ["2021_22", "2022_23", "2023_24", "2024_25", "2025_26"]:
+    for season in ["2021_22", "2022_23", "2023_24", "2024_25", "2025_26", "2026_27"]:
         p = OUT / f"leaguegamefinder_{season}.csv"
         if not p.exists():
             continue

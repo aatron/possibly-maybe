@@ -451,7 +451,7 @@ public static class Gate0Importer
             """, ct);
 
         await db.GameBoxes.ExecuteDeleteAsync(ct);
-        var gamesByKey = await db.Games.AsNoTracking()
+        var gamesByKey = await db.Games
             .ToDictionaryAsync(g => g.SourceKey, g => g, StringComparer.Ordinal, ct);
 
         using var reader = new StreamReader(boxPath);
@@ -460,6 +460,7 @@ public static class Gate0Importer
         int I(string n) => Idx(cols, n);
         var boxes = new List<GameBox>(65536);
         var matched = 0;
+        var created = 0;
         while (await reader.ReadLineAsync(ct) is { } line)
         {
             var c = SplitCsv(line);
@@ -469,30 +470,72 @@ public static class Gate0Importer
             var home = TeamCodes.TryNormalize(c[I("home")]);
             var away = TeamCodes.TryNormalize(c[I("away")]);
             if (home is null || away is null) continue;
-            if (!gamesByKey.TryGetValue(TeamCodes.GameKey(date, home, away), out var g)) continue;
-            if (!TryParseDouble(c[I("fga_h")], out var fgaH)) continue;
-            matched++;
-            boxes.Add(new GameBox
+            var key = TeamCodes.GameKey(date, home, away);
+            if (!gamesByKey.TryGetValue(key, out var g))
             {
-                GameId = g.Id,
-                FgaHome = fgaH,
-                OrebHome = ParseD(c, I("oreb_h")),
-                TovHome = ParseD(c, I("tov_h")),
-                FtaHome = ParseD(c, I("fta_h")),
-                PtsHome = ParseD(c, I("pts_h")),
-                Fg3aHome = ParseD(c, I("fg3a_h")),
-                FgaAway = ParseD(c, I("fga_a")),
-                OrebAway = ParseD(c, I("oreb_a")),
-                TovAway = ParseD(c, I("tov_a")),
-                FtaAway = ParseD(c, I("fta_a")),
-                PtsAway = ParseD(c, I("pts_a")),
-                Fg3aAway = ParseD(c, I("fg3a_a")),
-            });
+                // Only auto-create for current season (avoid B-csv orphans with odd keys).
+                if (date < new DateOnly(2026, 10, 1)) continue;
+                var ptsH = ParseD(c, I("pts_h"));
+                var ptsA = ParseD(c, I("pts_a"));
+                g = new Game
+                {
+                    Sport = "NBA",
+                    Season = date.Month >= 10 ? $"{date.Year + 1}" : $"{date.Year}",
+                    SourceKey = key,
+                    TipoffUtc = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
+                    HomeTeam = home,
+                    AwayTeam = away,
+                    HomeScore = (int)ptsH,
+                    AwayScore = (int)ptsA,
+                };
+                db.Games.Add(g);
+                gamesByKey[key] = g;
+                created++;
+            }
+        }
+
+        if (created > 0)
+            await db.SaveChangesAsync(ct); // assign IDs for new games
+
+        matched = 0;
+        using (var reader2 = new StreamReader(boxPath))
+        {
+            _ = await reader2.ReadLineAsync(ct);
+            while (await reader2.ReadLineAsync(ct) is { } line)
+            {
+                var c = SplitCsv(line);
+                if (c.Length < 19) continue;
+                if (!DateOnly.TryParse(c[I("date")], CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+                    continue;
+                var home = TeamCodes.TryNormalize(c[I("home")]);
+                var away = TeamCodes.TryNormalize(c[I("away")]);
+                if (home is null || away is null) continue;
+                var key = TeamCodes.GameKey(date, home, away);
+                if (!gamesByKey.TryGetValue(key, out var g) || g.Id == 0) continue;
+                if (!TryParseDouble(c[I("fga_h")], out var fgaH)) continue;
+                matched++;
+                boxes.Add(new GameBox
+                {
+                    GameId = g.Id,
+                    FgaHome = fgaH,
+                    OrebHome = ParseD(c, I("oreb_h")),
+                    TovHome = ParseD(c, I("tov_h")),
+                    FtaHome = ParseD(c, I("fta_h")),
+                    PtsHome = ParseD(c, I("pts_h")),
+                    Fg3aHome = ParseD(c, I("fg3a_h")),
+                    FgaAway = ParseD(c, I("fga_a")),
+                    OrebAway = ParseD(c, I("oreb_a")),
+                    TovAway = ParseD(c, I("tov_a")),
+                    FtaAway = ParseD(c, I("fta_a")),
+                    PtsAway = ParseD(c, I("pts_a")),
+                    Fg3aAway = ParseD(c, I("fg3a_a")),
+                });
+            }
         }
 
         db.GameBoxes.AddRange(boxes);
         await db.SaveChangesAsync(ct);
-        Console.WriteLine($"GameBoxes: {boxes.Count} matched (csv hits on games={matched})");
+        Console.WriteLine($"GameBoxes: {boxes.Count} matched (created games={created}, csv hits={matched})");
     }
 
     private static double ParseD(string[] c, int i)

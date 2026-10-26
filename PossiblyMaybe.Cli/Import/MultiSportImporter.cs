@@ -146,6 +146,96 @@ public static class MultiSportImporter
         Console.WriteLine($"MLB pitchers: {rows.Count} (missing FIP → league {lg})");
     }
 
+    /// <summary>
+    /// Import soccer league totals CSV (same columns as MLS export) under Sport=<paramref name="sport"/>.
+    /// Team names stored as-is (no MLS code map). Path: soccer/{folder}/totals_open_close.csv
+    /// </summary>
+    public static async Task ImportSoccerLeagueAsync(
+        string rawRoot, string dbPath, string sport, string folder, CancellationToken ct = default)
+    {
+        var path = Path.Combine(rawRoot, "soccer", folder, "totals_open_close.csv");
+        if (!File.Exists(path))
+            throw new FileNotFoundException($"Missing {path}. Run: python scripts/export_soccer_league_totals.py --league …");
+
+        var cs = $"Data Source={dbPath}";
+        await AppDbContext.EnsureCreatedAsync(cs, ct);
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(cs).Options;
+        await using var db = new AppDbContext(options);
+
+        var oldIds = await db.Games.Where(g => g.Sport == sport).Select(g => g.Id).ToListAsync(ct);
+        if (oldIds.Count > 0)
+        {
+            await db.OddsSnapshots.Where(o => oldIds.Contains(o.GameId)).ExecuteDeleteAsync(ct);
+            await db.Games.Where(g => g.Sport == sport).ExecuteDeleteAsync(ct);
+        }
+
+        using var reader = new StreamReader(path);
+        var header = await reader.ReadLineAsync(ct) ?? "";
+        var cols = Split(header);
+        int I(string n) => Array.FindIndex(cols, c => c.Equals(n, StringComparison.OrdinalIgnoreCase));
+
+        var games = new List<Game>();
+        var keyToGame = new Dictionary<string, Game>(StringComparer.Ordinal);
+        while (await reader.ReadLineAsync(ct) is { } line)
+        {
+            var c = Split(line);
+            var home = Safe(c, I("home_team")).Trim();
+            var away = Safe(c, I("away_team")).Trim();
+            if (home.Length == 0 || away.Length == 0) continue;
+            if (!DateTimeOffset.TryParse(c[I("kickoff_utc")], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var tip))
+                continue;
+            var date = DateOnly.FromDateTime(tip.UtcDateTime);
+            if (!int.TryParse(c[I("home_score")], out var hs) || !int.TryParse(c[I("away_score")], out var as_))
+                continue;
+            if (!TryD(c[I("open_ou")], out _) || !TryD(c[I("close_ou")], out _))
+                continue;
+            var key = SportTeams.GameKey(sport.ToLowerInvariant(), date, home, away);
+            if (keyToGame.ContainsKey(key)) continue;
+
+            var g = new Game
+            {
+                Sport = sport,
+                Season = Safe(c, I("season")),
+                SourceKey = key,
+                TipoffUtc = tip,
+                HomeTeam = home,
+                AwayTeam = away,
+                HomeScore = hs,
+                AwayScore = as_,
+            };
+            keyToGame[key] = g;
+            games.Add(g);
+        }
+
+        db.Games.AddRange(games);
+        await db.SaveChangesAsync(ct);
+
+        var snaps = new List<OddsSnapshot>();
+        using var reader2 = new StreamReader(path);
+        _ = await reader2.ReadLineAsync(ct);
+        while (await reader2.ReadLineAsync(ct) is { } line)
+        {
+            var c = Split(line);
+            var home = Safe(c, I("home_team")).Trim();
+            var away = Safe(c, I("away_team")).Trim();
+            if (home.Length == 0 || away.Length == 0) continue;
+            if (!DateTimeOffset.TryParse(c[I("kickoff_utc")], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var tip))
+                continue;
+            var key = SportTeams.GameKey(sport.ToLowerInvariant(), DateOnly.FromDateTime(tip.UtcDateTime), home, away);
+            if (!keyToGame.TryGetValue(key, out var g)) continue;
+            if (!TryD(c[I("open_ou")], out var openT) || !TryD(c[I("close_ou")], out var closeT))
+                continue;
+            snaps.Add(Total(g.Id, openT, PriceKind.Open, g.TipoffUtc.AddHours(-24)));
+            snaps.Add(Total(g.Id, closeT, PriceKind.Close, g.TipoffUtc));
+        }
+
+        db.OddsSnapshots.AddRange(snaps);
+        await db.SaveChangesAsync(ct);
+        Console.WriteLine($"{sport} import: games={games.Count} totalSnaps={snaps.Count} from {folder}");
+    }
+
     public static async Task ImportMlsAsync(string rawRoot, string dbPath, CancellationToken ct = default)
     {
         var path = Path.Combine(rawRoot, "mls", "mls_totals_open_close.csv");
@@ -355,33 +445,46 @@ public static class MultiSportImporter
         await db.SaveChangesAsync(ct);
         Console.WriteLine($"NFL nflverse: games={keyToGame.Count} closeTotals={snaps.Count} contexts={contexts.Count}");
 
-        if (!File.Exists(openClose)) return;
+        var espnOu = Path.Combine(rawRoot, "espn_nfl_ou", "espn_nfl_ou_open_close.csv");
+        // ESPN first (multi-year OpenClose); minmaxer overlays 2026 if present
+        await OverlayNflOpenCloseAsync(db, keyToGame, espnOu, "ESPN", ct);
+        await OverlayNflOpenCloseAsync(db, keyToGame, openClose, "minmaxer", ct);
+    }
 
-        using var reader3 = new StreamReader(openClose);
+    private static async Task OverlayNflOpenCloseAsync(
+        AppDbContext db, Dictionary<string, Game> keyToGame, string path, string label, CancellationToken ct)
+    {
+        if (!File.Exists(path)) return;
+
+        using var reader3 = new StreamReader(path);
         var h3 = await reader3.ReadLineAsync(ct) ?? "";
         var cols3 = Split(h3);
         int J(string n) => Array.FindIndex(cols3, c => c.Equals(n, StringComparison.OrdinalIgnoreCase));
+        if (J("home_team") < 0 || J("open_total") < 0 || J("close_total") < 0) return;
+
         var added = 0;
         while (await reader3.ReadLineAsync(ct) is { } line)
         {
             var c = Split(line);
-            var home = SportTeams.TryNfl(c[J("home_team")]);
-            var away = SportTeams.TryNfl(c[J("away_team")]);
+            var home = SportTeams.TryNfl(Safe(c, J("home_team")));
+            var away = SportTeams.TryNfl(Safe(c, J("away_team")));
             if (home is null || away is null) continue;
-            var datePart = c[J("date_et")].Length >= 10 ? c[J("date_et")][..10] : c[J("date_et")];
+            var dateRaw = Safe(c, J("date_et"));
+            var datePart = dateRaw.Length >= 10 ? dateRaw[..10] : dateRaw;
             if (!DateOnly.TryParse(datePart, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
                 continue;
-            if (!TryD(c[J("open_total")], out var openT) || !TryD(c[J("close_total")], out var closeT))
+            if (!TryD(Safe(c, J("open_total")), out var openT) || !TryD(Safe(c, J("close_total")), out var closeT))
                 continue;
             var key = SportTeams.GameKey("nfl", date, home, away);
             if (!keyToGame.TryGetValue(key, out var g))
             {
-                int.TryParse(c[J("home_score")], out var hs);
-                int.TryParse(c[J("away_score")], out var as_);
+                int.TryParse(Safe(c, J("home_score")), out var hs);
+                int.TryParse(Safe(c, J("away_score")), out var as_);
+                var seasonCol = Safe(c, J("season"));
                 g = new Game
                 {
                     Sport = "NFL",
-                    Season = c[J("season")],
+                    Season = string.IsNullOrWhiteSpace(seasonCol) ? date.Year.ToString() : seasonCol,
                     SourceKey = key,
                     TipoffUtc = new DateTimeOffset(date.ToDateTime(new TimeOnly(17, 0)), TimeSpan.Zero),
                     HomeTeam = home,
@@ -401,7 +504,7 @@ public static class MultiSportImporter
         }
 
         await db.SaveChangesAsync(ct);
-        Console.WriteLine($"NFL minmaxer open/close overlays: {added}");
+        Console.WriteLine($"NFL {label} open/close overlays: {added}");
     }
 
     private static async Task EnsurePitchingTableAsync(AppDbContext db, CancellationToken ct)

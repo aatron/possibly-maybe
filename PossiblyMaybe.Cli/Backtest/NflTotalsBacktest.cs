@@ -7,7 +7,7 @@ namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
 /// NFL totals: nflverse pregame EPA (+ roof/wind) blended with market; scoring EMA fallback when EPA missing.
-/// HOLD PASS 2024: pnl=+7.1u / n=33 clv=0.0 (w=0.50 edge=3.0; CLV thin — provisional).
+/// HOLD FAIL once ESPN OpenClose lands: prior +7.1u/33 was CloseOnly (CLV=0 mirage).
 /// </summary>
 public static class NflTotalsBacktest
 {
@@ -127,11 +127,15 @@ public static class NflTotalsBacktest
         Console.WriteLine($"=== NFL CHAMP (train max PnL) w={best.W:F2} edge={best.Edge:F1} ===");
         Console.WriteLine($"TRAIN  n={best.Train.Bets} clv={best.Train.MeanClv:F3} hit={best.Train.HitRate:P1} pnl={best.Train.PaperPnlUnits:F1}");
         Console.WriteLine($"HOLDOUT n={best.Hold.Bets} clv={best.Hold.MeanClv:F3} hit={best.Hold.HitRate:P1} pnl={best.Hold.PaperPnlUnits:F1}");
-        // Require PnL; CLV optional until open/close denser
-        var pass = best.Hold.PaperPnlUnits > 0 && best.Hold.Bets >= 30;
-        Console.WriteLine(pass
-            ? "KILL: HOLD PASS (PnL) — NFL provisional; CLV weak until open/close history grows."
-            : "KILL: HOLD FAIL — NFL not money yet.");
+        // Full money gate: PnL + CLV once OpenClose density exists; else provisional PnL-only
+        var clvReady = best.Hold.Bets >= 30 && Math.Abs(best.Hold.MeanClv) > 1e-9;
+        var passFull = best.Hold.PaperPnlUnits > 0 && best.Hold.MeanClv > 0 && best.Hold.Bets >= 30;
+        var passProv = !clvReady && best.Hold.PaperPnlUnits > 0 && best.Hold.Bets >= 30;
+        Console.WriteLine(passFull
+            ? "KILL: HOLD PASS — NFL totals (CLV+PnL)."
+            : passProv
+                ? "KILL: HOLD PASS (PnL) — NFL provisional; CLV still empty."
+                : "KILL: HOLD FAIL — NFL not money yet.");
     }
 
     internal static Dictionary<(string Season, string Home, string Away), EpaRow> LoadPregameEpa(string path)
