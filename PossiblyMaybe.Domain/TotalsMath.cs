@@ -135,3 +135,17 @@ public sealed class PaceEfficiencyBook
     private (double Pace, double Ortg, double Drtg, double ThreeRate) Get(string team)
         => _t.TryGetValue(team, out var v) ? v : (_initPace, _initOrtg, _initOrtg, 0.35);
 }
+
+/// <summary>Prior-season team eFG → points added to a pace×eff expected total.</summary>
+public static class EfgPriorMath
+{
+    /// <summary>~1% eFG ≈ 2 pts on ~100 possessions → scale 200.</summary>
+    public const double DefaultScale = 200.0;
+
+    /// <summary>Season end-year 2025 (2024-25) → prior file key 2023_24.</summary>
+    public static string PriorFileKey(int seasonEndYear)
+        => $"{seasonEndYear - 2}_{(seasonEndYear - 1) % 100:D2}";
+
+    public static double AdjPts(double efgHome, double efgAway, double leagueEfg, double scale = DefaultScale)
+        => scale * ((efgHome + efgAway) / 2.0 - leagueEfg);
+}

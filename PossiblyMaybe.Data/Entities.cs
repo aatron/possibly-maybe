@@ -94,6 +94,15 @@ public sealed class NflGameContext
     public int AwayRest { get; set; }
 }
 
+/// <summary>MLS ASA team xG for the game (leakage-safe: used only after tip in walk-forward update).</summary>
+public sealed class MlsGameXg
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+    public double HomeXg { get; set; }
+    public double AwayXg { get; set; }
+}
+
 /// <summary>Team box inputs for pace / ORtg / DRtg (one row per game).</summary>
 public sealed class GameBox
 {

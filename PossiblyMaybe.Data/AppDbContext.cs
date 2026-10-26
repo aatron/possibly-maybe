@@ -11,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<GameBox> GameBoxes => Set<GameBox>();
     public DbSet<GamePitching> GamePitchings => Set<GamePitching>();
     public DbSet<NflGameContext> NflGameContexts => Set<NflGameContext>();
+    public DbSet<MlsGameXg> MlsGameXgs => Set<MlsGameXg>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,6 +74,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Roof).HasMaxLength(32);
+            e.HasIndex(x => x.GameId).IsUnique();
+        });
+
+        modelBuilder.Entity<MlsGameXg>(e =>
+        {
+            e.HasKey(x => x.Id);
             e.HasIndex(x => x.GameId).IsUnique();
         });
     }

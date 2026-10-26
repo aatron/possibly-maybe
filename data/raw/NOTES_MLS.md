@@ -3,12 +3,23 @@
 **US retail books (DraftKings, FanDuel, and peers) post MLS.**  
 All large files stay under `data/raw/` (**gitignored** — never commit the 500MB+ zip or parquets).
 
+## Holdout lock (BEFORE metric peek — 2026-10-25)
+
+| Slice | Rule |
+|---|---|
+| **Train** | `season` ≤ **2024** (calendar MLS year from Kaggle `season`) |
+| **Holdout** | `season` == **2025** only |
+| **2026** | Excluded from train/hold scoring (incomplete / post-lock) |
+
+Do **not** retune on holdout. Champ = max train PnL among configs with train CLV>0, train PnL>0, bets in band; then score holdout once.
+
 ## Status (2026-10-25)
 
 | Source | Status | Path |
 |---|---|---|
-| Kaggle football-odds-movements | **In** (parquet only; CSV tick dumps **not** extracted) | `kaggle/football_odds_movements_2018_2026/` |
+| Kaggle football-odds-movements | **In** (parquet only) | `kaggle/football_odds_movements_2018_2026/` |
 | MLS slice | **3507** matches | `mls/mls_matches.parquet` |
+| Export for CLI | `scripts/export_mls_totals.py` → | `mls/mls_totals_open_close.csv` |
 | football-data USA.csv | **In** | `mls/USA.csv` |
 | ASA games + xG | **In** | `mls/asa_*.json` |
 
@@ -16,62 +27,32 @@ Zip source: `~/Downloads/archive(8).zip` (~517MB). Uncompressed CSVs are multi�
 
 ## Soft vs NBA / NFL / MLB (retail)
 
-MLS is **softer for retail bettors** than NBA/NFL/MLB on average: thinner US handle and liquidity, fewer dedicated soccer sharps in DK/FD pools, and public bias toward big-brand favorites / overs / “America knows soccer less than basketball.” Draw + 3-way ML also misprices casual money vs 2-way US sports. Not a free lunch — offshore/Pinnacle soccer markets are sharper — but **DK/FD MLS totals and AH are a credible soft-spot candidate** after NFL EPA work, not instead of it.
+MLS is **softer for retail bettors** than NBA/NFL/MLB on average: thinner US handle and liquidity, fewer dedicated soccer sharps in DK/FD pools, and public bias toward big-brand favorites / overs. Offshore/Pinnacle soccer markets are sharper — edge thesis is **US-book MLS totals** after NFL EPA work.
 
-## Required (human download) — URLs
+## Gate 1 path
 
-| Priority | Source | URL | What you get |
-|---|---|---|---|
-| **1** | Kaggle — odds movements (open→close) | https://www.kaggle.com/datasets/archangel0x01/football-odds-movements-2018-2026 | **Best CLV candidate.** ~3.5k MLS matches (2019–2026); 1X2 + **AH** + **OU** with timestamped moves; `match_closing` has open/close. Filter competition = MLS. |
-| **2** | football-data.co.uk USA (free CSV, no auth) | https://www.football-data.co.uk/new/USA.csv | Results + **closing** 1X2 (Pinnacle / market avg/max). Index: https://www.football-data.co.uk/new_leagues.php — **no totals/AH columns** on the extra-league file. |
-| **3** | Extra-leagues hub | https://www.football-data.co.uk/all_new_data.php | Same USA file + Excel; updated ~2×/week. |
-| **4** | Kaggle — MLS results/events (no modern odds) | https://www.kaggle.com/datasets/josephvm/major-league-soccer-dataset | Matches/events through ~2021 — scores backbone only; stale for betting. |
-| **5** | Kaggle — closing ML sample (9 sports incl. MLS) | https://www.kaggle.com/datasets/oliviersportsdata/us-sports-master-historical-closing-odds | Free **sample** rows; full MLS ~9k games is paid (Gumroad). Close **1X2 only**, no open, no totals. |
+- Import: `import-mls` — Sport=`MLS`, TOTAL open/close (Pinnacle preferred), optional ASA xG on game
+- Model: team **xG for/against EMA** when ASA joinable; else **goals EMA**
+- Sweep: `sweep-mls` — walk-forward; holdout locked above
+- CLI: do not wipe NBA rows
 
-Suggested local paths after unpack:
+## Required sources (URLs)
 
-- `data/raw/kaggle/football_odds_movements_2018_2026/` — filter MLS
-- `data/raw/football_data/USA.csv` — from football-data.co.uk
-- `data/raw/kaggle/mls_josephvm/` — optional scores/events
-
-## Free / cheap (no Kaggle)
-
-| Source | URL | Caveat |
+| Priority | Source | URL |
 |---|---|---|
-| ASA games + xG (free API) | https://app.americansocceranalysis.com/api/v1/mls/games · https://app.americansocceranalysis.com/api/v1/mls/games/xgoals | No key. Client: https://github.com/American-Soccer-Analysis/itscalledsoccer — **metrics**, not book lines. |
-| ASA interactive | https://www.americansocceranalysis.com/interactivegamebygame | Browser export / browse for spot checks. |
-| The Odds Gap MLS sample | https://theoddsgap.com/data/mls · `curl -o mls.csv "https://theoddsgap.com/api/odds-history.csv?sport=soccer_usa_mls"` | Free sample week only; full history is sub; starts mid-2026 — **too short for Gate 1 alone**. |
-| footballcsv MLS (results) | https://github.com/footballcsv/major-league-soccer | Scores/fixtures style dumps; verify license/freshness before use. |
+| **1** | Kaggle odds movements | https://www.kaggle.com/datasets/archangel0x01/football-odds-movements-2018-2026 |
+| **2** | football-data USA.csv | https://www.football-data.co.uk/new/USA.csv |
+| **3** | ASA games + xG | https://app.americansocceranalysis.com/api/v1/mls/games · `/xgoals` |
 
-## Flashscore dumps
+## Metrics / pack
 
-Flashscore is a common **results** source (football-data.co.uk cites it). There is **no official bulk free odds archive**.
+See `PossiblyMaybe.Cli/SportPacks/MlsPack.md`.
 
-| Option | URL | Caveat |
-|---|---|---|
-| League archive scrapers (Apify etc.) | e.g. https://apify.com/incognito_mode/flashscore-league-archive-scraper | Results/tables; paid compute; ToS risk. |
-| Odds+results actors | e.g. https://apify.com/sports-odds-lab/football-odds-results (league `USA: MLS`) | Open/close 1X2/OU/AH possible; **not free**, scrape-fragile — prefer Kaggle #1 if it covers your seasons. |
-
-Prefer packaged Kaggle / football-data over DIY Flashscore scrapes for Gate 0.
-
-## API-Football free tier — caveats
+## Sweep result (after holdout lock)
 
 | | |
 |---|---|
-| Docs / pricing | https://www.api-football.com/documentation-v3 · https://www.api-football.com/pricing |
-| Free plan | **100 req/day**, ~30/min; all endpoints listed, but **season depth is gated** — free often locked to older seasons (reports of “try 2021–2023” when asking for 2024/25). |
-| MLS season param | Calendar year (e.g. `season=2025`); league id varies by catalog — confirm via `/leagues`. |
-| Odds | Pre-match odds endpoints exist but are **not a multi-year open/close totals archive**; burning 100 calls on fixture+odds pagination is easy. |
-| Lab stance | Fine for live fixture probes; **not** the Gate 0 CLV spine. Use Kaggle odds-movements + football-data close ML. |
-
-## Status
-
-| Source | Status |
-|---|---|
-| archangel0x01/football-odds-movements-2018-2026 | **Not downloaded** |
-| football-data.co.uk `USA.csv` | **Not downloaded** |
-| ASA xG / games | **Not pulled** |
-| josephvm MLS dataset | **Not downloaded** (optional) |
-
-**Metrics / holdout:** see `PossiblyMaybe.Cli/SportPacks/MlsPack.md`.  
-**Do not implement an MLS importer yet.**
+| Games imported | **3506** (xg on 3498) |
+| Champ | **w=0.40**, `|exp−line|≥0.25`, EV≥4%, xG EMA (else goals) |
+| Holdout 2025 | **n=93**, CLV **+0.18** goals, PnL **+12.2u** |
+| Kill | **HOLD PASS** |

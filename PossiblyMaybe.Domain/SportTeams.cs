@@ -58,6 +58,28 @@ public static class SportTeams
         return Mlb.TryGetValue(t, out var c) ? c : null;
     }
 
+    /// <summary>MLS: stable short codes from full Kaggle names (or pass-through if already short).</summary>
+    public static string? TryMls(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Mls.TryGetValue(t, out var c) ? c : null;
+    }
+
+    private static readonly Dictionary<string, string> Mls = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Atlanta United"] = "ATL", ["Austin FC"] = "ATX", ["CF Montreal"] = "MTL",
+        ["Charlotte FC"] = "CLT", ["Chicago Fire"] = "CHI", ["Colorado Rapids"] = "COL",
+        ["Columbus Crew"] = "CLB", ["DC United"] = "DC", ["FC Cincinnati"] = "CIN",
+        ["FC Dallas"] = "DAL", ["Houston Dynamo"] = "HOU", ["Inter Miami CF"] = "MIA",
+        ["Los Angeles FC"] = "LAFC", ["Los Angeles Galaxy"] = "LAG", ["Minnesota United FC"] = "MIN",
+        ["Nashville SC"] = "NSH", ["New England Revolution"] = "NE", ["New York City FC"] = "NYC",
+        ["New York Red Bulls"] = "RBNY", ["Orlando City"] = "ORL", ["Philadelphia Union"] = "PHI",
+        ["Portland Timbers"] = "POR", ["Real Salt Lake"] = "RSL", ["San Diego FC"] = "SD",
+        ["San Jose Earthquakes"] = "SJ", ["Seattle Sounders"] = "SEA", ["Sporting Kansas City"] = "SKC",
+        ["St. Louis City"] = "STL", ["Toronto FC"] = "TOR", ["Vancouver Whitecaps"] = "VAN",
+    };
+
     public static string GameKey(string sport, DateOnly date, string home, string away)
         => $"{sport.ToLowerInvariant()}:{date:yyyy-MM-dd}:{home}:{away}";
 }

@@ -104,6 +104,13 @@ switch (command)
         await MultiSportImporter.ImportNflAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-mls":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await MultiSportImporter.ImportMlsAsync(ResolveRawRoot(), dbPath);
+        return 0;
+    }
     case "sweep-totals":
     {
         var repoRoot = FindRepoRoot();
@@ -129,6 +136,13 @@ switch (command)
         var repoRoot = FindRepoRoot();
         var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
         await NflTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
+    case "sweep-mls":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await MlsTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
     case "advise":
@@ -298,9 +312,9 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
-          import-mlb / import-nfl    Append MLB (SP FIP) / NFL (roof/wind) totals
-          sweep-totals [db]          NBA O/U Scoring vs PaceEff
-          sweep-mlb / sweep-nfl      Soft-spot sweeps for MLB / NFL totals
+          import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
+          sweep-totals [db]          NBA O/U Scoring vs PaceEff vs PaceEffEfg
+          sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
           paper-bet <key> <OVER|UNDER|HOME|AWAY> <line> <odds> <$> [p]

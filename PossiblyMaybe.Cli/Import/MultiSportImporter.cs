@@ -146,6 +146,104 @@ public static class MultiSportImporter
         Console.WriteLine($"MLB pitchers: {rows.Count} (missing FIP → league {lg})");
     }
 
+    public static async Task ImportMlsAsync(string rawRoot, string dbPath, CancellationToken ct = default)
+    {
+        var path = Path.Combine(rawRoot, "mls", "mls_totals_open_close.csv");
+        if (!File.Exists(path))
+            throw new FileNotFoundException($"Missing {path}. Run: python scripts/export_mls_totals.py");
+
+        var cs = $"Data Source={dbPath}";
+        await AppDbContext.EnsureCreatedAsync(cs, ct);
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(cs).Options;
+        await using var db = new AppDbContext(options);
+        await EnsureMlsXgTableAsync(db, ct);
+
+        var oldIds = await db.Games.Where(g => g.Sport == "MLS").Select(g => g.Id).ToListAsync(ct);
+        if (oldIds.Count > 0)
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                $"DELETE FROM MlsGameXgs WHERE GameId IN ({string.Join(",", oldIds.DefaultIfEmpty(-1))})", ct);
+            await db.OddsSnapshots.Where(o => oldIds.Contains(o.GameId)).ExecuteDeleteAsync(ct);
+            await db.Games.Where(g => g.Sport == "MLS").ExecuteDeleteAsync(ct);
+        }
+
+        using var reader = new StreamReader(path);
+        var header = await reader.ReadLineAsync(ct) ?? "";
+        var cols = Split(header);
+        int I(string n) => Array.FindIndex(cols, c => c.Equals(n, StringComparison.OrdinalIgnoreCase));
+
+        var games = new List<Game>();
+        var keyToGame = new Dictionary<string, Game>(StringComparer.Ordinal);
+        var pendingXg = new List<(string Key, double Home, double Away)>();
+        while (await reader.ReadLineAsync(ct) is { } line)
+        {
+            var c = Split(line);
+            var home = SportTeams.TryMls(c[I("home_team")]);
+            var away = SportTeams.TryMls(c[I("away_team")]);
+            if (home is null || away is null) continue;
+            if (!DateTimeOffset.TryParse(c[I("kickoff_utc")], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var tip))
+                continue;
+            var date = DateOnly.FromDateTime(tip.UtcDateTime);
+            if (!int.TryParse(c[I("home_score")], out var hs) || !int.TryParse(c[I("away_score")], out var as_))
+                continue;
+            if (!TryD(c[I("open_ou")], out _) || !TryD(c[I("close_ou")], out _))
+                continue;
+            var key = SportTeams.GameKey("mls", date, home, away);
+            if (keyToGame.ContainsKey(key)) continue;
+
+            var g = new Game
+            {
+                Sport = "MLS",
+                Season = c[I("season")],
+                SourceKey = key,
+                TipoffUtc = tip,
+                HomeTeam = home,
+                AwayTeam = away,
+                HomeScore = hs,
+                AwayScore = as_,
+            };
+            keyToGame[key] = g;
+            games.Add(g);
+            if (TryD(Safe(c, I("home_xg")), out var hx) && TryD(Safe(c, I("away_xg")), out var ax))
+                pendingXg.Add((key, hx, ax));
+        }
+
+        db.Games.AddRange(games);
+        await db.SaveChangesAsync(ct);
+
+        var snaps = new List<OddsSnapshot>();
+        using var reader2 = new StreamReader(path);
+        _ = await reader2.ReadLineAsync(ct);
+        while (await reader2.ReadLineAsync(ct) is { } line)
+        {
+            var c = Split(line);
+            var home = SportTeams.TryMls(c[I("home_team")]);
+            var away = SportTeams.TryMls(c[I("away_team")]);
+            if (home is null || away is null) continue;
+            if (!DateTimeOffset.TryParse(c[I("kickoff_utc")], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var tip))
+                continue;
+            var key = SportTeams.GameKey("mls", DateOnly.FromDateTime(tip.UtcDateTime), home, away);
+            if (!keyToGame.TryGetValue(key, out var g)) continue;
+            if (!TryD(c[I("open_ou")], out var openT) || !TryD(c[I("close_ou")], out var closeT))
+                continue;
+            snaps.Add(Total(g.Id, openT, PriceKind.Open, g.TipoffUtc.AddHours(-24)));
+            snaps.Add(Total(g.Id, closeT, PriceKind.Close, g.TipoffUtc));
+        }
+
+        db.OddsSnapshots.AddRange(snaps);
+        var xgRows = new List<MlsGameXg>();
+        foreach (var (key, hx, ax) in pendingXg)
+        {
+            if (!keyToGame.TryGetValue(key, out var g)) continue;
+            xgRows.Add(new MlsGameXg { GameId = g.Id, HomeXg = hx, AwayXg = ax });
+        }
+        db.MlsGameXgs.AddRange(xgRows);
+        await db.SaveChangesAsync(ct);
+        Console.WriteLine($"MLS import: games={games.Count} totalSnaps={snaps.Count} xg={xgRows.Count}");
+    }
+
     public static async Task ImportNflAsync(string rawRoot, string dbPath, CancellationToken ct = default)
     {
         var openClose = Path.Combine(rawRoot, "kaggle", "nfl_odds_2026", "nfl_2026_odds.csv");
@@ -334,6 +432,19 @@ public static class MultiSportImporter
               "AwayRest" INTEGER NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_NflGameContexts_GameId" ON "NflGameContexts" ("GameId");
+            """, ct);
+    }
+
+    private static async Task EnsureMlsXgTableAsync(AppDbContext db, CancellationToken ct)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "MlsGameXgs" (
+              "Id" INTEGER NOT NULL CONSTRAINT "PK_MlsGameXgs" PRIMARY KEY AUTOINCREMENT,
+              "GameId" INTEGER NOT NULL,
+              "HomeXg" REAL NOT NULL,
+              "AwayXg" REAL NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_MlsGameXgs_GameId" ON "MlsGameXgs" ("GameId");
             """, ct);
     }
 
