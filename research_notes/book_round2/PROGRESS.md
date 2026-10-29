@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** wait for / collect the 7 phase-2/3/4b agent outputs below. When a session restarts, background agents from the old session are gone:
+**Next action (paused 2026-10-28 by user):** all 7 agents were stopped before writing any output. Relaunch all 7 from `agent_prompts.md` (Opus, background), then collect outputs. When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Opus).
@@ -15,13 +15,13 @@ Phase 4 starts only when E1–E4 + audit are `done`. Never re-run a `done` row. 
 
 | ID | Task | Model | Output file | Status |
 |---|---|---|---|---|
-| E1 | ISL / ESL / Sparsity topics | opus | `eval_isl_esl_sparsity.md` | running |
-| E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | opus | `eval_bayesian.md` | running |
-| E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | opus | `eval_ml_general.md` | running |
-| E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | opus | `eval_forecast_markets.md` | running |
-| A1 | Overcorrection / training audit | opus | `audit_overcorrection.md` | running |
-| V1 | Venue placement (Kalshi / RH / Crypto.com) | opus | `venue_placement.md` | running |
-| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | opus | `hunt_data_sources.md` | running |
+| E1 | ISL / ESL / Sparsity topics | opus | `eval_isl_esl_sparsity.md` | stopped — no output, relaunch |
+| E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | opus | `eval_bayesian.md` | stopped — no output, relaunch |
+| E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | opus | `eval_ml_general.md` | stopped — no output, relaunch |
+| E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | opus | `eval_forecast_markets.md` | stopped — no output, relaunch |
+| A1 | Overcorrection / training audit | opus | `audit_overcorrection.md` | stopped — no output, relaunch |
+| V1 | Venue placement (Kalshi / RH / Crypto.com) | opus | `venue_placement.md` | stopped — no output, relaunch |
+| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | opus | `hunt_data_sources.md` | stopped — no output, relaunch |
 
 ### Experiment ledger (phase 4 / 4b)
 
@@ -40,9 +40,9 @@ Phase 4 starts only when E1–E4 + audit are `done`. Never re-run a `done` row. 
 | # | Phase | Status | Output |
 |---|---|---|---|
 | 1 | Download free books / repos → `library/` | done | see Downloads |
-| 2 | Topic evaluation (4 subagents, by book group) | running | `eval_*.md` |
-| 3a | Over-correction / training audit | running | `audit_overcorrection.md` |
-| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | running | `venue_placement.md` |
+| 2 | Topic evaluation (4 subagents, by book group) | paused — relaunch | `eval_*.md` |
+| 3a | Over-correction / training audit | paused — relaunch | `audit_overcorrection.md` |
+| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | paused — relaunch | `venue_placement.md` |
 | 4 | Pick candidates, worktree experiments | pending (waits on 2 + 3a protocol) | `exp_*.md` |
 | 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | pending (after 4) | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
@@ -84,3 +84,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | User: research agents run on Opus (the 7 running agents already inherit Opus) |
 | 2026-10-28 | Added RESUME HERE section, agent/experiment/Tier C ledgers, agent_prompts.md for relaunch |
 | 2026-10-28 | Handoff doc added; pointers in AGENTS.md and root PROGRESS.md |
+| 2026-10-28 | **PAUSED by user.** All 7 agents stopped; none had written output; data/raw/round2_odds not created; no worktrees. Clean state at this commit. |
