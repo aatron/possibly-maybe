@@ -194,21 +194,27 @@ echo ">>> import-box (NBA pace warehouse; ok if nothing new)"
 SLATE_LOG="$(mktemp)"
 trap 'rm -f "$SLATE_LOG"' EXIT
 
+SOCCER_PASS=(MLS LIGUE1 LIGAMX SERIEA)
+
 echo
 echo ">>> slate NBA $DAY"
 ("${CLI[@]}" slate-nba "$DAY" 1000 || true) | tee -a "$SLATE_LOG"
 
-echo
-echo ">>> slate MLS $DAY"
-("${CLI[@]}" slate-mls "$DAY" 1000 || true) | tee -a "$SLATE_LOG"
+for sp in "${SOCCER_PASS[@]}"; do
+  echo
+  echo ">>> slate $sp $DAY"
+  ("${CLI[@]}" slate-soccer "$sp" "$DAY" 1000 || true) | tee -a "$SLATE_LOG"
+done
 
 echo
 echo ">>> slate NBA $TOMORROW (lookahead)"
 ("${CLI[@]}" slate-nba "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
 
-echo
-echo ">>> slate MLS $TOMORROW (lookahead)"
-("${CLI[@]}" slate-mls "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
+for sp in "${SOCCER_PASS[@]}"; do
+  echo
+  echo ">>> slate $sp $TOMORROW (lookahead)"
+  ("${CLI[@]}" slate-soccer "$sp" "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
+done
 
 echo
 echo ">>> Kalshi vs DraftKings (today/tomorrow GOs from slate)"

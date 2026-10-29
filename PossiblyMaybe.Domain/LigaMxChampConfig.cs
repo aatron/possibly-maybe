@@ -3,7 +3,7 @@ namespace PossiblyMaybe.Domain;
 /// <summary>
 /// Liga MX totals paper candidate (library α sweep KEEP): w=0.40, |exp−line|≥0.25, EV≥4%.
 /// Goals EMA α=0.129 (hl≈5). Hold 2024-2025: +3.5u / 52, CLV +0.24 (prior α=0.18 FAIL n&lt;40).
-/// No live slate yet — paper config only.
+/// Live slate: `slate-soccer LIGAMX`.
 /// </summary>
 public static class LigaMxChampConfig
 {

@@ -2,9 +2,10 @@
 name: pm-calculate
 description: >-
   Run the daily PossiblyMaybe paper ritual (/pm-calculate): open at-risk
-  tickets, ESPN score probe + settle hints, NBA/MLS soft-spot slates, and
-  dashboard refresh. Use when the user says /pm-calculate, asks for today's
-  bets, slate, what is at risk, or the daily paper check.
+  tickets, ESPN score probe + settle hints, NBA + HOLD-PASS soccer soft-spot
+  slates (MLS, Ligue 1, Liga MX, Serie A), and dashboard refresh. Use when the
+  user says /pm-calculate, asks for today's bets, slate, what is at risk, or
+  the daily paper check.
 disable-model-invocation: true
 ---
 
@@ -30,7 +31,7 @@ bash scripts/pm-calculate.sh 20261028
    - **At risk:** open tickets by game + total reserved per lane
    - **Settles:** any `SETTLE …` / `settle-go` hints from finals
    - **GOs:** every printed `paper-go` line (same pick across all six lanes)
-   - **Kalshi vs DK:** for open tickets and GOs — which venue is cheaper to buy (EV / ask gap). Kalshi is binary YES=over via public `trade-api/v2` (`scripts/kalshi_compare.py`)
+   - **Venues:** DraftKings vs Kalshi vs Robinhood vs Crypto.com — which is cheaper to buy (EV / ask gap). Kalshi/RH = Kalshi public asks; Crypto.com = `data-api.crypto.com` Predict totals
    - **NO-GO / sit out:** note discipline wins
    - **OUT lanes:** available ≈ $0 → scheme is dead (no reload)
 
@@ -40,7 +41,8 @@ bash scripts/pm-calculate.sh 20261028
 
 ## Rules baked into the trial
 
-- Two venues (DraftKings | Kalshi tabs) × six $1000 lanes each
-- `paper-go` places independently per venue from that venue’s odds (DK-only / Kalshi-only / both / neither)
+- Four venues (DraftKings | Kalshi | Robinhood | Crypto.com) × six $1000 lanes each
+- `paper-go` places independently per venue from that venue’s odds
 - Within a venue, live schemes share the pick; sizing differs
 - No extra capital; ruined lane stays out on that venue through 2026-12-31
+- Live soccer slates: **MLS, LIGUE1, LIGAMX, SERIEA** only (HOLD PASS). EFL / La Liga FAIL. Darts / cricket: no Gate 0.

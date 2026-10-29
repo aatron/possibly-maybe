@@ -136,8 +136,21 @@ switch (command)
             return 2;
         }
         // `sweep-totals [db] --cal` → same-gate Platt/Ridge vs PaceEff only
+        // `sweep-totals [db] --absence` → same-gate PaceEff vs tip-time DNP absence adj
         if (args.Any(a => a is "--cal" or "cal"))
             await TotalsSweep.CompareChampGatesAsync(dbPath);
+        else if (args.Any(a => a is "--absence" or "absence"))
+        {
+            var scale = 0.5;
+            for (var i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] is "--scale" or "scale"
+                    && double.TryParse(args[i + 1], out var s))
+                    scale = s;
+            }
+
+            await TotalsSweep.CompareAbsenceAsync(dbPath, scale);
+        }
         else
             await TotalsSweep.RunAsync(dbPath);
         return 0;
@@ -271,6 +284,27 @@ switch (command)
         await DailySlate.RunMlsAsync(dbPath, date, bank);
         return 0;
     }
+    case "slate-soccer":
+    {
+        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA> [yyyymmdd] [bank]");
+            return 1;
+        }
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        var date = args.Length > 2 && args[2].Length == 8 ? args[2]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 3 && double.TryParse(args[3], out var b) ? b : 1000.0;
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunSoccerAsync(args[1], dbPath, date, bank);
+        return 0;
+    }
     case "advise-mls":
     {
         // Paper MLS champ: advise-mls <modelExpectedGoals> <openTotal> [juice=-110] [bankroll]
@@ -331,7 +365,7 @@ switch (command)
     }
     case "paper-go":
     {
-        // Independent DK + Kalshi: paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport>
+        // Independent DK + Kalshi + Robinhood + Crypto.com
         if (args.Length < 8
             || !double.TryParse(args[3], out var line)
             || !int.TryParse(args[4], out var odds)
@@ -345,19 +379,21 @@ switch (command)
         var (db, path) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
-            var (dk, kalshi, kalshiNote) = await PaperLedger.PlaceDualVenueAsync(
+            var (dk, others) = await PaperLedger.PlaceDualVenueAsync(
                 db, args[1], args[2], line, odds, modelProb, absEdge, args[7]);
             Console.WriteLine($"PAPER-GO {args[1]} {args[2]} {line} dk@{odds} p={modelProb:F3} edge={absEdge:F2} → {path}");
             Console.WriteLine($"  DK     placed={dk.Count}" + (dk.Count > 0 ? $" group={dk[0].TicketGroup}" : " (skip/already open/no EV)"));
             foreach (var r in dk)
                 Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
-            Console.WriteLine($"  Kalshi placed={kalshi.Count}" + (kalshi.Count > 0 ? $" group={kalshi[0].TicketGroup}" : ""));
-            if (kalshiNote is not null)
-                Console.WriteLine($"    {kalshiNote}");
-            foreach (var r in kalshi)
-                Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
-            if (dk.Count == 0 && kalshi.Count == 0)
-                Console.WriteLine("  (nothing placed on either venue)");
+            foreach (var o in others)
+            {
+                Console.WriteLine($"  {o.Venue,-8} placed={o.Placed.Count}" + (o.Placed.Count > 0 ? $" group={o.Placed[0].TicketGroup}" : ""));
+                Console.WriteLine($"    {o.Note}");
+                foreach (var r in o.Placed)
+                    Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
+            }
+            if (dk.Count == 0 && others.All(x => x.Placed.Count == 0))
+                Console.WriteLine("  (nothing placed on any venue)");
         }
         return 0;
     }
@@ -514,6 +550,7 @@ static void PrintUsage()
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
+          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA HOLD-PASS slates
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go

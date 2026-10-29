@@ -41,10 +41,9 @@ public static class PaperLedger
         => Math.Max(0, await EquityAsync(db, scheme, venue, ct) - await ReservedAsync(db, scheme, venue, ct));
 
     /// <summary>
-    /// Independent dual-venue place: DK and Kalshi each decide from their own odds (EV≥4% via scheme sizer).
-    /// A pick may land on DK only, Kalshi only, both, or neither.
+    /// Independent multi-venue place: DK + Kalshi + Robinhood (Kalshi prices) + Crypto.com each EV-gate alone.
     /// </summary>
-    public static async Task<(IReadOnlyList<LedgerEntry> Dk, IReadOnlyList<LedgerEntry> Kalshi, string? KalshiNote)> PlaceDualVenueAsync(
+    public static async Task<(IReadOnlyList<LedgerEntry> Dk, IReadOnlyList<VenuePlaceNote> Others)> PlaceDualVenueAsync(
         AppDbContext db,
         string gameKey,
         string side,
@@ -58,34 +57,62 @@ public static class PaperLedger
         var dk = await PlaceAllSchemesAsync(
             db, gameKey, side, line, dkAmericanOdds, modelProb, absEdge, sport, PaperVenues.DraftKings, ct);
 
-        IReadOnlyList<LedgerEntry> kalshi = [];
-        string? note = null;
-        var quote = await KalshiQuotes.TryGetTotalAsync(sport, gameKey, side, line, ct);
+        var others = new List<VenuePlaceNote>();
+
+        // Kalshi + Robinhood share Kalshi public asks; separate $1000 lane books.
+        var kalshiQuote = await KalshiQuotes.TryGetTotalAsync(sport, gameKey, side, line, ct);
+        BinaryAsk? kalAsk = kalshiQuote is { } kq
+            ? new BinaryAsk(kq.Strike, kq.BuyPrice, kq.AmericanOdds, kq.SideLabel, kq.MarketTicker)
+            : null;
+        others.Add(await PlaceFromBinaryQuoteAsync(
+            db, gameKey, side, modelProb, absEdge, sport, PaperVenues.Kalshi, kalAsk, ct));
+        others.Add(await PlaceFromBinaryQuoteAsync(
+            db, gameKey, side, modelProb, absEdge, sport, PaperVenues.Robinhood, kalAsk, ct));
+
+        var crypto = await CryptoComQuotes.TryGetTotalAsync(sport, gameKey, side, line, ct);
+        BinaryAsk? cryptoAsk = crypto is { } cq
+            ? new BinaryAsk(cq.Strike, cq.BuyPrice, cq.AmericanOdds, cq.SideLabel, cq.EventId)
+            : null;
+        others.Add(await PlaceFromBinaryQuoteAsync(
+            db, gameKey, side, modelProb, absEdge, sport, PaperVenues.CryptoCom, cryptoAsk, ct));
+
+        return (dk, others);
+    }
+
+    public readonly record struct VenuePlaceNote(string Venue, IReadOnlyList<LedgerEntry> Placed, string Note);
+
+    readonly record struct BinaryAsk(double Strike, double BuyPrice, int AmericanOdds, string SideLabel, string Ticker);
+
+    static async Task<VenuePlaceNote> PlaceFromBinaryQuoteAsync(
+        AppDbContext db,
+        string gameKey,
+        string side,
+        double modelProb,
+        double absEdge,
+        string sport,
+        string venue,
+        BinaryAsk? quote,
+        CancellationToken ct)
+    {
+        var label = PaperVenues.DisplayName(venue);
         if (quote is null)
+            return new VenuePlaceNote(venue, [], $"{label} SKIP — no matching open total market");
+
+        var q = quote.Value;
+        var ev = OddsMath.ExpectedValue(modelProb, q.AmericanOdds);
+        if (ev < 0.04)
         {
-            note = "Kalshi SKIP — no matching open total market";
-        }
-        else
-        {
-            var ev = OddsMath.ExpectedValue(modelProb, quote.Value.AmericanOdds);
-            if (ev < 0.04)
-            {
-                note =
-                    $"Kalshi SKIP — EV {ev:P1} < 4% at {quote.Value.SideLabel} ask=${quote.Value.BuyPrice:F3} (~{quote.Value.AmericanOdds:+0;-0}) strike={quote.Value.Strike}";
-            }
-            else
-            {
-                kalshi = await PlaceAllSchemesAsync(
-                    db, gameKey, side, quote.Value.Strike, quote.Value.AmericanOdds, modelProb, absEdge, sport,
-                    PaperVenues.Kalshi, ct);
-                note =
-                    kalshi.Count == 0
-                        ? $"Kalshi SKIP — EV ok but all lanes dust/ruined @ {quote.Value.AmericanOdds:+0;-0}"
-                        : $"Kalshi GO — {quote.Value.SideLabel} ask=${quote.Value.BuyPrice:F3} (~{quote.Value.AmericanOdds:+0;-0}) strike={quote.Value.Strike} ticker={quote.Value.MarketTicker}";
-            }
+            return new VenuePlaceNote(
+                venue, [],
+                $"{label} SKIP — EV {ev:P1} < 4% at {q.SideLabel} ask=${q.BuyPrice:F3} (~{q.AmericanOdds:+0;-0}) strike={q.Strike}");
         }
 
-        return (dk, kalshi, note);
+        var placed = await PlaceAllSchemesAsync(
+            db, gameKey, side, q.Strike, q.AmericanOdds, modelProb, absEdge, sport, venue, ct);
+        var note = placed.Count == 0
+            ? $"{label} SKIP — EV ok but all lanes dust/ruined @ {q.AmericanOdds:+0;-0}"
+            : $"{label} GO — {q.SideLabel} ask=${q.BuyPrice:F3} (~{q.AmericanOdds:+0;-0}) strike={q.Strike} id={q.Ticker}";
+        return new VenuePlaceNote(venue, placed, note);
     }
 
     /// <summary>Place the same GO across every stake scheme on one venue (each lane sizes from its own bankroll).</summary>
@@ -389,7 +416,7 @@ public static class PaperLedger
         await File.WriteAllTextAsync(htmlPath, DashboardHtml(json), ct);
         Console.WriteLine($"Dashboard → {htmlPath}");
         Console.WriteLine($"Data      → {jsonPath}");
-        Console.WriteLine("Open ui/index.html — tabs: DraftKings | Kalshi (re-run `dashboard` after settles).");
+        Console.WriteLine("Open ui/index.html — tabs: DraftKings | Kalshi | Robinhood | Crypto.com (re-run `dashboard` after settles).");
     }
 
     static object BuildVenuePayload(List<LedgerEntry> rows)
@@ -540,6 +567,8 @@ public static class PaperLedger
 <div class="tabs" id="tabs">
   <button type="button" class="tab active" data-venue="DK">DraftKings</button>
   <button type="button" class="tab" data-venue="Kalshi">Kalshi</button>
+  <button type="button" class="tab" data-venue="Robinhood">Robinhood</button>
+  <button type="button" class="tab" data-venue="CryptoCom">Crypto.com</button>
 </div>
 <main>
   <section class="board" id="cards"></section>
@@ -604,7 +633,7 @@ function lanes() { return venueBlock().lanes || []; }
 function byCode() { return Object.fromEntries(lanes().map(l => [l.code, l])); }
 
 document.getElementById('sub').textContent =
-  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · DK and Kalshi decide independently`;
+  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · DK / Kalshi / Robinhood / Crypto.com decide independently`;
 
 document.getElementById('tabs').addEventListener('click', e => {
   const btn = e.target.closest('[data-venue]');

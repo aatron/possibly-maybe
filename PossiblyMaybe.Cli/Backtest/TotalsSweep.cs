@@ -96,6 +96,37 @@ public static class TotalsSweep
             $"PaceEff baseline: n={paceHold.Bets} CLV={paceHold.MeanClv:F2} PnL={paceHold.PaperPnlUnits:F1}");
     }
 
+    /// <summary>Same-gate holdout: PaceEff vs PaceEffAbsence (tip-time DNP PPG proxy).</summary>
+    public static async Task CompareAbsenceAsync(
+        string dbPath,
+        double absenceScale = 0.5,
+        CancellationToken ct = default)
+    {
+        const double w = 0.5, minEv = 0.04, minEdge = 6.0;
+        Console.WriteLine();
+        Console.WriteLine(
+            $"######## SAME-GATE PaceEff vs PaceEffAbsence (w={w} edge={minEdge} EV≥{minEv:P0} absenceScale={absenceScale}) ########");
+        Console.WriteLine($"{"Model",-16} {"hold_n",8} {"CLV",8} {"PnL",8} {"Brier",8} {"LogLoss",8}");
+
+        var (_, paceHold) = await TotalsEdgeBacktest.RunAsync(
+            dbPath, w, minEv, minEdge, TotalsModelKind.PaceEff, ct: ct);
+        Console.WriteLine(
+            $"{TotalsModelKind.PaceEff,-16} {paceHold.Bets,8} {paceHold.MeanClv,8:F2} {paceHold.PaperPnlUnits,8:F1} {paceHold.Brier,8:F4} {paceHold.LogLoss,8:F4}");
+
+        var (_, absHold) = await TotalsEdgeBacktest.RunAsync(
+            dbPath, w, minEv, minEdge, TotalsModelKind.PaceEffAbsence,
+            absenceScale: absenceScale, ct: ct);
+        Console.WriteLine(
+            $"{TotalsModelKind.PaceEffAbsence,-16} {absHold.Bets,8} {absHold.MeanClv,8:F2} {absHold.PaperPnlUnits,8:F1} {absHold.Brier,8:F4} {absHold.LogLoss,8:F4}");
+
+        var pnlBeat = absHold.PaperPnlUnits > paceHold.PaperPnlUnits;
+        var clvBeat = absHold.MeanClv > paceHold.MeanClv;
+        var promote = absHold.PaperPnlUnits > 0 && absHold.MeanClv > 0 && (pnlBeat || clvBeat);
+        Console.WriteLine(
+            $"Verdict: Absence {(promote ? "BEATS" : "does not beat")} PaceEff on promote rule " +
+            $"(PnL {(pnlBeat ? ">" : "<=")} baseline, CLV {(clvBeat ? ">" : "<=")} baseline).");
+    }
+
     private sealed record Row(
         double W, double MinEv, double MinEdge, Gate1aResult Train, Gate1aResult Hold);
 }

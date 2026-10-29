@@ -16,6 +16,8 @@ public enum TotalsModelKind
     PaceEffPlatt = 3,
     /// <summary>PaceEff + walk-forward ridge-logistic on [line, modelExp] → P(over).</summary>
     PaceEffRidge = 4,
+    /// <summary>PaceEff − scale × tip-time DNP stars' rolling PPG (lineup/injury proxy).</summary>
+    PaceEffAbsence = 5,
 }
 
 /// <summary>
@@ -37,6 +39,8 @@ public static class TotalsEdgeBacktest
         string? trackingDir = null,
         double alpha = 0.15,
         double restB2bPts = 0,
+        double absenceScale = 0,
+        string? playerBoxCsv = null,
         CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -69,6 +73,14 @@ public static class TotalsEdgeBacktest
             ? TeamEfgPriors.Load(trackingDir ?? GuessTrackingDir(dbPath))
             : null;
 
+        var playerLines = model == TotalsModelKind.PaceEffAbsence
+            ? EspnPlayerBoxLoader.LoadByEspnGameId(playerBoxCsv ?? GuessPlayerBoxCsv(dbPath))
+            : null;
+        var absence = model == TotalsModelKind.PaceEffAbsence ? new AbsenceBook() : null;
+        var espnByGameId = games
+            .Where(g => !string.IsNullOrEmpty(g.EspnGameId))
+            .ToDictionary(g => g.Id, g => g.EspnGameId!);
+
         var scoring = new ScoringBook(alpha: alpha);
         var pace = new PaceEfficiencyBook(alpha: alpha);
         var rest = new RestTracker();
@@ -77,6 +89,8 @@ public static class TotalsEdgeBacktest
         var usedPace = 0;
         var usedScoringFallback = 0;
         var efgTouched = 0;
+        var absenceTouched = 0;
+        var absencePtsSum = 0.0;
 
         OuPlattCalibrator? platt = model == TotalsModelKind.PaceEffPlatt
             ? new OuPlattCalibrator(fallbackSharpness: 0.25)
@@ -102,7 +116,8 @@ public static class TotalsEdgeBacktest
                 modelExp += restB2bPts * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
 
             if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg
-                or TotalsModelKind.PaceEffPlatt or TotalsModelKind.PaceEffRidge)
+                or TotalsModelKind.PaceEffPlatt or TotalsModelKind.PaceEffRidge
+                or TotalsModelKind.PaceEffAbsence)
             {
                 if (boxes.ContainsKey(g.Id)) usedPace++;
                 else usedScoringFallback++; // no box ⇒ pace book not updated this game (stale priors)
@@ -113,6 +128,21 @@ public static class TotalsEdgeBacktest
                 var adj = efgPriors.AdjPts(g.Season, g.HomeTeam, g.AwayTeam);
                 if (adj != 0) efgTouched++;
                 modelExp += adj;
+            }
+
+            List<AbsenceBook.PlayerLine>? tipPlayers = null;
+            if (absence is not null && playerLines is not null
+                && espnByGameId.TryGetValue(g.Id, out var eid)
+                && playerLines.TryGetValue(eid, out tipPlayers))
+            {
+                var scale = absenceScale <= 0 ? 0.5 : absenceScale;
+                var miss = absence.MissingPtsAdjustment(tipPlayers, scale);
+                if (miss != 0)
+                {
+                    absenceTouched++;
+                    absencePtsSum += miss;
+                    modelExp += miss;
+                }
             }
 
             var acc = g.Season == HoldoutSeason ? hold : train;
@@ -169,12 +199,16 @@ public static class TotalsEdgeBacktest
                     box.FgaHome, box.OrebHome, box.TovHome, box.FtaHome, box.PtsHome, box.Fg3aHome,
                     box.FgaAway, box.OrebAway, box.TovAway, box.FtaAway, box.PtsAway, box.Fg3aAway);
             }
+
+            if (absence is not null && tipPlayers is not null)
+                absence.UpdateAfterGame(tipPlayers);
+
             rest.Played(g.HomeTeam, date);
             rest.Played(g.AwayTeam, date);
         }
 
         Console.WriteLine(
-            $"  [model={model} α={alpha:F3} restB2bPts={restB2bPts:F2} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched}]");
+            $"  [model={model} α={alpha:F3} restB2bPts={restB2bPts:F2} absenceScale={absenceScale:F2} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched} absenceGames={absenceTouched} meanAbsenceAdj={(absenceTouched == 0 ? 0 : absencePtsSum / absenceTouched):F2}]");
         return (train.ToResult(), hold.ToResult());
     }
 
@@ -267,6 +301,20 @@ public static class TotalsEdgeBacktest
         }
 
         return Path.Combine("data", "raw", "nba_tracking");
+    }
+
+    private static string GuessPlayerBoxCsv(string dbPath)
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? ".");
+        while (dir is not null)
+        {
+            var candidate = Path.Combine(dir.FullName, "data", "raw", "nba_box", "espn_player_box.csv");
+            if (File.Exists(candidate))
+                return candidate;
+            dir = dir.Parent;
+        }
+
+        return Path.Combine("data", "raw", "nba_box", "espn_player_box.csv");
     }
 
     private sealed class Acc(string slice)

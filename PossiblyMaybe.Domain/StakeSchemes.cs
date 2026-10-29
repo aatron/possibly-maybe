@@ -14,15 +14,39 @@ public static class PaperVenues
 {
     public const string DraftKings = "DK";
     public const string Kalshi = "Kalshi";
+    /// <summary>Robinhood event contracts — sports prices from Kalshi (CFTC partner); own bankroll.</summary>
+    public const string Robinhood = "Robinhood";
+    /// <summary>Crypto.com Predict — public data-api.crypto.com totals; own bankroll.</summary>
+    public const string CryptoCom = "CryptoCom";
 
-    public static IReadOnlyList<string> All { get; } = [DraftKings, Kalshi];
+    public static IReadOnlyList<string> All { get; } =
+        [DraftKings, Kalshi, Robinhood, CryptoCom];
 
     public static string Normalize(string? venue)
-        => string.IsNullOrWhiteSpace(venue) ? DraftKings
-            : venue.Equals("Kalshi", StringComparison.OrdinalIgnoreCase) ? Kalshi
-            : venue.Equals("DK", StringComparison.OrdinalIgnoreCase)
-              || venue.Equals("DraftKings", StringComparison.OrdinalIgnoreCase) ? DraftKings
-            : venue.Trim();
+    {
+        if (string.IsNullOrWhiteSpace(venue)) return DraftKings;
+        if (venue.Equals("Kalshi", StringComparison.OrdinalIgnoreCase)) return Kalshi;
+        if (venue.Equals("Robinhood", StringComparison.OrdinalIgnoreCase)
+            || venue.Equals("RH", StringComparison.OrdinalIgnoreCase))
+            return Robinhood;
+        if (venue.Equals("CryptoCom", StringComparison.OrdinalIgnoreCase)
+            || venue.Equals("Crypto", StringComparison.OrdinalIgnoreCase)
+            || venue.Equals("Crypto.com", StringComparison.OrdinalIgnoreCase))
+            return CryptoCom;
+        if (venue.Equals("DK", StringComparison.OrdinalIgnoreCase)
+            || venue.Equals("DraftKings", StringComparison.OrdinalIgnoreCase))
+            return DraftKings;
+        return venue.Trim();
+    }
+
+    public static string DisplayName(string venue) => Normalize(venue) switch
+    {
+        DraftKings => "DraftKings",
+        Kalshi => "Kalshi",
+        Robinhood => "Robinhood",
+        CryptoCom => "Crypto.com",
+        _ => venue,
+    };
 }
 
 public readonly record struct StakeScheme(
