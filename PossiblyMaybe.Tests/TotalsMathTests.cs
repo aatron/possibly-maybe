@@ -13,6 +13,28 @@ public class TotalsMathTests
     }
 
     [Test]
+    public async Task NormalOverProb_matches_phi_at_6pt_edge()
+    {
+        // logistic sharpness 0.25 → ~0.82; Φ(6/22.8) ≈ 0.604
+        var logistic = TotalsMath.OverProb(226, 220, sharpness: 0.25);
+        var normal = TotalsMath.NormalOverProb(226, 220, sigma: 22.8);
+        await Assert.That(logistic).IsGreaterThan(0.80);
+        await Assert.That(normal).IsEqualTo(0.6038).Within(0.005);
+        await Assert.That(TotalsMath.NormalOverProb(220, 220, 22.8)).IsEqualTo(0.5).Within(1e-9);
+        await Assert.That(TotalsMath.NormalCdf(0)).IsEqualTo(0.5).Within(1e-9);
+    }
+
+    [Test]
+    public async Task ExpandingResidualSigma_uses_fallback_then_rmse()
+    {
+        var s = new ExpandingResidualSigma();
+        await Assert.That(s.Sigma).IsEqualTo(ExpandingResidualSigma.FallbackSigma);
+        for (var i = 0; i < ExpandingResidualSigma.MinN; i++)
+            s.Observe(10.0);
+        await Assert.That(s.Sigma).IsEqualTo(10.0).Within(1e-9);
+    }
+
+    [Test]
     public async Task ScoringBook_moves_toward_observed()
     {
         var book = new ScoringBook(alpha: 1.0, leagueInit: 200);

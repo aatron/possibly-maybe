@@ -18,6 +18,8 @@ public enum TotalsModelKind
     PaceEffRidge = 4,
     /// <summary>PaceEff − scale × tip-time DNP stars' rolling PPG (lineup/injury proxy).</summary>
     PaceEffAbsence = 5,
+    /// <summary>PaceEff + expanding train residual-σ Normal CDF for P(over).</summary>
+    PaceEffNormal = 6,
 }
 
 /// <summary>
@@ -99,6 +101,9 @@ public static class TotalsEdgeBacktest
         var ridgeY = model == TotalsModelKind.PaceEffRidge ? new List<double>() : null;
         double[]? ridgeBeta = null;
         var ridgeFitAt = 0;
+        ExpandingResidualSigma? residualSigma = model == TotalsModelKind.PaceEffNormal
+            ? new ExpandingResidualSigma()
+            : null;
 
         foreach (var g in games)
         {
@@ -117,7 +122,7 @@ public static class TotalsEdgeBacktest
 
             if (model is TotalsModelKind.PaceEff or TotalsModelKind.PaceEffEfg
                 or TotalsModelKind.PaceEffPlatt or TotalsModelKind.PaceEffRidge
-                or TotalsModelKind.PaceEffAbsence)
+                or TotalsModelKind.PaceEffAbsence or TotalsModelKind.PaceEffNormal)
             {
                 if (boxes.ContainsKey(g.Id)) usedPace++;
                 else usedScoringFallback++; // no box ⇒ pace book not updated this game (stale priors)
@@ -157,7 +162,7 @@ public static class TotalsEdgeBacktest
                 var clvOver = TotalsMath.OverClvPoints(line, closeLine);
 
                 var pOver = PredictOver(platt, ridgeX, ridgeY, ref ridgeBeta, ref ridgeFitAt,
-                    exp, line, modelExp);
+                    residualSigma, exp, line, modelExp);
 
                 // Secondary ISLP metrics on all scored non-push games.
                 if (ou != 0)
@@ -169,21 +174,26 @@ public static class TotalsEdgeBacktest
                     {
                         var ev = OddsMath.ExpectedValue(pOver, juice);
                         if (ev >= minEv)
-                            acc.AddBet(clvOver, ou > 0, TotalsMath.OuPnL(juice, ou));
+                            acc.AddBet(clvOver, ou > 0, TotalsMath.OuPnL(juice, ou),
+                                kellyPnl: TotalsMath.OuPnL(juice, ou)
+                                          * OddsMath.FractionalKelly(pOver, juice, 0.25));
                     }
                     else
                     {
                         var pUnder = 1 - pOver;
                         var ev = OddsMath.ExpectedValue(pUnder, juice);
                         if (ev >= minEv)
-                            acc.AddBet(-clvOver, ou < 0, TotalsMath.OuPnL(juice, -ou));
+                            acc.AddBet(-clvOver, ou < 0, TotalsMath.OuPnL(juice, -ou),
+                                kellyPnl: TotalsMath.OuPnL(juice, -ou)
+                                          * OddsMath.FractionalKelly(pUnder, juice, 0.25));
                     }
                 }
 
                 acc.AddGame();
 
-                // Leakage-safe: update calibrator only after this tip's decision.
+                // Leakage-safe: update calibrator / residual σ only after this tip's decision.
                 platt?.Observe(exp, line, ou);
+                residualSigma?.Observe(g.HomeScore!.Value + g.AwayScore!.Value - exp);
                 if (ridgeX is not null && ridgeY is not null && ou != 0)
                 {
                     ridgeX.Add([1.0, line / 100.0, modelExp / 100.0]);
@@ -207,9 +217,117 @@ public static class TotalsEdgeBacktest
             rest.Played(g.AwayTeam, date);
         }
 
+        var sigmaNote = residualSigma is null
+            ? ""
+            : $" residualσ={residualSigma.Sigma:F2} (n={residualSigma.Count})";
         Console.WriteLine(
-            $"  [model={model} α={alpha:F3} restB2bPts={restB2bPts:F2} absenceScale={absenceScale:F2} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched} absenceGames={absenceTouched} meanAbsenceAdj={(absenceTouched == 0 ? 0 : absencePtsSum / absenceTouched):F2}]");
+            $"  [model={model} α={alpha:F3} restB2bPts={restB2bPts:F2} absenceScale={absenceScale:F2} paceGamesTouched≈{usedPace} scoringFallback={usedScoringFallback} efgAdjGames={efgTouched} absenceGames={absenceTouched} meanAbsenceAdj={(absenceTouched == 0 ? 0 : absencePtsSum / absenceTouched):F2}{sigmaNote}]");
         return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>
+    /// Tier A rolling-origin fold: warm books on all tips, score only <paramref name="testSeason"/>.
+    /// Pre-holdout only — caller must not pass HoldoutSeason for selection.
+    /// </summary>
+    public static async Task<(Gate1aResult Fold, double EndSigma, int SigmaN)> RunSeasonFoldAsync(
+        string dbPath,
+        string testSeason,
+        double marketWeight,
+        double minEv,
+        double minAbsEdge,
+        TotalsModelKind model = TotalsModelKind.PaceEff,
+        double alpha = 0.15,
+        CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+        await using var db = new AppDbContext(options);
+
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null && g.AwayScore != null)
+                .ToListAsync(ct))
+            .Where(g => string.CompareOrdinal(g.Season, HoldoutSeason) < 0)
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+
+        var odds = await db.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL")
+            .ToListAsync(ct);
+        var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        Dictionary<int, GameBox> boxes = [];
+        try { boxes = await db.GameBoxes.AsNoTracking().ToDictionaryAsync(b => b.GameId, ct); }
+        catch { /* older DB */ }
+
+        var pace = new PaceEfficiencyBook(alpha: alpha);
+        var fold = new Acc($"fold_{testSeason}");
+        ExpandingResidualSigma? residualSigma = model == TotalsModelKind.PaceEffNormal
+            ? new ExpandingResidualSigma()
+            : null;
+
+        foreach (var g in games)
+        {
+            byGame.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
+            var modelExp = pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+
+            if (open?.Line is { } line && close?.Line is { } closeLine
+                && Math.Abs(line - closeLine) >= 0.25)
+            {
+                var exp = marketWeight * line + (1 - marketWeight) * modelExp;
+                var edge = exp - line;
+                var juice = open.AmericanOdds == 0 ? -110 : open.AmericanOdds;
+                var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
+                var clvOver = TotalsMath.OverClvPoints(line, closeLine);
+                var pOver = residualSigma is not null
+                    ? TotalsMath.NormalOverProb(exp, line, residualSigma.Sigma)
+                    : TotalsMath.OverProb(exp, line);
+
+                if (g.Season == testSeason)
+                {
+                    if (ou != 0)
+                        fold.AddPred(pOver, ou > 0);
+
+                    if (Math.Abs(edge) >= minAbsEdge)
+                    {
+                        if (edge > 0)
+                        {
+                            var ev = OddsMath.ExpectedValue(pOver, juice);
+                            if (ev >= minEv)
+                                fold.AddBet(clvOver, ou > 0, TotalsMath.OuPnL(juice, ou),
+                                    kellyPnl: TotalsMath.OuPnL(juice, ou)
+                                              * OddsMath.FractionalKelly(pOver, juice, 0.25));
+                        }
+                        else
+                        {
+                            var pUnder = 1 - pOver;
+                            var ev = OddsMath.ExpectedValue(pUnder, juice);
+                            if (ev >= minEv)
+                                fold.AddBet(-clvOver, ou < 0, TotalsMath.OuPnL(juice, -ou),
+                                    kellyPnl: TotalsMath.OuPnL(juice, -ou)
+                                              * OddsMath.FractionalKelly(pUnder, juice, 0.25));
+                        }
+                    }
+
+                    fold.AddGame();
+                }
+
+                residualSigma?.Observe(g.HomeScore!.Value + g.AwayScore!.Value - exp);
+            }
+
+            if (boxes.TryGetValue(g.Id, out var box))
+            {
+                pace.Update(
+                    g.HomeTeam, g.AwayTeam,
+                    box.FgaHome, box.OrebHome, box.TovHome, box.FtaHome, box.PtsHome, box.Fg3aHome,
+                    box.FgaAway, box.OrebAway, box.TovAway, box.FtaAway, box.PtsAway, box.Fg3aAway);
+            }
+        }
+
+        return (fold.ToResult(), residualSigma?.Sigma ?? double.NaN, residualSigma?.Count ?? 0);
     }
 
     /// <summary>
@@ -270,12 +388,16 @@ public static class TotalsEdgeBacktest
         List<double>? ridgeY,
         ref double[]? ridgeBeta,
         ref int ridgeFitAt,
+        ExpandingResidualSigma? residualSigma,
         double exp,
         double line,
         double modelExp)
     {
         if (platt is not null)
             return platt.OverProb(exp, line);
+
+        if (residualSigma is not null)
+            return TotalsMath.NormalOverProb(exp, line, residualSigma.Sigma);
 
         if (ridgeX is null || ridgeY is null || ridgeX.Count < RidgeMinRows)
             return TotalsMath.OverProb(exp, line);
@@ -320,7 +442,7 @@ public static class TotalsEdgeBacktest
     private sealed class Acc(string slice)
     {
         private int _games, _bets, _hits, _nPred;
-        private double _clv, _pnl, _ll, _br;
+        private double _clv, _pnl, _kelly, _ll, _br;
 
         public void AddGame() => _games++;
 
@@ -333,11 +455,12 @@ public static class TotalsEdgeBacktest
             _nPred++;
         }
 
-        public void AddBet(double clv, bool won, double pnl)
+        public void AddBet(double clv, bool won, double pnl, double kellyPnl = 0)
         {
             _bets++;
             _clv += clv;
             _pnl += pnl;
+            _kelly += kellyPnl;
             if (won) _hits++;
         }
 
@@ -352,6 +475,7 @@ public static class TotalsEdgeBacktest
             LogLoss = _nPred == 0 ? 0 : _ll / _nPred,
             Brier = _nPred == 0 ? 0 : _br / _nPred,
             PaperPnlUnits = _pnl,
+            KellyQuarterPnl = _kelly,
         };
     }
 }

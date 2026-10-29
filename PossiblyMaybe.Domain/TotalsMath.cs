@@ -20,6 +20,28 @@ public static class TotalsMath
         return 1.0 / (1.0 + Math.Exp(-sharpness * edge));
     }
 
+    /// <summary>Φ(z) via erf. P(over) = Φ((exp−line)/σ) for Normal totals residual.</summary>
+    public static double NormalCdf(double z)
+        => 0.5 * (1.0 + Erf(z / Math.Sqrt(2.0)));
+
+    public static double NormalOverProb(double expectedTotal, double line, double sigma)
+    {
+        if (sigma <= 1e-9) return expectedTotal > line ? 1.0 : expectedTotal < line ? 0.0 : 0.5;
+        return NormalCdf((expectedTotal - line) / sigma);
+    }
+
+    // Abramowitz–Stegun 7.1.26 (max |err| &lt; 1.5e-7).
+    private static double Erf(double x)
+    {
+        var sign = x < 0 ? -1.0 : 1.0;
+        x = Math.Abs(x);
+        const double a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+        const double a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+        var t = 1.0 / (1.0 + p * x);
+        var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.Exp(-x * x);
+        return sign * y;
+    }
+
     public static double OuPnL(int americanJuice, int ouResult)
     {
         if (ouResult == 0) return 0;
@@ -34,6 +56,28 @@ public static class TotalsMath
         double homeOff, double homeDef, double awayOff, double awayDef,
         double leagueAvg = 45.2, double scale = 7.0)
         => leagueAvg + scale * (homeOff + awayOff - homeDef - awayDef);
+}
+
+/// <summary>
+/// Expanding RMSE of (actualTotal − blendedExp), train-only / asOf. 0 free params once fallback locked.
+/// </summary>
+public sealed class ExpandingResidualSigma
+{
+    /// <summary>Locked fallback ≈ pre-holdout residual sd (eval_ml_general); used until MinN.</summary>
+    public const double FallbackSigma = 22.8;
+    public const int MinN = 50;
+
+    private double _sumSq;
+    private int _n;
+
+    public int Count => _n;
+    public double Sigma => _n < MinN ? FallbackSigma : Math.Sqrt(_sumSq / _n);
+
+    public void Observe(double residual)
+    {
+        _sumSq += residual * residual;
+        _n++;
+    }
 }
 
 /// <summary>EMA α from half-life in games: α = 1 − 0.5^(1/hl). Dixon–Coles-style recency for books.</summary>
