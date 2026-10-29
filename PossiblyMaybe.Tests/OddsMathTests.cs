@@ -85,4 +85,48 @@ public class OddsMathTests
         await Assert.That(OddsMath.FractionalKelly(0.40, -110, fraction: 0.25))
             .IsEqualTo(0.0);
     }
+
+    [Test]
+    [Arguments(0.20, 0.2112)]
+    [Arguments(0.50, 0.5175)]
+    [Arguments(0.80, 0.8112)]
+    public async Task EffectiveBuyPrice_KalshiMatchesVenueTable(double p, double allIn)
+    {
+        await Assert.That(OddsMath.EffectiveBuyPrice(p, PaperVenues.Kalshi))
+            .IsEqualTo(allIn).Within(1e-9);
+        await Assert.That(OddsMath.EffectiveBuyPrice(p, PaperVenues.CryptoCom))
+            .IsEqualTo(allIn).Within(1e-9);
+    }
+
+    [Test]
+    [Arguments(0.20, 0.22)]
+    [Arguments(0.50, 0.52)]
+    [Arguments(0.80, 0.82)]
+    public async Task EffectiveBuyPrice_RobinhoodNoGoldPlusExchange(double p, double allIn)
+    {
+        await Assert.That(OddsMath.EffectiveBuyPrice(p, PaperVenues.Robinhood))
+            .IsEqualTo(allIn).Within(1e-9);
+    }
+
+    [Test]
+    public async Task EffectiveBuyPrice_DraftKingsUnchanged()
+    {
+        await Assert.That(OddsMath.EffectiveBuyPrice(0.50, PaperVenues.DraftKings))
+            .IsEqualTo(0.50).Within(1e-12);
+    }
+
+    [Test]
+    public async Task ExpectedValue_FeeAdjustedIsStrictlyWorseNearEven()
+    {
+        // p=0.53: fee-blind EV@50¢ = +6% (GO); all-in 51.75¢ EV ≈ +2.4% (SKIP under 4% gate)
+        const double pModel = 0.53;
+        const double ask = 0.50;
+        var blindAm = OddsMath.AmericanFromBuyPrice(ask);
+        var feeAm = OddsMath.AmericanFromBuyPrice(OddsMath.EffectiveBuyPrice(ask, PaperVenues.Kalshi));
+        var blindEv = OddsMath.ExpectedValue(pModel, blindAm);
+        var feeEv = OddsMath.ExpectedValue(pModel, feeAm);
+        await Assert.That(blindEv).IsGreaterThan(0.04);
+        await Assert.That(feeEv).IsLessThan(blindEv);
+        await Assert.That(feeEv).IsLessThan(0.04);
+    }
 }
