@@ -3,6 +3,38 @@
 Started 2026-10-28. Baseline `main` @ `0f43ea7` (user WIP uncommitted in `PaperLedger.cs`, `ui/*` — do not touch/commit).
 Final write-up → `reports/book_topics_review.md`.
 
+## ▶ RESUME HERE (read after any interruption)
+
+**Next action:** wait for / collect the 7 phase-2/3/4b agent outputs below. When a session restarts, background agents from the old session are gone:
+for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
+- File complete → mark `done`, commit it.
+- File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Opus).
+Phase 4 starts only when E1–E4 + audit are `done`. Never re-run a `done` row. Tier C (soccer 2025–26 / MLS 2026) never scored yet — check the Tier C ledger below before scoring.
+
+### Agent ledger
+
+| ID | Task | Model | Output file | Status |
+|---|---|---|---|---|
+| E1 | ISL / ESL / Sparsity topics | opus | `eval_isl_esl_sparsity.md` | running |
+| E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | opus | `eval_bayesian.md` | running |
+| E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | opus | `eval_ml_general.md` | running |
+| E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | opus | `eval_forecast_markets.md` | running |
+| A1 | Overcorrection / training audit | opus | `audit_overcorrection.md` | running |
+| V1 | Venue placement (Kalshi / RH / Crypto.com) | opus | `venue_placement.md` | running |
+| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | opus | `hunt_data_sources.md` | running |
+
+### Experiment ledger (phase 4 / 4b)
+
+| Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
+|---|---|---|---|---|---|---|---|
+| — | | | | | | | |
+
+### Tier C ledger (look-once; append before scoring, never re-score)
+
+| Date | Candidates scored | Result file |
+|---|---|---|
+| — | | |
+
 ## Phases
 
 | # | Phase | Status | Output |
@@ -50,3 +82,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | Plan committed (a078fb8); 6 agents launched (E1–E4, audit, venue). User added phase 4b: NBA/NFL/MLB soft-spot hunt |
 | 2026-10-28 | User: code-change agents run on Sonnet; 4b data-source agent launched (download only) |
 | 2026-10-28 | User: research agents run on Opus (the 7 running agents already inherit Opus) |
+| 2026-10-28 | Added RESUME HERE section, agent/experiment/Tier C ledgers, agent_prompts.md for relaunch |
