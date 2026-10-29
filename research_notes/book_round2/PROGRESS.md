@@ -49,3 +49,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | Phase 1 done; phases 2/3 agents launched |
 | 2026-10-28 | Plan committed (a078fb8); 6 agents launched (E1–E4, audit, venue). User added phase 4b: NBA/NFL/MLB soft-spot hunt |
 | 2026-10-28 | User: code-change agents run on Sonnet; 4b data-source agent launched (download only) |
+| 2026-10-28 | User: research agents run on Opus (the 7 running agents already inherit Opus) |
