@@ -13,6 +13,32 @@ public class TotalsMathTests
     }
 
     [Test]
+    public async Task PoissonTotalOverProb_half_line_and_symmetry()
+    {
+        // μ=2.5 → P(T>2.5)=P(T≥3)=1−(p0+p1+p2); independent λs sum
+        var p = TotalsMath.PoissonTotalOverProb(1.25, 1.25, 2.5);
+        var mu = 2.5;
+        var p0 = Math.Exp(-mu);
+        var p1 = p0 * mu;
+        var p2 = p1 * mu / 2;
+        var expect = 1 - (p0 + p1 + p2);
+        await Assert.That(p).IsEqualTo(expect).Within(1e-12);
+        await Assert.That(p).IsGreaterThan(0.4);
+        await Assert.That(p).IsLessThan(0.6);
+        // High μ ⇒ over heavily favored at low line
+        var pHigh = TotalsMath.PoissonTotalOverProb(3.0, 3.0, 2.5);
+        await Assert.That(pHigh).IsGreaterThan(0.9);
+        // Integer line: P(T>3)=1−F(3) at μ=3
+        var pInt = TotalsMath.PoissonTotalOverProb(1.5, 1.5, 3.0);
+        var m3 = 3.0;
+        var q0 = Math.Exp(-m3);
+        var q1 = q0 * m3;
+        var q2 = q1 * m3 / 2;
+        var q3 = q2 * m3 / 3;
+        await Assert.That(pInt).IsEqualTo(1 - (q0 + q1 + q2 + q3)).Within(1e-12);
+    }
+
+    [Test]
     public async Task ScoringBook_moves_toward_observed()
     {
         var book = new ScoringBook(alpha: 1.0, leagueInit: 200);

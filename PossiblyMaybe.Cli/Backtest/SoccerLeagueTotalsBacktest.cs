@@ -64,17 +64,28 @@ public static class SoccerLeagueTotalsBacktest
                 continue;
             }
 
-            var modelExp = dcBook?.ExpectedTotal(g.HomeTeam, g.AwayTeam)
-                ?? goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var (lh, la) = dcBook?.ExpectedLambdas(g.HomeTeam, g.AwayTeam)
+                ?? goalsBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
             if (restB2bGoals != 0)
-                modelExp += restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            {
+                var adj = restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+                if (modelExp > 1e-9)
+                {
+                    var s = (modelExp + adj) / modelExp;
+                    lh *= s;
+                    la *= s;
+                }
+                modelExp += adj;
+            }
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
             var acc = season == holdoutSeason ? hold : train;
             var juice = -110;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
             var clv = TotalsMath.OverClvPoints(line, closeLine);
-            var pOver = platt?.OverProb(modelExp, line) ?? TotalsMath.OverProb(exp, line, sharpness: 1.2);
+            var pOver = platt?.OverProb(modelExp, line)
+                ?? SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (Math.Abs(edge) >= minAbsEdge)
             {

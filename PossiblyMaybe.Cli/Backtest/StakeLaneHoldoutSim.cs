@@ -189,13 +189,14 @@ public static class StakeLaneHoldoutSim
             }
 
             var useXg = seenXg.Contains(g.HomeTeam) && seenXg.Contains(g.AwayTeam);
-            var modelExp = useXg
-                ? xgBook.ExpectedTotal(g.HomeTeam, g.AwayTeam)
-                : goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var (lh, la) = useXg
+                ? xgBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam)
+                : goalsBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = TotalsMath.OverProb(exp, line, sharpness: 1.2);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, "MLS");
 
             if (g.Season == MlsTotalsBacktest.HoldoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {
@@ -263,11 +264,12 @@ public static class StakeLaneHoldoutSim
                 continue;
             }
 
-            var modelExp = book.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var (lh, la) = book.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = TotalsMath.OverProb(exp, line, sharpness: 1.2);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (season == holdoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {
@@ -327,11 +329,12 @@ public static class StakeLaneHoldoutSim
                 continue;
             }
 
-            var modelExp = dc.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var (lh, la) = dc.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = TotalsMath.OverProb(exp, line, sharpness: 1.2);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (season == holdoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {
