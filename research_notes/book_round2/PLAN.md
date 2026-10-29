@@ -32,7 +32,7 @@ Each one gives a verdict (USED / TESTED / CANDIDATE / IGNORE) per chapter with a
 
 ## Phase 4: Experiments (worktree agents)
 - The parent merges the E1–E4 shortlists, dedupes, and picks the **top ≤ 6** by money × testability × low overfit risk. Venue sizing/pricing fixes from 3b may add ≤ 2.
-- **Implementation agents run on Sonnet** (`model: sonnet`) — all code changes (experiments, fixes, importers, hunts). **Research/eval/audit agents run on Opus** (`model: opus`); Tier C scoring and merges stay with the parent.
+- **Implementation agents run on Composer** — all code changes (experiments, fixes, importers, hunts). **Research/eval/audit agents run on Auto**; Tier C scoring and merges stay with the parent.
 - Each experiment gets `git worktree add ../pm-exp-<slug> -b exp/<slug>` and one agent, which implements, adds a test, runs Tier A (+B), and writes `exp_<slug>.md`. Agents commit in their branch and **do not run Tier C**.
 - The parent runs Tier C once for all Tier-A passers, then merges KEEPs into `main` (`git merge --no-ff`) and updates the `*ChampConfig.cs` / PROGRESS tables. Losing branches stay unmerged and are documented.
 - Commands: `dotnet build`, `dotnet test`, `dotnet run --project PossiblyMaybe.Cli -c Release -- sweep-totals|sweep-soccer|sweep-decay …`, plus whatever new flag the experiment adds.

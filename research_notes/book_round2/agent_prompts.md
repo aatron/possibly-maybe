@@ -1,6 +1,6 @@
 # Agent prompts (for relaunch after interruption)
 
-Launch with the Agent tool: `subagent_type: general-purpose`, `model: opus` (research) / `sonnet` (code), `run_in_background: true`.
+Launch with the Agent tool: `subagent_type: generalPurpose`, research = Auto (omit `model` / default), code = Composer (`model: inherit`), `run_in_background: true`.
 Every prompt starts with the shared preamble.
 
 ## Shared preamble
