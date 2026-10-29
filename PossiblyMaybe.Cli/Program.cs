@@ -111,6 +111,14 @@ switch (command)
         await MultiSportImporter.ImportMlsAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-round2-odds":
+    {
+        // D1 flancast O→C: NFL overlay + MLB 2011–2021 append (no wipe)
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await Round2OddsImporter.ImportFlancastAsync(ResolveRawRoot(), dbPath);
+        return 0;
+    }
     case "import-soccer":
     {
         // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
@@ -602,6 +610,7 @@ static void PrintUsage()
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
+          import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals

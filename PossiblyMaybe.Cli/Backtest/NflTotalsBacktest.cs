@@ -15,7 +15,7 @@ public static class NflTotalsBacktest
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, double marketWeight, double minEv, double minAbsEdge,
-        string? epaCsvPath = null, CancellationToken ct = default)
+        string? epaCsvPath = null, bool requireOpenClose = true, CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -74,7 +74,8 @@ public static class NflTotalsBacktest
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, betLine);
             var clv = hasClv ? TotalsMath.OverClvPoints(betLine, closeLine) : 0;
 
-            if (Math.Abs(edge) >= minAbsEdge)
+            // After D1 O→C import: soft-spot hunt bets only when true open→close exists.
+            if ((!requireOpenClose || hasClv) && Math.Abs(edge) >= minAbsEdge)
             {
                 if (edge > 0)
                 {
@@ -102,12 +103,12 @@ public static class NflTotalsBacktest
     public static async Task SweepAsync(string dbPath, CancellationToken ct = default)
     {
         Console.WriteLine("######## NFL TOTALS (EPA + roof/wind) ########");
-        Console.WriteLine("NOTE: most history is CloseOnly — CLV sparse until more open/close lands.");
+        Console.WriteLine("NOTE: requireOpenClose=true (D1 flancast O→C overlays). AssumedJuice −110.");
         var rows = new List<(double W, double Edge, Gate1aResult Train, Gate1aResult Hold)>();
         foreach (var w in new[] { 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 2.0, 3.0, 4.0, 5.0, 6.0 })
         {
-            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, ct: ct);
+            var (tr, ho) = await RunAsync(dbPath, w, 0.04, edge, requireOpenClose: true, ct: ct);
             rows.Add((w, edge, tr, ho));
             Console.WriteLine(
                 $"w={w:F2} edge={edge:F1}  train n={tr.Bets} clv={tr.MeanClv:F2} pnl={tr.PaperPnlUnits:F1} | hold n={ho.Bets} clv={ho.MeanClv:F2} pnl={ho.PaperPnlUnits:F1}");

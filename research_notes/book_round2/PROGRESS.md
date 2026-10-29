@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** Phase 4 model experiments done (poisson KEEP merged; nba/inv-var KILL). Phase 4b imports from D1 next, or settle-CLV (needs user OK on `PaperLedger.cs`). Phase 5 write-up when ready. When a session restarts, background agents from the old session are gone:
+**Next action:** Phase 4b hunts done (NFL/MLB FAIL with filled O→C). Settle-CLV script fixed (no PaperLedger). Phase 5/6 write-ups still pending. When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
@@ -62,7 +62,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
 | 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
 | 4 | Pick candidates, worktree experiments | done — see experiment ledger | `exp_*.md` |
-| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 done — import+hunts after phase 4 | `hunt_*.md` |
+| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | done — NFL/MLB FAIL; NBA 2022–23 SBRO not imported | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
 
@@ -117,3 +117,5 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | `inv-var-blend-w` KILL — Tier A FAIL NBA 7/14 PnL folds, MLS 2/5; branch unmerged; exp doc on main. |
 | 2026-10-28 | `poisson-cdf-pover` Tier A PASS SerieA/Ligue1/LigaMX (FAIL MLS); **await Tier C batch** before merge. |
 | 2026-10-28 | Tier C poisson: KEEP SERIEA+LIGUE1; LIGAMX FAIL CLV. nba-normal-sigma KILL. |
+| 2026-10-29 | Settle hint: `pm-calculate.sh` no longer passes final_total as closeLine. |
+| 2026-10-29 | `import-round2-odds`: NFL +2892 O→C overlays; MLB +25571 games. Hunts: NFL FAIL, MLB FAIL (docs). |
