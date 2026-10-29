@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** wait for E2 (+ D1). Phase 4 starts when E1–E4 + A1 are `done` (A1 done; E2 still out). When a session restarts, background agents from the old session are gone:
+**Next action:** Phase 4 experiments running (Composer worktrees). D1 still out. Settle-CLV fix needs user OK (touches WIP `PaperLedger.cs`). When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
@@ -17,18 +17,35 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 | ID | Task | Model | Output file | Status |
 |---|---|---|---|---|
 | E1 | ISL / ESL / Sparsity topics | Auto | `eval_isl_esl_sparsity.md` | done — `78cd220d-6dea-4f92-9be9-8e6fde8283c7` |
-| E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | Auto | `eval_bayesian.md` | running — `ccb38f53-6076-4767-9446-d235e223b2c8` |
+| E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | Auto | `eval_bayesian.md` | done — `ccb38f53-6076-4767-9446-d235e223b2c8` |
 | E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | Auto | `eval_ml_general.md` | done — `c89ab46e-e292-4565-bdcb-ea33624dcd1e` |
 | E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | Auto | `eval_forecast_markets.md` | done — `1e7297b3-a373-4afe-b281-1a1718342cd3` |
 | A1 | Overcorrection / training audit | Auto | `audit_overcorrection.md` | done — `7751b52c-3e9d-4e0e-89de-02e2dd285307` |
 | V1 | Venue placement (Kalshi / RH / Crypto.com) | Auto | `venue_placement.md` | done — `0f2e5c1d-9b92-42fc-be9d-ed68197fca64` |
 | D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | running — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
 
+### Phase 4 picks (merged E1–E4 + A1/V1; money × testability × low overfit)
+
+| # | Slug | Why | Params | Source |
+|---|---|---|---|---|
+| 1 | `poisson-cdf-pover` | Soccer: replace logistic OverProb with Poisson/grid from existing λs — unanimous #1 | 0 | E1–E4 |
+| 2 | `nba-normal-sigma-pover` | NBA: Normal CDF with train residual σ — fixes overconfident Kelly (σ≈22.8 vs sharpness 0.25) | ≤1 | E1–E4 |
+| 3 | `venue-fee-ev` | Fee-adjusted buy price in EV/Kelly (Kalshi/Crypto/RH) — stops false GOs near even | formula | V1 |
+| 4 | `strike-max-delta` | Reject Kalshi/Crypto strikes far from model line | 1 threshold | V1 |
+| 5 | `inv-var-blend-w` | Inverse-variance model+line blend vs fixed w | ≤2 σ | E3 |
+| — | `settle-clv-fix` | Live CloseLine=finals → fake CLV | script (+ maybe PaperLedger) | A1 — **blocked: ask user** |
+
+Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after #1–2 or higher overfit).
+
 ### Experiment ledger (phase 4 / 4b)
 
 | Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
 |---|---|---|---|---|---|---|---|
-| — | | | | | | | |
+| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer | pending | | | | |
+| nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer | pending | | | | |
+| venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer | pending | | | | |
+| strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer | pending | | | | |
+| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer | pending | | | | |
 
 ### Tier C ledger (look-once; append before scoring, never re-score)
 
@@ -41,10 +58,10 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 | # | Phase | Status | Output |
 |---|---|---|---|
 | 1 | Download free books / repos → `library/` | done | see Downloads |
-| 2 | Topic evaluation (4 subagents, by book group) | E1/E3/E4 done; E2 running | `eval_*.md` |
+| 2 | Topic evaluation (4 subagents, by book group) | done | `eval_*.md` |
 | 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
 | 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
-| 4 | Pick candidates, worktree experiments | pending (waits on 2 + 3a protocol) | `exp_*.md` |
+| 4 | Pick candidates, worktree experiments | running — see experiment ledger | `exp_*.md` |
 | 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 running (Auto); hunts after 4 | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
@@ -92,3 +109,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | A1 done: holdout reused ≥8×; live CloseLine=finals; DK −110 default; protocol tightened in PLAN. Money-fix rank: settle CLV → holdout peek → thin champs. |
 | 2026-10-28 | E3 done: `eval_ml_general.md`. Same #1 distributional OverProb; NBA logistic badly overconfident vs residual σ≈22.8. |
 | 2026-10-28 | V1 done: `venue_placement.md`. Top code gaps: fee-adjusted BE, exact strike gate, EU/MX Kalshi series. |
+| 2026-10-28 | E2 done: `eval_bayesian.md`. Same #1 poisson-cdf-pover. Phase 2+3a gate clear → phase 4 picks locked. |
