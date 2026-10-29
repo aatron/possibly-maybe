@@ -8,10 +8,11 @@ Final write-up → `reports/book_topics_review.md`.
 | # | Phase | Status | Output |
 |---|---|---|---|
 | 1 | Download free books / repos → `library/` | done | see Downloads |
-| 2 | Topic evaluation (4 subagents, by book group) | launching | `eval_*.md` |
-| 3a | Over-correction / training audit | launching | `audit_overcorrection.md` |
-| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | launching | `venue_placement.md` |
+| 2 | Topic evaluation (4 subagents, by book group) | running | `eval_*.md` |
+| 3a | Over-correction / training audit | running | `audit_overcorrection.md` |
+| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | running | `venue_placement.md` |
 | 4 | Pick candidates, worktree experiments | pending (waits on 2 + 3a protocol) | `exp_*.md` |
+| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | pending (after 4) | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
 
@@ -46,3 +47,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | When | Event |
 |---|---|
 | 2026-10-28 | Phase 1 done; phases 2/3 agents launched |
+| 2026-10-28 | Plan committed (a078fb8); 6 agents launched (E1–E4, audit, venue). User added phase 4b: NBA/NFL/MLB soft-spot hunt |

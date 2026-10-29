@@ -36,6 +36,12 @@ Each one gives a verdict (USED / TESTED / CANDIDATE / IGNORE) per chapter with a
 - The parent runs Tier C once for all Tier-A passers, then merges KEEPs into `main` (`git merge --no-ff`) and updates the `*ChampConfig.cs` / PROGRESS tables. Losing branches stay unmerged and are documented.
 - Commands: `dotnet build`, `dotnet test`, `dotnet run --project PossiblyMaybe.Cli -c Release -- sweep-totals|sweep-soccer|sweep-decay …`, plus whatever new flag the experiment adds.
 
+## Phase 4b: NBA / NFL / MLB soft-spot hunt (after phase 4 results)
+User is skeptical that NFL and MLB can't be bet. Both previously failed, and both failures were at least partly **data-limited**: NFL had only ~450 ESPN + 92 minmaxer real open→close totals (the rest close-only), MLB has one season (2025), and NBA totals odds are missing for 2023, 2024 and 2026.
+1. **Data agent (first).** Find free historical **open→close** totals per sport (e.g. SBRO-style xlsx archives, Kaggle, nflverse `total_line` = close only, GitHub odds dumps). Also find sub-markets where soft spots are more likely: MLB first-5-innings totals, NFL team totals / wind games / key numbers, NBA first-half and team totals. Report coverage per season and licence; import only with the existing importer pattern.
+2. **Hunt agents (one per sport, worktrees)** reuse whatever phase 4 proved, e.g. a better P(over) distribution. Each runs the same protocol: walk-forward Tier A, and a look-once Tier C season held back **before** any tuning.
+3. Verdict per sport goes in the final write-up, PASS or FAIL **with justification**. "Not a good fit" is an acceptable answer if the data or the market says so.
+
 ## Phase 5: Write-up
 `reports/book_topics_review.md` gets every topic from E1–E4 and **every ISL chapter**, each marked used / ignored / tested-and-rejected, with the reason. It also records which experiments merged, the protocol, the number of trials, and the venue recipe.
 
