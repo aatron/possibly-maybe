@@ -5,11 +5,11 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** Wait for `nba-normal-sigma-pover` Tier A; then parent Tier C batch for all Tier-A passers (poisson soccer leagues first). Settle-CLV fix needs user OK. When a session restarts, background agents from the old session are gone:
+**Next action:** Phase 4 model experiments done (poisson KEEP merged; nba/inv-var KILL). Phase 4b imports from D1 next, or settle-CLV (needs user OK on `PaperLedger.cs`). Phase 5 write-up when ready. When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
-Phase 4 starts only when E1–E4 + audit are `done`. Never re-run a `done` row. Tier C (soccer 2025–26 / MLS 2026) never scored yet — check the Tier C ledger below before scoring.
+Never re-run a `done` row. Tier C soccer 2025–26 scored once for poisson (see ledger) — never re-score.
 Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 
 ### Agent ledger
@@ -41,7 +41,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 
 | Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
 |---|---|---|---|---|---|---|---|
-| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | KEEP SERIEA/LIGUE1; FAIL LIGAMX | KEEP (per-league) | pending merge |
+| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | KEEP SERIEA/LIGUE1; FAIL LIGAMX | KEEP (per-league) | merged |
 | nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer `5b8162ac-ee38-42b2-aa89-8f788275464e` | FAIL (0/8 ΔPnL; Kelly worse) | report only | — | KILL (unmerged) | — |
 | venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
 | strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
@@ -61,7 +61,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | 2 | Topic evaluation (4 subagents, by book group) | done | `eval_*.md` |
 | 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
 | 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
-| 4 | Pick candidates, worktree experiments | running — see experiment ledger | `exp_*.md` |
+| 4 | Pick candidates, worktree experiments | done — see experiment ledger | `exp_*.md` |
 | 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 done — import+hunts after phase 4 | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
