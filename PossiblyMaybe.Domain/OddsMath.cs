@@ -39,6 +39,28 @@ public static class OddsMath
         return DecimalToAmerican(1.0 / buyPrice);
     }
 
+    /// <summary>
+    /// Large-C taker fee per contract at fill price P (venue_placement.md).
+    /// Kalshi/Crypto: 0.07·P·(1−P). RH no-Gold: min(0.01, 0.10·P·(1−P)) + $0.01 exchange.
+    /// DK / unknown: 0.
+    /// </summary>
+    public static double BinaryTakerFeePerContract(double buyPrice, string venue)
+    {
+        if (buyPrice is <= 0 or >= 1)
+            throw new ArgumentOutOfRangeException(nameof(buyPrice), "Buy price must be in (0,1).");
+        return PaperVenues.Normalize(venue) switch
+        {
+            PaperVenues.Kalshi or PaperVenues.CryptoCom => 0.07 * buyPrice * (1.0 - buyPrice),
+            // shortcut: RH Gold (k=0.05) not modeled; upgrade if Gold is confirmed on the account
+            PaperVenues.Robinhood => Math.Min(0.01, 0.10 * buyPrice * (1.0 - buyPrice)) + 0.01,
+            _ => 0.0,
+        };
+    }
+
+    /// <summary>All-in cost to buy-and-hold one binary contract: ask + venue fee.</summary>
+    public static double EffectiveBuyPrice(double buyPrice, string venue)
+        => buyPrice + BinaryTakerFeePerContract(buyPrice, venue);
+
     /// <summary>Two-way multiplicative no-vig: normalize raw implied probs to sum to 1.</summary>
     public static (double ProbA, double ProbB) NoVigTwoWay(int americanA, int americanB)
     {

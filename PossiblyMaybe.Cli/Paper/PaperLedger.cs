@@ -99,19 +99,22 @@ public static class PaperLedger
             return new VenuePlaceNote(venue, [], $"{label} SKIP — no matching open total market");
 
         var q = quote.Value;
-        var ev = OddsMath.ExpectedValue(modelProb, q.AmericanOdds);
+        // Fee-adjusted American drives EV gate, Kelly sizing, and settle payout (venue_placement #1).
+        var effectiveBuy = OddsMath.EffectiveBuyPrice(q.BuyPrice, venue);
+        var american = OddsMath.AmericanFromBuyPrice(effectiveBuy);
+        var ev = OddsMath.ExpectedValue(modelProb, american);
         if (ev < 0.04)
         {
             return new VenuePlaceNote(
                 venue, [],
-                $"{label} SKIP — EV {ev:P1} < 4% at {q.SideLabel} ask=${q.BuyPrice:F3} (~{q.AmericanOdds:+0;-0}) strike={q.Strike}");
+                $"{label} SKIP — EV {ev:P1} < 4% at {q.SideLabel} ask=${q.BuyPrice:F3} all-in=${effectiveBuy:F3} (~{american:+0;-0}) strike={q.Strike}");
         }
 
         var placed = await PlaceAllSchemesAsync(
-            db, gameKey, side, q.Strike, q.AmericanOdds, modelProb, absEdge, sport, venue, ct);
+            db, gameKey, side, q.Strike, american, modelProb, absEdge, sport, venue, ct);
         var note = placed.Count == 0
-            ? $"{label} SKIP — EV ok but all lanes dust/ruined @ {q.AmericanOdds:+0;-0}"
-            : $"{label} GO — {q.SideLabel} ask=${q.BuyPrice:F3} (~{q.AmericanOdds:+0;-0}) strike={q.Strike} id={q.Ticker}";
+            ? $"{label} SKIP — EV ok but all lanes dust/ruined @ {american:+0;-0}"
+            : $"{label} GO — {q.SideLabel} ask=${q.BuyPrice:F3} all-in=${effectiveBuy:F3} (~{american:+0;-0}) strike={q.Strike} id={q.Ticker}";
         return new VenuePlaceNote(venue, placed, note);
     }
 
