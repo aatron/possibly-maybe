@@ -16,8 +16,10 @@ public static class MlsTotalsBacktest
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, double marketWeight, double minEv, double minAbsEdge,
         bool usePlatt = false, double alpha = MlsChampConfig.EmaAlpha, double restB2bGoals = 0,
-        bool useDixonColes = false, double dcAlpha = 0.12, CancellationToken ct = default)
+        bool useDixonColes = false, double dcAlpha = 0.12, string? holdoutSeason = null,
+        CancellationToken ct = default)
     {
+        holdoutSeason ??= HoldoutSeason;
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
 
@@ -40,12 +42,15 @@ public static class MlsTotalsBacktest
         var seenXg = new HashSet<string>(StringComparer.Ordinal);
         OuPlattCalibrator? platt = usePlatt ? new OuPlattCalibrator() : null;
         var train = new Acc("mls_train");
-        var hold = new Acc("mls_holdout_2025");
+        var hold = new Acc($"mls_holdout_{holdoutSeason}");
 
         foreach (var g in games)
         {
             var date = DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime);
-            if (g.Season is "2026")
+            // Never score Tier C (2026). Seasons after the fold update books only.
+            if (g.Season is "2026"
+                || (holdoutSeason != HoldoutSeason
+                    && string.CompareOrdinal(g.Season, holdoutSeason) > 0))
             {
                 ApplyUpdate(g, xgByGame, xgBook, goalsBook, seenXg, dcXg, dcGoals);
                 rest.Played(g.HomeTeam, date);
@@ -71,25 +76,36 @@ public static class MlsTotalsBacktest
             }
 
             var useXg = seenXg.Contains(g.HomeTeam) && seenXg.Contains(g.AwayTeam);
-            double modelExp;
+            double lh, la;
             if (dcGoals is not null && dcXg is not null)
-                modelExp = useXg
-                    ? dcXg.ExpectedTotal(g.HomeTeam, g.AwayTeam)
-                    : dcGoals.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+                (lh, la) = useXg
+                    ? dcXg.ExpectedLambdas(g.HomeTeam, g.AwayTeam)
+                    : dcGoals.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
             else
-                modelExp = useXg
-                    ? xgBook.ExpectedTotal(g.HomeTeam, g.AwayTeam)
-                    : goalsBook.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+                (lh, la) = useXg
+                    ? xgBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam)
+                    : goalsBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
             if (restB2bGoals != 0)
-                modelExp += restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+            {
+                var adj = restB2bGoals * rest.B2bCount(g.HomeTeam, g.AwayTeam, date);
+                if (modelExp > 1e-9)
+                {
+                    var s = (modelExp + adj) / modelExp;
+                    lh *= s;
+                    la *= s;
+                }
+                modelExp += adj;
+            }
 
             var exp = marketWeight * line + (1 - marketWeight) * modelExp;
             var edge = exp - line;
-            var acc = g.Season == HoldoutSeason ? hold : train;
+            var acc = g.Season == holdoutSeason ? hold : train;
             var juice = -110;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
             var clv = TotalsMath.OverClvPoints(line, closeLine);
-            var pOver = platt?.OverProb(modelExp, line) ?? TotalsMath.OverProb(exp, line, sharpness: 1.2);
+            var pOver = platt?.OverProb(modelExp, line)
+                ?? SoccerOverProbConfig.OverProb(lh, la, exp, line);
 
             if (Math.Abs(edge) >= minAbsEdge)
             {

@@ -20,6 +20,27 @@ public static class TotalsMath
         return 1.0 / (1.0 + Math.Exp(-sharpness * edge));
     }
 
+    /// <summary>
+    /// P(H+A &gt; line) under independent Poisson(λ_h), Poisson(λ_a).
+    /// Sum is Poisson(λ_h+λ_a); integer totals → 1 − F(⌊line⌋). No new params.
+    /// </summary>
+    public static double PoissonTotalOverProb(double lambdaHome, double lambdaAway, double line)
+    {
+        var mu = Math.Max(1e-9, lambdaHome + lambdaAway);
+        var kMax = (int)Math.Floor(line);
+        if (kMax < 0) return 1.0;
+        // Recursive PMF: p0=e^{-μ}, p_{k+1}=p_k·μ/(k+1)
+        var p = Math.Exp(-mu);
+        var cdf = p;
+        for (var k = 0; k < kMax; k++)
+        {
+            p *= mu / (k + 1);
+            cdf += p;
+            if (cdf >= 1.0 - 1e-15) return 0.0;
+        }
+        return Math.Clamp(1.0 - cdf, 0.0, 1.0);
+    }
+
     public static double OuPnL(int americanJuice, int ouResult)
     {
         if (ouResult == 0) return 0;
@@ -59,12 +80,18 @@ public sealed class ScoringBook
         _leagueInit = leagueInit;
     }
 
-    public double ExpectedTotal(string home, string away)
+    public (double Home, double Away) ExpectedLambdas(string home, string away)
     {
         var h = Get(home);
         var a = Get(away);
         // classic: (home off vs away def) + (away off vs home def)
-        return 0.5 * (h.For + a.Against) + 0.5 * (a.For + h.Against);
+        return (0.5 * (h.For + a.Against), 0.5 * (a.For + h.Against));
+    }
+
+    public double ExpectedTotal(string home, string away)
+    {
+        var (lh, la) = ExpectedLambdas(home, away);
+        return lh + la;
     }
 
     public void Update(string home, string away, int homeScore, int awayScore)

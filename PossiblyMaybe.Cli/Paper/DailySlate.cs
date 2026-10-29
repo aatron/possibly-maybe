@@ -86,7 +86,7 @@ public static class DailySlate
         if (!SoccerEspnPaths.TryGetValue(sport, out var espnLeague))
             throw new ArgumentException($"No live slate for {sport}. PASS paper: MLS, LIGUE1, LIGAMX, SERIEA.");
 
-        var (modelName, w, minEdge, minEv, model) = await BuildSoccerModelAsync(sport, dbPath, ct);
+        var (modelName, w, minEdge, minEv, lambdas) = await BuildSoccerModelAsync(sport, dbPath, ct);
         List<SlateGame> games;
         try
         {
@@ -100,7 +100,7 @@ public static class DailySlate
         }
 
         Console.WriteLine($"######## {sport} SLATE {yyyymmdd} bankroll=${bankroll:F0} paper {modelName} ########");
-        Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0}");
+        Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdf ? "poisson" : "logistic")}");
         if (games.Count == 0)
         {
             Console.WriteLine($"No {sport} games on this date.");
@@ -116,7 +116,8 @@ public static class DailySlate
                 continue;
             }
 
-            var modelExp = model(g.Home, g.Away);
+            var (lh, la) = lambdas(g.Home, g.Away);
+            var modelExp = lh + la;
             var line = g.Total ?? await FetchEspnTotalAsync("soccer", espnLeague, g.EspnId, ct);
             if (line is null)
             {
@@ -134,9 +135,8 @@ public static class DailySlate
             }
 
             var betOver = edge > 0;
-            var p = betOver
-                ? TotalsMath.OverProb(exp, line.Value, sharpness: 1.2)
-                : 1 - TotalsMath.OverProb(exp, line.Value, sharpness: 1.2);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line.Value);
+            var p = betOver ? pOver : 1 - pOver;
             var advice = BetDecider.Advise(p, juice, bankroll, minEv);
             var side = betOver ? "OVER" : "UNDER";
             if (!advice.Go)
@@ -181,7 +181,7 @@ public static class DailySlate
         return pace;
     }
 
-    private static async Task<(string ModelName, double W, double MinEdge, double MinEv, Func<string, string, double> Model)>
+    private static async Task<(string ModelName, double W, double MinEdge, double MinEv, Func<string, string, (double Lh, double La)> Lambdas)>
         BuildSoccerModelAsync(string sport, string dbPath, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
@@ -212,8 +212,8 @@ public static class DailySlate
             return (MlsChampConfig.Model, MlsChampConfig.MarketWeight, MlsChampConfig.MinAbsTotalEdge,
                 MlsChampConfig.MinEv,
                 (home, away) => seen.Contains(home) && seen.Contains(away)
-                    ? xgBook.ExpectedTotal(home, away)
-                    : goalsBook.ExpectedTotal(home, away));
+                    ? xgBook.ExpectedLambdas(home, away)
+                    : goalsBook.ExpectedLambdas(home, away));
         }
 
         if (sport == "LIGUE1")
@@ -222,7 +222,7 @@ public static class DailySlate
             foreach (var g in games)
                 book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
             return (Ligue1ChampConfig.Model, Ligue1ChampConfig.MarketWeight, Ligue1ChampConfig.MinAbsTotalEdge,
-                Ligue1ChampConfig.MinEv, book.ExpectedTotal);
+                Ligue1ChampConfig.MinEv, book.ExpectedLambdas);
         }
 
         if (sport == "LIGAMX")
@@ -231,7 +231,7 @@ public static class DailySlate
             foreach (var g in games)
                 book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
             return (LigaMxChampConfig.Model, LigaMxChampConfig.MarketWeight, LigaMxChampConfig.MinAbsTotalEdge,
-                LigaMxChampConfig.MinEv, book.ExpectedTotal);
+                LigaMxChampConfig.MinEv, book.ExpectedLambdas);
         }
 
         if (sport == "SERIEA")
@@ -252,9 +252,10 @@ public static class DailySlate
                 SerieAChampConfig.MinEv,
                 (home, away) =>
                 {
-                    var t = dc.ExpectedTotal(home, away);
+                    var (lh, la) = dc.ExpectedLambdas(home, away);
+                    var t = lh + la;
                     // Pathological collapse → goals EMA fallback (still same edge/EV gates).
-                    return t is >= 1.5 and <= 5.0 ? t : goals.ExpectedTotal(home, away);
+                    return t is >= 1.5 and <= 5.0 ? (lh, la) : goals.ExpectedLambdas(home, away);
                 });
         }
 
