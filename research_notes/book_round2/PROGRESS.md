@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** Phase 4 experiments running (Composer worktrees). D1 still out. Settle-CLV fix needs user OK (touches WIP `PaperLedger.cs`). When a session restarts, background agents from the old session are gone:
+**Next action:** Phase 4 model experiments still running (poisson / nba-normal / inv-var). D1 done — NFL/MLB O→C now fillable; import after phase 4. Settle-CLV fix needs user OK (WIP `PaperLedger.cs`). When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
@@ -22,7 +22,7 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 | E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | Auto | `eval_forecast_markets.md` | done — `1e7297b3-a373-4afe-b281-1a1718342cd3` |
 | A1 | Overcorrection / training audit | Auto | `audit_overcorrection.md` | done — `7751b52c-3e9d-4e0e-89de-02e2dd285307` |
 | V1 | Venue placement (Kalshi / RH / Crypto.com) | Auto | `venue_placement.md` | done — `0f2e5c1d-9b92-42fc-be9d-ed68197fca64` |
-| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | running — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
+| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | done — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
 
 ### Phase 4 picks (merged E1–E4 + A1/V1; money × testability × low overfit)
 
@@ -62,7 +62,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
 | 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
 | 4 | Pick candidates, worktree experiments | running — see experiment ledger | `exp_*.md` |
-| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 running (Auto); hunts after 4 | `hunt_*.md` |
+| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 done — import+hunts after phase 4 | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
 
@@ -113,3 +113,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | D1 progress: SBRO NFL xlsx 2007–08…2021–22 downloaded; NBA CDX shows through 2022–23; MLB CDX still 504. |
 | 2026-10-28 | `strike-max-delta` KEEP/SHIP merged (live hygiene; N_trials=1; Tier A N/A). |
 | 2026-10-28 | `venue-fee-ev` KEEP/SHIP merged (fee into EV/Kelly; N_trials=2; Tier A N/A). User WIP PaperLedger/ui restored cleanly. |
+| 2026-10-28 | D1 done: `hunt_data_sources.md`. P0: NFL SBRO 2007–21 + MLB flancast/Arnav O→C fill prior FAILs; NBA only 2022–23 free O→C patch. |
