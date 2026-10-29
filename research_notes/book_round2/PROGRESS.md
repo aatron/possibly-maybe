@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** Phase 4 model experiments still running (poisson / nba-normal / inv-var). D1 done — NFL/MLB O→C now fillable; import after phase 4. Settle-CLV fix needs user OK (WIP `PaperLedger.cs`). When a session restarts, background agents from the old session are gone:
+**Next action:** Wait for `nba-normal-sigma-pover` Tier A; then parent Tier C batch for all Tier-A passers (poisson soccer leagues first). Settle-CLV fix needs user OK. When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
@@ -41,7 +41,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 
 | Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
 |---|---|---|---|---|---|---|---|
-| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | running | | | | |
+| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | pending batch | pending Tier C | — |
 | nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer `5b8162ac-ee38-42b2-aa89-8f788275464e` | running | | | | |
 | venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
 | strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
@@ -115,3 +115,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | `venue-fee-ev` KEEP/SHIP merged (fee into EV/Kelly; N_trials=2; Tier A N/A). User WIP PaperLedger/ui restored cleanly. |
 | 2026-10-28 | D1 done: `hunt_data_sources.md`. P0: NFL SBRO 2007–21 + MLB flancast/Arnav O→C fill prior FAILs; NBA only 2022–23 free O→C patch. |
 | 2026-10-28 | `inv-var-blend-w` KILL — Tier A FAIL NBA 7/14 PnL folds, MLS 2/5; branch unmerged; exp doc on main. |
+| 2026-10-28 | `poisson-cdf-pover` Tier A PASS SerieA/Ligue1/LigaMX (FAIL MLS); **await Tier C batch** before merge. |
