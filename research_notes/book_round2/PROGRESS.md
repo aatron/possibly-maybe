@@ -45,7 +45,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer `5b8162ac-ee38-42b2-aa89-8f788275464e` | running | | | | |
 | venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
 | strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
-| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | running | | | | |
+| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | FAIL | — | — | KILL (unmerged) | — |
 
 ### Tier C ledger (look-once; append before scoring, never re-score)
 
@@ -114,3 +114,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | `strike-max-delta` KEEP/SHIP merged (live hygiene; N_trials=1; Tier A N/A). |
 | 2026-10-28 | `venue-fee-ev` KEEP/SHIP merged (fee into EV/Kelly; N_trials=2; Tier A N/A). User WIP PaperLedger/ui restored cleanly. |
 | 2026-10-28 | D1 done: `hunt_data_sources.md`. P0: NFL SBRO 2007–21 + MLB flancast/Arnav O→C fill prior FAILs; NBA only 2022–23 free O→C patch. |
+| 2026-10-28 | `inv-var-blend-w` KILL — Tier A FAIL NBA 7/14 PnL folds, MLS 2/5; branch unmerged; exp doc on main. |
