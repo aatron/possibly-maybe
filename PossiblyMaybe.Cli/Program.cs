@@ -124,6 +124,18 @@ switch (command)
         await MultiSportImporter.ImportSoccerLeagueAsync(ResolveRawRoot(), dbPath, args[1].ToUpperInvariant(), args[2]);
         return 0;
     }
+    case "sim-stakes":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await StakeLaneHoldoutSim.RunAsync(dbPath);
+        return 0;
+    }
     case "sweep-totals":
     {
         var repoRoot = FindRepoRoot();

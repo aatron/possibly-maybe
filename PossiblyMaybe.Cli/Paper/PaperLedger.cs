@@ -425,9 +425,18 @@ public static class PaperLedger
         foreach (var s in StakeSchemes.All)
         {
             var mine = rows.Where(r => r.Scheme == s.Code).ToList();
+            var settled = mine.Where(r => r.Result != null)
+                .OrderBy(r => r.PlacedAt).ThenBy(r => r.Id).ToList();
+            var openRows = mine.Where(r => r.Result == null).ToList();
+            var reserved = openRows.Sum(r => r.StakeDollars);
+
             double bank = StakeTrial.SeedDollars;
-            var equity = new List<object> { new { t = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"), bank } };
-            foreach (var r in mine.Where(r => r.Result != null).OrderBy(r => r.PlacedAt).ThenBy(r => r.Id))
+            var t0 = settled.Count > 0
+                ? settled[0].PlacedAt
+                : mine.OrderBy(r => r.PlacedAt).Select(r => (DateTimeOffset?)r.PlacedAt).FirstOrDefault()
+                  ?? DateTimeOffset.UtcNow;
+            var equity = new List<object> { new { t = t0.ToString("o"), bank = StakeTrial.SeedDollars } };
+            foreach (var r in settled)
             {
                 bank += r.PnL ?? 0;
                 equity.Add(new { t = r.PlacedAt.ToString("o"), bank = Math.Round(bank, 2) });
@@ -436,13 +445,10 @@ public static class PaperLedger
             if (equity.Count == 1)
                 equity.Add(new { t = DateTimeOffset.UtcNow.ToString("o"), bank = StakeTrial.SeedDollars });
 
-            var settled = mine.Where(r => r.Result != null).ToList();
-            var openRows = mine.Where(r => r.Result == null).ToList();
-            var reserved = openRows.Sum(r => r.StakeDollars);
             var peak = StakeTrial.SeedDollars;
             var maxDd = 0.0;
             var run = StakeTrial.SeedDollars;
-            foreach (var r in settled.OrderBy(r => r.PlacedAt).ThenBy(r => r.Id))
+            foreach (var r in settled)
             {
                 run += r.PnL ?? 0;
                 peak = Math.Max(peak, run);
@@ -510,9 +516,15 @@ public static class PaperLedger
   header { padding: 1.5rem 2rem 0.5rem; }
   header h1 { margin:0; font-size:1.4rem; letter-spacing:0.02em; }
   header p { margin:0.35rem 0 0; color:var(--muted); font-size:0.95rem; }
-  .tabs { display:flex; gap:0.4rem; padding: 0.75rem 2rem 0; }
+  .tabs { display:flex; gap:0.4rem; padding: 0.75rem 2rem 0; flex-wrap:wrap; }
   .tab { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:8px 8px 0 0; padding:0.45rem 1rem; cursor:pointer; font:inherit; }
   .tab.active { color:var(--ink); border-color:var(--accent); background:var(--panel); }
+  .filters { display:flex; flex-wrap:wrap; gap:0.45rem; align-items:center; padding: 0.65rem 2rem 0; }
+  .filters .label { color:var(--muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; margin-right:0.25rem; }
+  .chip { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:999px; padding:0.35rem 0.75rem; cursor:pointer; font:inherit; font-size:0.85rem; }
+  .chip:hover { border-color: var(--accent); color:var(--ink); }
+  .chip.active { color:var(--ink); border-color:var(--accent); background:rgba(108,182,255,0.12); }
+  .chip .pnl { font-variant-numeric: tabular-nums; margin-left:0.35rem; font-size:0.8rem; }
   main { padding: 1rem 2rem 3rem; display:grid; gap:1.25rem; }
   .board { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:0.75rem; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem; cursor:pointer; }
@@ -524,6 +536,8 @@ public static class PaperLedger
   .card .meta { color:var(--muted); font-size:0.8rem; margin-top:0.25rem; }
   .pos { color:var(--up); } .neg { color:var(--down); }
   .chart-wrap { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:1rem; }
+  .charts { display:grid; grid-template-columns: 1fr; gap:1.25rem; }
+  @media (min-width: 1100px) { .charts { grid-template-columns: 1fr 1fr; } }
   table { width:100%; border-collapse:collapse; font-size:0.9rem; }
   th, td { text-align:left; padding:0.55rem 0.6rem; border-bottom:1px solid var(--line); font-variant-numeric: tabular-nums; }
   th { color:var(--muted); font-weight:500; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
@@ -570,6 +584,7 @@ public static class PaperLedger
   <button type="button" class="tab" data-venue="Robinhood">Robinhood</button>
   <button type="button" class="tab" data-venue="CryptoCom">Crypto.com</button>
 </div>
+<div class="filters" id="league-filters" aria-label="League filter"></div>
 <main>
   <section class="board" id="cards"></section>
   <section class="chart-wrap" id="calendar">
@@ -586,8 +601,9 @@ public static class PaperLedger
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </section>
-  <section class="chart-wrap">
-    <canvas id="equity" height="120"></canvas>
+  <section class="charts">
+    <div class="chart-wrap"><canvas id="equity" height="140"></canvas></div>
+    <div class="chart-wrap"><canvas id="league-success" height="140"></canvas></div>
   </section>
   <section class="chart-wrap">
     <table id="board-table">
@@ -621,19 +637,94 @@ public static class PaperLedger
 <script>
 const DATA = {{embeddedJson}};
 const colors = ['#6cb6ff','#3ecf8e','#e6b450','#d2a8ff','#f07178','#89ddff'];
+const sportColors = {
+  NBA:'#6cb6ff', MLS:'#3ecf8e', LIGUE1:'#e6b450', LIGAMX:'#d2a8ff', SERIEA:'#f07178',
+  EFL:'#89ddff', LALIGA:'#ff9f7a', NFL:'#9cdcfe', MLB:'#c5e478'
+};
 let venue = 'DK';
 let selected = null;
+let sportFilter = 'ALL';
 let calOffset = 0;
-let chart;
+let equityChart;
+let leagueChart;
 
-function venueBlock() {
-  return (DATA.venues && DATA.venues[venue]) || { lanes: [] };
+function venueBlock() { return (DATA.venues && DATA.venues[venue]) || { lanes: [] }; }
+function rawLanes() { return venueBlock().lanes || []; }
+function seed() { return Number(DATA.seed) || 1000; }
+
+function sportKey(t) { return (t && t.sport) ? String(t.sport).toUpperCase() : 'UNKNOWN'; }
+function matchSport(t) { return sportFilter === 'ALL' || sportKey(t) === sportFilter; }
+
+function allSports() {
+  const set = new Set();
+  for (const l of rawLanes()) for (const t of (l.tickets || [])) if (t.sport) set.add(sportKey(t));
+  return [...set].sort();
 }
-function lanes() { return venueBlock().lanes || []; }
+
+/** Rebuild lane stats from tickets (respects league filter). */
+function computeLane(raw) {
+  const tickets = (raw.tickets || []).filter(matchSport)
+    .slice().sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+  const settled = tickets.filter(t => t.result != null)
+    .sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+  const openRows = tickets.filter(t => t.result == null);
+  let bank = seed();
+  const t0 = settled[0]?.placedAt || tickets[0]?.placedAt || DATA.generatedAt;
+  const equity = [{ t: t0, bank }];
+  let peak = seed(), maxDd = 0, run = seed();
+  for (const r of settled) {
+    bank += Number(r.pnl) || 0;
+    equity.push({ t: r.placedAt, bank: Math.round(bank * 100) / 100 });
+    run += Number(r.pnl) || 0;
+    peak = Math.max(peak, run);
+    maxDd = Math.max(maxDd, peak - run);
+  }
+  if (equity.length === 1) equity.push({ t: DATA.generatedAt || new Date().toISOString(), bank: seed() });
+  const reserved = openRows.reduce((a,t) => a + Number(t.stake || 0), 0);
+  return {
+    ...raw,
+    tickets,
+    bank: Math.round(bank * 100) / 100,
+    reserved: Math.round(reserved * 100) / 100,
+    available: Math.round(Math.max(0, bank - reserved) * 100) / 100,
+    pnl: Math.round((bank - seed()) * 100) / 100,
+    settled: settled.length,
+    open: openRows.length,
+    wins: settled.filter(t => t.result === 'W').length,
+    losses: settled.filter(t => t.result === 'L').length,
+    maxDrawdown: Math.round(maxDd * 100) / 100,
+    equity,
+  };
+}
+
+function lanes() { return rawLanes().map(computeLane); }
 function byCode() { return Object.fromEntries(lanes().map(l => [l.code, l])); }
 
+/** Per-league PnL for filter chips: Flat lane when no selection, else selected lane. */
+function leagueTotals() {
+  const code = selected || 'Flat';
+  const raw = rawLanes().find(l => l.code === code) || rawLanes()[0];
+  const map = {};
+  for (const t of (raw?.tickets || [])) {
+    const s = sportKey(t);
+    if (!map[s]) map[s] = { sport: s, pnl: 0, wins: 0, losses: 0, open: 0, n: 0 };
+    map[s].n++;
+    if (t.result == null) map[s].open++;
+    else {
+      map[s].pnl += Number(t.pnl) || 0;
+      if (t.result === 'W') map[s].wins++;
+      if (t.result === 'L') map[s].losses++;
+    }
+  }
+  return Object.values(map).sort((a,b) => a.sport.localeCompare(b.sport));
+}
+
+function filterNote() {
+  return sportFilter === 'ALL' ? 'all leagues' : sportFilter;
+}
+
 document.getElementById('sub').textContent =
-  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · DK / Kalshi / Robinhood / Crypto.com decide independently`;
+  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · filter leagues to drop tanking books`;
 
 document.getElementById('tabs').addEventListener('click', e => {
   const btn = e.target.closest('[data-venue]');
@@ -642,6 +733,13 @@ document.getElementById('tabs').addEventListener('click', e => {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.venue === venue));
   selected = null;
   document.getElementById('detail').classList.remove('open');
+  renderAll();
+});
+
+document.getElementById('league-filters').addEventListener('click', e => {
+  const btn = e.target.closest('[data-sport]');
+  if (!btn) return;
+  sportFilter = btn.dataset.sport;
   renderAll();
 });
 
@@ -677,8 +775,8 @@ function renderCalendar() {
   const days = [];
   for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
   const fmt = d => d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
-  const laneNote = selected ? ` · ${selected} only` : ` · ${venue} all lanes`;
-  document.getElementById('cal-range').textContent = `${fmt(days[0])} – ${fmt(days[6])}${laneNote}`;
+  const laneNote = selected ? ` · ${selected}` : ` · ${venue} all lanes`;
+  document.getElementById('cal-range').textContent = `${fmt(days[0])} – ${fmt(days[6])}${laneNote} · ${filterNote()}`;
   const todayYmd = ymdLocal(today);
   document.getElementById('cal-grid').innerHTML = days.map(d => {
     const ymd = ymdLocal(d);
@@ -706,6 +804,31 @@ function fmtWhen(iso) {
   return isNaN(d) ? iso : d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 function fmtNum(v, digits=2) { return v == null || v === '' ? '—' : Number(v).toFixed(digits); }
+function fmtMoney(v) {
+  const n = Number(v) || 0;
+  return (n >= 0 ? '+' : '') + n.toFixed(2);
+}
+
+function renderFilters() {
+  const totals = leagueTotals();
+  const allPnl = totals.reduce((a,x) => a + x.pnl, 0);
+  const sports = allSports();
+  const chips = [
+    { sport: 'ALL', label: 'All', pnl: allPnl },
+    ...sports.map(s => {
+      const row = totals.find(t => t.sport === s) || { pnl: 0 };
+      return { sport: s, label: s, pnl: row.pnl };
+    })
+  ];
+  const laneHint = selected || 'Flat';
+  document.getElementById('league-filters').innerHTML =
+    `<span class="label">League</span>` +
+    chips.map(c => {
+      const cls = c.pnl >= 0 ? 'pos' : 'neg';
+      return `<button type="button" class="chip${sportFilter===c.sport?' active':''}" data-sport="${c.sport}">${c.label}<span class="pnl ${cls}">${fmtMoney(c.pnl)}</span></button>`;
+    }).join('') +
+    `<span class="rule">PnL chips = ${laneHint} lane${selected?'':' (default Flat)'}</span>`;
+}
 
 function showLane(code) {
   if (selected === code) { clearLane(); return; }
@@ -716,9 +839,9 @@ function showLane(code) {
   document.querySelectorAll('#board-table tbody tr').forEach(el => el.classList.toggle('active', el.dataset.code === code));
   document.getElementById('detail').classList.add('open');
   document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
-  document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${l.rule}`;
+  document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${filterNote()} · ${l.rule}`;
   document.getElementById('tickets').innerHTML = l.tickets.length === 0
-    ? `<tr><td colspan="12" class="rule">No tickets yet on ${venue}.</td></tr>`
+    ? `<tr><td colspan="12" class="rule">No tickets for this filter on ${venue}.</td></tr>`
     : l.tickets.map(t => {
         const res = t.result || 'open';
         const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
@@ -734,13 +857,17 @@ function showLane(code) {
           <td><span class="badge ${res}">${res}</span></td>
           <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
       }).join('');
+  renderFilters();
   renderCalendar();
+  renderCharts();
 }
 function clearLane() {
   selected = null;
   document.querySelectorAll('.card.active, #board-table tbody tr.active').forEach(el => el.classList.remove('active'));
   document.getElementById('detail').classList.remove('open');
+  renderFilters();
   renderCalendar();
+  renderCharts();
 }
 
 function renderBoard() {
@@ -765,40 +892,123 @@ function renderBoard() {
       <td>${l.open}</td>
       <td>$${l.maxDrawdown.toFixed(2)}</td>
     </tr>`).join('');
+  if (selected) {
+    document.querySelectorAll('.card').forEach(el => el.classList.toggle('active', el.dataset.code === selected));
+    document.querySelectorAll('#board-table tbody tr').forEach(el => el.classList.toggle('active', el.dataset.code === selected));
+  }
 }
 
-function renderChart() {
-  const datasets = lanes().map((l,i) => ({
+function renderCharts() {
+  const ls = lanes();
+  const eqDatasets = ls.map((l,i) => ({
     label: l.code,
     data: l.equity.map(p => ({ x: p.t, y: p.bank })),
     borderColor: colors[i % colors.length],
     backgroundColor: 'transparent',
     tension: 0.15,
-    pointRadius: 2,
+    pointRadius: 3,
+    pointHoverRadius: 5,
   }));
-  if (chart) chart.destroy();
-  chart = new Chart(document.getElementById('equity'), {
+  if (equityChart) equityChart.destroy();
+  equityChart = new Chart(document.getElementById('equity'), {
     type: 'line',
-    data: { datasets },
+    data: { datasets: eqDatasets },
     options: {
       parsing: false,
       interaction: { mode: 'nearest', intersect: false },
       scales: {
-        x: { type: 'time', time: { unit: 'day' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
+        x: { type: 'time', time: { tooltipFormat: 'MMM d HH:mm' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
         y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: venue + ' bankroll', color: '#8b9bb4' } }
       },
       plugins: {
         legend: { labels: { color: '#e7ecf3' } },
-        title: { display: true, text: venue + ' equity — independent of the other tab', color: '#e7ecf3' }
+        title: { display: true, text: `${venue} equity · ${filterNote()}`, color: '#e7ecf3' }
+      }
+    }
+  });
+
+  // League success = cumulative PnL over time (selected lane, or Flat).
+  const laneCode = selected || 'Flat';
+  const raw = rawLanes().find(l => l.code === laneCode) || rawLanes()[0];
+  const tickets = (raw?.tickets || []).filter(t => t.result != null && matchSport(t))
+    .slice().sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+  const sports = sportFilter === 'ALL'
+    ? [...new Set(tickets.map(sportKey))].sort()
+    : [sportFilter];
+  const cum = Object.fromEntries(sports.map(s => [s, 0]));
+  const series = Object.fromEntries(sports.map(s => [s, []]));
+  for (const t of tickets) {
+    const s = sportKey(t);
+    if (!series[s]) continue;
+    cum[s] += Number(t.pnl) || 0;
+    series[s].push({ x: t.placedAt, y: Math.round(cum[s] * 100) / 100 });
+  }
+  // Seed each series at 0 before first point so the first node is visible.
+  for (const s of sports) {
+    if (series[s].length) {
+      const first = series[s][0].x;
+      series[s].unshift({ x: first, y: 0 });
+    } else {
+      series[s].push({ x: DATA.generatedAt, y: 0 });
+    }
+  }
+  const leagueDatasets = sports.map((s,i) => ({
+    label: s,
+    data: series[s],
+    borderColor: sportColors[s] || colors[i % colors.length],
+    backgroundColor: 'transparent',
+    tension: 0.15,
+    pointRadius: 3,
+  }));
+  if (leagueChart) leagueChart.destroy();
+  leagueChart = new Chart(document.getElementById('league-success'), {
+    type: 'line',
+    data: { datasets: leagueDatasets },
+    options: {
+      parsing: false,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        x: { type: 'time', time: { tooltipFormat: 'MMM d' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
+        y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: 'Cumulative PnL', color: '#8b9bb4' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#e7ecf3' } },
+        title: { display: true, text: `League success · ${laneCode} · ${filterNote()}`, color: '#e7ecf3' }
       }
     }
   });
 }
 
 function renderAll() {
+  renderFilters();
   renderBoard();
-  renderChart();
+  renderCharts();
   renderCalendar();
+  if (selected) {
+    const l = byCode()[selected];
+    if (l) {
+      document.getElementById('detail').classList.add('open');
+      document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
+      document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${filterNote()} · ${l.rule}`;
+      document.getElementById('tickets').innerHTML = l.tickets.length === 0
+        ? `<tr><td colspan="12" class="rule">No tickets for this filter on ${venue}.</td></tr>`
+        : l.tickets.map(t => {
+            const res = t.result || 'open';
+            const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
+            const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
+            const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
+            return `<tr>
+              <td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
+              <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
+              <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
+              <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
+              <td>$${Number(t.stake).toFixed(2)}</td>
+              <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
+              <td><span class="badge ${res}">${res}</span></td>
+              <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
+          }).join('');
+    }
+  }
 }
 
 document.getElementById('cards').addEventListener('click', e => {
