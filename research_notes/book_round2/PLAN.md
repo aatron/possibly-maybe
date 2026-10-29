@@ -22,13 +22,17 @@ Each one gives a verdict (USED / TESTED / CANDIDATE / IGNORE) per chapter with a
 - **3a Overcorrection audit** → `audit_overcorrection.md`. Holdout reuse count / selection bias (deflated-Sharpe / PBO papers in `library/articles`), leakage (`asOf`), the market-weight and edge-gate grid size vs n, the hand-set `OverProb` sharpness, CLV definition in `paper.db` (CloseLine looks like final score), DK −110 default juice in live tickets, and the Kalshi heavy-juice break-even. **It confirms or amends the evaluation protocol below before phase 4 starts.**
 - **3b Venue placement research** → `venue_placement.md`. For each of Kalshi, Robinhood, and Crypto.com: how a totals contract maps to our OVER/UNDER line, fees (Kalshi fee formula), limit vs market orders, spread and depth, contract count from a $ stake, settlement rules (push / half-lines / OT), API vs manual, KYC/state limits. It ends with a recipe for an exact order ticket (price, count, max cost) and compares how `paper-go` prices each venue today with reality. Research only; any code goes through phase 4.
 
-## Evaluation protocol (anti-overcorrection; 3a may tighten it, never loosen it)
-1. **Tier A (selection), walk-forward rolling origin** on pre-holdout seasons (train < k, test k, for each k). PASS needs mean CLV ≥ champ's, PnL delta > 0 in a majority of folds, and n ≥ 40 per league overall.
-2. **Tier B, old holdout 2024–25 (MLS 2025).** Already burned, so it is reported but can never justify a KEEP on its own.
-3. **Tier C, fresh look-once holdout:** soccer 2025–26 (MLS 2026 partial). The parent scores all phase-4 finalists **in one batch, once** vs the current champ. KEEP needs Tier A PASS, Tier C CLV ≥ champ, and Tier C PnL > 0.
-4. **NBA** has no fresh totals season, so NBA KEEPs are labelled *provisional* (Tier A + B), and live paper decides.
-5. **≤ 3 new parameters** per change. Log the total number of variants tried and report it beside every result.
-6. Pure sizing/probability changes (calibration, distributions) are judged on log-loss/Brier **and** Kelly-lane PnL on the same tickets, because the bet set may not change.
+## Evaluation protocol (anti-overcorrection; tightened by A1 2026-10-28 — never loosen)
+1. **Tier A (selection), walk-forward rolling origin** on pre-holdout seasons (train < k, test k, for each k). Folds pre-declared; publish fold table in `exp_*.md`. PASS needs mean CLV ≥ champ's, PnL delta > 0 in a majority of folds, and n ≥ 40 per league overall. If **N_trials ≥ 25**, majority-fold Tier A is mandatory (no single-hold PASS).
+2. **Tier B, old holdout 2024–25 (MLS 2025).** Already burned — report only; never justifies KEEP alone. Do **not** print or sort on Tier B inside sweep loops.
+3. **Tier C, fresh look-once holdout:** soccer 2025–26 (MLS 2026 partial). The parent scores all phase-4 finalists **in one batch, once** vs the current champ. KEEP needs Tier A PASS, Tier C CLV ≥ champ, and Tier C PnL > 0. Ledger row before any score.
+4. **NBA** has no fresh totals season, so NBA KEEPs are labelled *provisional* (Tier A + B), and live paper decides — live CLV only after settle CloseLine fix (not finals).
+5. **≤ 3 new parameters** per change. Log **N_trials** (grid cells × leagues × families) beside every result.
+6. Pure sizing/probability changes (calibration, distributions) are judged on log-loss/Brier **and** Kelly-lane PnL on the same tickets, because the bet set may not change. Sharpness counts as sizing.
+7. **Sweep hygiene:** selection metrics = train / Tier A only. Hold and Tier C are separate commands after the candidate is frozen.
+8. **Tiny-sample:** if hold n < 80 or |mean CLV| < 0.05 goals (soccer), label **provisional**; cannot alone raise live stake. Liga MX / Serie A provisional until Tier A+C.
+9. **Venue/lane:** promote on a **pre-registered** primary venue+scheme; other cells exploratory.
+10. **Juice:** backtests using AssumedJuice −110 must say so; live tickets need venue ask or human-entered American odds.
 
 ## Phase 4: Experiments (worktree agents)
 - The parent merges the E1–E4 shortlists, dedupes, and picks the **top ≤ 6** by money × testability × low overfit risk. Venue sizing/pricing fixes from 3b may add ≤ 2.

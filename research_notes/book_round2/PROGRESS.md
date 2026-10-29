@@ -5,7 +5,7 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action (relaunched 2026-10-28):** all 7 research agents relaunched from `agent_prompts.md` (Auto, background). When a session restarts, background agents from the old session are gone:
+**Next action:** wait for E2 (+ D1). Phase 4 starts when E1–E4 + A1 are `done` (A1 done; E2 still out). When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
@@ -18,10 +18,10 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 |---|---|---|---|---|
 | E1 | ISL / ESL / Sparsity topics | Auto | `eval_isl_esl_sparsity.md` | done — `78cd220d-6dea-4f92-9be9-8e6fde8283c7` |
 | E2 | Bayesian (BDA3, ROS, CASI, Rethinking, BMCP) | Auto | `eval_bayesian.md` | running — `ccb38f53-6076-4767-9446-d235e223b2c8` |
-| E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | Auto | `eval_ml_general.md` | running — `c89ab46e-e292-4565-bdcb-ea33624dcd1e` |
+| E3 | General ML (Murphy, Bishop, MacKay, MML, GPML) | Auto | `eval_ml_general.md` | done — `c89ab46e-e292-4565-bdcb-ea33624dcd1e` |
 | E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | Auto | `eval_forecast_markets.md` | done — `1e7297b3-a373-4afe-b281-1a1718342cd3` |
-| A1 | Overcorrection / training audit | Auto | `audit_overcorrection.md` | running — `7751b52c-3e9d-4e0e-89de-02e2dd285307` |
-| V1 | Venue placement (Kalshi / RH / Crypto.com) | Auto | `venue_placement.md` | running — `0f2e5c1d-9b92-42fc-be9d-ed68197fca64` |
+| A1 | Overcorrection / training audit | Auto | `audit_overcorrection.md` | done — `7751b52c-3e9d-4e0e-89de-02e2dd285307` |
+| V1 | Venue placement (Kalshi / RH / Crypto.com) | Auto | `venue_placement.md` | done — `0f2e5c1d-9b92-42fc-be9d-ed68197fca64` |
 | D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | running — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
 
 ### Experiment ledger (phase 4 / 4b)
@@ -41,9 +41,9 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 | # | Phase | Status | Output |
 |---|---|---|---|
 | 1 | Download free books / repos → `library/` | done | see Downloads |
-| 2 | Topic evaluation (4 subagents, by book group) | running (Auto) | `eval_*.md` |
-| 3a | Over-correction / training audit | running (Auto) | `audit_overcorrection.md` |
-| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | running (Auto) | `venue_placement.md` |
+| 2 | Topic evaluation (4 subagents, by book group) | E1/E3/E4 done; E2 running | `eval_*.md` |
+| 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
+| 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
 | 4 | Pick candidates, worktree experiments | pending (waits on 2 + 3a protocol) | `exp_*.md` |
 | 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 running (Auto); hunts after 4 | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
@@ -89,3 +89,6 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | Model directive change: code agents = Composer (was Sonnet); research = Auto (was Opus). Relaunched all 7 research agents (Auto, background). |
 | 2026-10-28 | E1 done: `eval_isl_esl_sparsity.md`. Top $: soccer Poisson CDF OverProb (0 params); NBA residual-σ Normal CDF. |
 | 2026-10-28 | E4 done: `eval_forecast_markets.md`. Agrees #1 Poisson/grid P(over); Kaunitz live-only (no TOTAL multi-book). |
+| 2026-10-28 | A1 done: holdout reused ≥8×; live CloseLine=finals; DK −110 default; protocol tightened in PLAN. Money-fix rank: settle CLV → holdout peek → thin champs. |
+| 2026-10-28 | E3 done: `eval_ml_general.md`. Same #1 distributional OverProb; NBA logistic badly overconfident vs residual σ≈22.8. |
+| 2026-10-28 | V1 done: `venue_placement.md`. Top code gaps: fee-adjusted BE, exact strike gate, EU/MX Kalshi series. |
