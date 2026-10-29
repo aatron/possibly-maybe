@@ -1,5 +1,7 @@
 # PossiblyMaybe — progress (read this first after any interruption)
 
+> **In flight:** Book round 2 — see `research_notes/book_round2/HANDOFF.md` (plan, progress ledger, agent prompts).
+
 ## Snapshot
 
 | Field | Value |

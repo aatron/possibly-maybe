@@ -83,3 +83,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | User: code-change agents run on Sonnet; 4b data-source agent launched (download only) |
 | 2026-10-28 | User: research agents run on Opus (the 7 running agents already inherit Opus) |
 | 2026-10-28 | Added RESUME HERE section, agent/experiment/Tier C ledgers, agent_prompts.md for relaunch |
+| 2026-10-28 | Handoff doc added; pointers in AGENTS.md and root PROGRESS.md |

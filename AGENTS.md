@@ -2,6 +2,10 @@
 
 Project conventions for coding agents working in **PossiblyMaybe**.
 
+## In-flight work
+
+**Book round 2** (ML-book topic review, overcorrection audit, venue placement, NBA/NFL/MLB soft-spot hunt) — if continuing it, start at `research_notes/book_round2/HANDOFF.md`.
+
 ## Slash commands
 
 ### `/pm-calculate`
