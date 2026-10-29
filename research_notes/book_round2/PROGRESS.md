@@ -110,3 +110,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | E3 done: `eval_ml_general.md`. Same #1 distributional OverProb; NBA logistic badly overconfident vs residual σ≈22.8. |
 | 2026-10-28 | V1 done: `venue_placement.md`. Top code gaps: fee-adjusted BE, exact strike gate, EU/MX Kalshi series. |
 | 2026-10-28 | E2 done: `eval_bayesian.md`. Same #1 poisson-cdf-pover. Phase 2+3a gate clear → phase 4 picks locked. |
+| 2026-10-28 | D1 progress: SBRO NFL xlsx 2007–08…2021–22 downloaded; NBA CDX shows through 2022–23; MLB CDX still 504. |
