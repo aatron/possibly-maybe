@@ -41,11 +41,11 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 
 | Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
 |---|---|---|---|---|---|---|---|
-| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer | pending | | | | |
-| nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer | pending | | | | |
-| venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer | pending | | | | |
-| strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer | pending | | | | |
-| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer | pending | | | | |
+| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | running | | | | |
+| nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer `5b8162ac-ee38-42b2-aa89-8f788275464e` | running | | | | |
+| venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | running | | | | |
+| strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | running | | | | |
+| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | running | | | | |
 
 ### Tier C ledger (look-once; append before scoring, never re-score)
 
