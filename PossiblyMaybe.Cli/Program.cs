@@ -244,6 +244,26 @@ switch (command)
         await PoissonCdfTierA.RunAsync(dbPath, filter);
         return 0;
     }
+    case "tier-c-poisson":
+    {
+        // Parent look-once only. Do not re-run after results are logged.
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await PoissonCdfTierC.RunAsync(dbPath);
+        return 0;
+    }
     case "sweep-decay":
     {
         // Library: EMA half-life / α + sparse B2B gate (TRAIN select; holdout once)
@@ -367,7 +387,7 @@ switch (command)
         var betOver = edge > 0;
         // advise-mls has only total μ — split evenly for Poisson path
         var half = modelExp / 2.0;
-        var pOver = SoccerOverProbConfig.OverProb(half, half, exp, openTotal);
+        var pOver = SoccerOverProbConfig.OverProb(half, half, exp, openTotal, "MLS");
         var p = betOver ? pOver : 1 - pOver;
         var advice = BetDecider.Advise(p, juice, bankroll, MlsChampConfig.MinEv);
         Console.WriteLine(advice.Go ? "GO" : "NO-GO");

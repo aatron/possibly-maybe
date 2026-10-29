@@ -100,7 +100,7 @@ public static class DailySlate
         }
 
         Console.WriteLine($"######## {sport} SLATE {yyyymmdd} bankroll=${bankroll:F0} paper {modelName} ########");
-        Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdf ? "poisson" : "logistic")}");
+        Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdfFor(sport) ? "poisson" : "logistic")}");
         if (games.Count == 0)
         {
             Console.WriteLine($"No {sport} games on this date.");
@@ -135,7 +135,7 @@ public static class DailySlate
             }
 
             var betOver = edge > 0;
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line.Value);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line.Value, sport);
             var p = betOver ? pOver : 1 - pOver;
             var advice = BetDecider.Advise(p, juice, bankroll, minEv);
             var side = betOver ? "OVER" : "UNDER";

@@ -85,7 +85,7 @@ public static class SoccerLeagueTotalsBacktest
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
             var clv = TotalsMath.OverClvPoints(line, closeLine);
             var pOver = platt?.OverProb(modelExp, line)
-                ?? SoccerOverProbConfig.OverProb(lh, la, exp, line);
+                ?? SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (Math.Abs(edge) >= minAbsEdge)
             {

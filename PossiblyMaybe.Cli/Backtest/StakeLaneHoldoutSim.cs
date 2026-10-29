@@ -196,7 +196,7 @@ public static class StakeLaneHoldoutSim
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, "MLS");
 
             if (g.Season == MlsTotalsBacktest.HoldoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {
@@ -269,7 +269,7 @@ public static class StakeLaneHoldoutSim
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (season == holdoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {
@@ -334,7 +334,7 @@ public static class StakeLaneHoldoutSim
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
 
             if (season == holdoutSeason && ou != 0 && Math.Abs(edge) >= minEdge)
             {

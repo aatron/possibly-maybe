@@ -14,7 +14,7 @@ public static class PoissonCdfTierA
     {
         Console.WriteLine("######## Tier A: poisson-cdf-pover vs logistic champ ########");
         Console.WriteLine("AssumedJuice −110. Selection = Tier A folds only (no Tier B sort). N_trials=1/league.");
-        Console.WriteLine($"SoccerOverProbConfig default UsePoissonCdf={SoccerOverProbConfig.UsePoissonCdf}\n");
+        Console.WriteLine($"SoccerOverProbConfig ForceMode={SoccerOverProbConfig.ForceMode?.ToString() ?? "null (KEEP set)"}\n");
 
         var sports = sportFilter is null
             ? new[] { "SERIEA", "MLS", "LIGUE1", "LIGAMX" }
@@ -49,11 +49,11 @@ public static class PoissonCdfTierA
 
         foreach (var fold in folds)
         {
-            SoccerOverProbConfig.UsePoissonCdf = false;
+            SoccerOverProbConfig.ForceMode = false;
             var (_, holdL) = await RunHoldAsync(dbPath, sport, fold, w, minEv, minEdge, alpha, useDc, dcAlpha, ct);
             var kellyL = await KellyOnHoldAsync(dbPath, sport, fold, w, minEv, minEdge, alpha, useDc, dcAlpha, ct);
 
-            SoccerOverProbConfig.UsePoissonCdf = true;
+            SoccerOverProbConfig.ForceMode = true;
             var (_, holdP) = await RunHoldAsync(dbPath, sport, fold, w, minEv, minEdge, alpha, useDc, dcAlpha, ct);
             var kellyP = await KellyOnHoldAsync(dbPath, sport, fold, w, minEv, minEdge, alpha, useDc, dcAlpha, ct);
 
@@ -74,7 +74,7 @@ public static class PoissonCdfTierA
                 $"{fold,-12} {holdL.Bets,5} {holdL.MeanClv,7:F3} {holdL.PaperPnlUnits,7:F1} {holdL.LogLoss,7:F4} {holdL.Brier,7:F4} {kellyL,8:F1} | {holdP.Bets,5} {holdP.MeanClv,7:F3} {holdP.PaperPnlUnits,7:F1} {holdP.LogLoss,7:F4} {holdP.Brier,7:F4} {kellyP,8:F1} {dPnl,7:F1} {dClv,7:F3}");
         }
 
-        SoccerOverProbConfig.UsePoissonCdf = true; // restore experiment default
+        SoccerOverProbConfig.ForceMode = null; // restore KEEP set
 
         var meanClvL = nTotL == 0 ? 0 : sumClvL / nTotL;
         var meanClvP = nTotP == 0 ? 0 : sumClvP / nTotP;
@@ -231,7 +231,7 @@ public static class PoissonCdfTierA
             var exp = w * line + (1 - w) * modelExp;
             var edge = exp - line;
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
             var isFold = sport == "MLS" ? season == fold : season == fold;
 
             if (isFold && Math.Abs(edge) >= minEdge && ou != 0)
