@@ -22,6 +22,32 @@ public class VaultTests
     }
 
     [Test]
+    public async Task Durable_Vault_Second_Final_Refused_Across_Separate_Store_Instances()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"pm-vault-{Guid.NewGuid():N}.db");
+        try
+        {
+            var hash = Vault.StrategyHash("V0", "durable=1");
+            var (vault1, trials1) = VaultDb.Open(path);
+            Vault.AuthorizeSimulationDate(vault1, "MLS", VaultDay, hash, final: true);
+            trials1.Record(hash, "durable=1", VaultDay, VaultDay, gridSize: 1);
+            await Assert.That(vault1.HasUsed("MLS", hash)).IsTrue();
+            await Assert.That(trials1.NTrials).IsEqualTo(1);
+
+            // New process / new instances on the same file — burn must still be refused.
+            var (vault2, trials2) = VaultDb.Open(path);
+            await Assert.That(vault2.HasUsed("MLS", hash)).IsTrue();
+            await Assert.That(trials2.NTrials).IsEqualTo(1);
+            await Assert.That(() => Vault.AuthorizeSimulationDate(vault2, "MLS", VaultDay, hash, final: true))
+                .Throws<VaultAlreadyUsedException>();
+        }
+        finally
+        {
+            try { File.Delete(path); } catch { /* temp cleanup */ }
+        }
+    }
+
+    [Test]
     public async Task Engine_Sim_Refuses_Vault_Date_Without_Final()
     {
         var slate = new List<SlateCandidate> { MlsCand(VaultDay) };

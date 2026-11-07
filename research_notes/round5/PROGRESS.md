@@ -1,13 +1,13 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for the user to say "implement", then launch wave 1 (T1, T2a, T2b, T3) in parallel.
+**Next action:** parent `--no-ff` merges T1 when ready; wave 1 peers continue independently.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
 | Id | Item | Agent | Worktree / branch | Proof | Status | Merge |
 |---|---|---|---|---|---|---|
-| T1 | Durable vault + trial ledger | Composer | `../pm-r5-t1` `r5/t1` | restart double-burn refused | planned | |
+| T1 | Durable vault + trial ledger | Composer | `../pm-r5-t1` `r5/t1` | `t1_proof.md` restart double-burn refused | done | |
 | T2a | Import NHL SBRO | Composer | `../pm-r5-t2a` `r5/t2a` | seasons × O+C coverage; Anaheim ≠ Oregon | planned | |
 | T2b | Import AUS NFL totals | Composer | `../pm-r5-t2b` `r5/t2b` | 2022 filled; % real prices | planned | |
 | T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | decision can't see close | planned | |
@@ -23,3 +23,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | When | Event |
 |---|---|
 | 2026-11-07 | Round 5 plan written (plan only, per user). |
+| 2026-11-07 | T1 durable vault + trial ledger (`data/vault.db`); second final refused across store instances. |

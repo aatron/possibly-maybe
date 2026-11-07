@@ -34,7 +34,7 @@ dotnet PossiblyMaybe.Tests/bin/Debug/net10.0/PossiblyMaybe.Tests.dll --disable-l
 
 ## Limits / risks
 
-- shortcut: `VaultStore` is in-process only (CLI `--sim` gets a fresh store per invocation) — upgrade to a durable vault ledger file when look-once burns must survive restarts.
+- ~~shortcut: `VaultStore` is in-process only~~ — removed by Round 5 T1 (`data/vault.db`, see `round5/t1_proof.md`).
 - shortcut: DSR uses non-skewed Lo SE + Winitzki Φ^{-1}; upgrade if skew/kurtosis matter for stake gates.
 - shortcut: live `engine-day` does not burn vault (correct for unfolding seasons); only `--sim` enforces look-once.
 - shortcut: SkipSeason is excluded from train folds but is not a vault burn (live/incomplete season).
