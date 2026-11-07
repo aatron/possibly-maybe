@@ -34,7 +34,11 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
 | R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | running | |
-| R4 | replay --asof command | Composer | `../pm-r4-r4` | 11-07 diff = 0 | pending (A1, R1, R2) | |
+| R4 | replay --asof command | — | — | — | superseded by R7–R9 (replay = engine over logged dates) | |
+| R7 | Point-in-time AsOfView (no DB handle for strategies) | Composer | `../pm-r4-r7` | leak tests | pending (A1+R1/R2) | |
+| R8 | IStrategy plug-in + port champions | Composer | `../pm-r4-r8` | reproduce Tier A/B | pending (R7) | |
+| R9 | Day-stepping engine shared with live | Composer | `../pm-r4-r9` | live == engine today | pending (R7) | |
+| R10 | Vault + trial ledger + nested tuning + no sim-only promotion | Composer | `../pm-r4-r10` | vault refusal test | pending (R8, R9) | |
 | R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | running | |
 | R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
@@ -55,3 +59,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | User: record data so any model can be re-run without cheating → Wave R (R1–R6) added; R1/R2 should amend A1 while it is running. |
 | 2026-11-07 | A3 merged @ 3ddce67 (172 tests). A4 census done. Launched C6-epl, C6-bundesliga, C6-nhl. |
 | 2026-11-07 | B9 merged @ 10ef936 (174 tests). |
+| 2026-11-07 | User: blind day-by-day sim for any new approach → R7–R10 added; recommend R7–R9 before wave B (variants written once as strategies). |

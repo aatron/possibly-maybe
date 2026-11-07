@@ -55,4 +55,8 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] `replay --asof` that reproduces logged decisions and reports n / CLV / PnL per variant → R4
 - [ ] Checkpoint reporter: 50 / 100–200 / 500 / 1,500 bet stages per variant × league → R5
 - [ ] Real DK price at bet (not −110) on paper tickets → R6
+- [ ] Blind point-in-time data view; strategies can't touch the DB → R7
+- [ ] Plug-in strategy interface; port champions as strategies → R8
+- [ ] Day-stepping engine shared by live and simulation (guards, venues, staking, bankroll, same-book settle) → R9
+- [ ] Vault (look-once seasons sealed), trial ledger (N_trials / DSR / BH auto), nested tuning, no promotion from sim alone → R10
 
