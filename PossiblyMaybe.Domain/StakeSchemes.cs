@@ -9,6 +9,28 @@ public static class StakeTrial
     public static readonly DateOnly HorizonEnd = new(2026, 12, 31);
 }
 
+/// <summary>
+/// Schemes that can stake above 2% (Kelly5) stay capped at 2% until live paper CLV clears.
+/// Rule: global across all venues/schemes — settled rows with ClvPts, n≥100 and mean &gt; 0.
+/// </summary>
+public static class StakeGate
+{
+    public const int MinClvN = 100;
+    public const double SoftCapFrac = 0.02;
+    public const double WideCapFrac = 0.05;
+
+    public static bool IsKelly5Promoted(int clvN, double meanClvPts)
+        => clvN >= MinClvN && meanClvPts > 0;
+
+    public static string StatusLine(int clvN, double meanClvPts)
+    {
+        var mean = clvN == 0 ? "n/a" : meanClvPts.ToString("+0.000;-0.000;0.000");
+        return IsKelly5Promoted(clvN, meanClvPts)
+            ? $"STAKE GATE: Kelly5 PROMOTED (clv_n={clvN}/{MinClvN} mean={mean})"
+            : $"STAKE GATE: Kelly5 NOT PROMOTED (clv_n={clvN}/{MinClvN} mean={mean}; cap 2%)";
+    }
+}
+
 /// <summary>Independent paper books — same schemes, separate $1000 seeds, separate GO decisions.</summary>
 public static class PaperVenues
 {
@@ -73,6 +95,7 @@ public static class StakeSchemes
     /// <summary>
     /// Stake in dollars for this scheme given current lane bankroll.
     /// <paramref name="absEdge"/> = |modelExp − line| (points/goals); used by EdgeBand.
+    /// <paramref name="kelly5Promoted"/> must be true (live CLV gate) before Kelly5 may use the 5% cap.
     /// </summary>
     public static double StakeDollars(
         string schemeCode,
@@ -80,7 +103,8 @@ public static class StakeSchemes
         int americanOdds,
         double bankroll,
         double absEdge = 0,
-        string sport = "")
+        string sport = "",
+        bool kelly5Promoted = false)
     {
         if (bankroll <= 0 || modelWinProb is < 0 or > 1)
             return 0;
@@ -89,12 +113,14 @@ public static class StakeSchemes
         if (ev < 0.04)
             return 0;
 
+        var kellyFrac = OddsMath.FractionalKelly(modelWinProb, americanOdds, 0.25);
+        var kelly5Cap = kelly5Promoted ? StakeGate.WideCapFrac : StakeGate.SoftCapFrac;
         var code = schemeCode.ToUpperInvariant();
         return code switch
         {
             "FLAT" => 10.0,
-            "KELLY2" => bankroll * Math.Min(0.02, OddsMath.FractionalKelly(modelWinProb, americanOdds, 0.25)),
-            "KELLY5" => bankroll * Math.Min(0.05, OddsMath.FractionalKelly(modelWinProb, americanOdds, 0.25)),
+            "KELLY2" => bankroll * Math.Min(StakeGate.SoftCapFrac, kellyFrac),
+            "KELLY5" => bankroll * Math.Min(kelly5Cap, kellyFrac),
             "EVPROP" => bankroll * Math.Min(0.02, Math.Max(0.005, 0.35 * ev)),
             "CONFBAND" => bankroll * ConfFrac(modelWinProb),
             "EDGEBAND" => bankroll * EdgeFrac(absEdge, sport),
