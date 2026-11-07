@@ -35,12 +35,27 @@ public class StakeSchemesTests
     }
 
     [Test]
-    public async Task Kelly5_AllowsWiderThanKelly2()
+    public async Task Kelly5_Unpromoted_CapsLikeKelly2()
     {
         var k2 = StakeSchemes.StakeDollars("Kelly2", 0.65, -110, 1000);
-        var k5 = StakeSchemes.StakeDollars("Kelly5", 0.65, -110, 1000);
+        var k5 = StakeSchemes.StakeDollars("Kelly5", 0.65, -110, 1000, kelly5Promoted: false);
+        await Assert.That(k5).IsEqualTo(k2).Within(0.01);
+        var gated = StakeGate.IsKelly5Promoted(12, 0.5);
+        await Assert.That(gated).IsFalse();
+        await Assert.That(StakeGate.StatusLine(12, 0.5)).Contains("NOT PROMOTED");
+    }
+
+    [Test]
+    public async Task Kelly5_Promoted_AllowsWiderThanKelly2()
+    {
+        var k2 = StakeSchemes.StakeDollars("Kelly2", 0.65, -110, 1000);
+        var k5 = StakeSchemes.StakeDollars("Kelly5", 0.65, -110, 1000, kelly5Promoted: true);
         await Assert.That(k5).IsGreaterThan(k2);
         await Assert.That(k5).IsLessThanOrEqualTo(50.0);
+        var ok = StakeGate.IsKelly5Promoted(100, 0.01);
+        var zeroMean = StakeGate.IsKelly5Promoted(100, 0);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(zeroMean).IsFalse();
     }
 
     [Test]

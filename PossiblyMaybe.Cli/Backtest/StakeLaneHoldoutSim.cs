@@ -79,7 +79,8 @@ public static class StakeLaneHoldoutSim
         var n = 0;
         foreach (var b in bets)
         {
-            var stake = StakeSchemes.StakeDollars(scheme, b.ModelProb, american, bank, b.AbsEdge, b.Sport);
+            // Historical what-if: show uncapped Kelly5; live paper uses StakeGate via PaperLedger.
+            var stake = StakeSchemes.StakeDollars(scheme, b.ModelProb, american, bank, b.AbsEdge, b.Sport, kelly5Promoted: true);
             if (stake < 0.50) continue;
             n++;
             var pnlU = TotalsMath.OuPnL(american, b.Won ? 1 : -1);

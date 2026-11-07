@@ -40,6 +40,24 @@ public static class PaperLedger
     public static async Task<double> BankrollAsync(AppDbContext db, string scheme, string venue, CancellationToken ct = default)
         => Math.Max(0, await EquityAsync(db, scheme, venue, ct) - await ReservedAsync(db, scheme, venue, ct));
 
+    /// <summary>Global live CLV: all settled paper rows with ClvPts (every venue/scheme).</summary>
+    public static async Task<(int N, double Mean)> LiveClvStatsAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var pts = await db.LedgerEntries.AsNoTracking()
+            .Where(r => r.Result != null && r.ClvPts != null)
+            .Select(r => r.ClvPts!.Value)
+            .ToListAsync(ct);
+        if (pts.Count == 0)
+            return (0, 0);
+        return (pts.Count, pts.Average());
+    }
+
+    public static async Task<bool> Kelly5PromotedAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var (n, mean) = await LiveClvStatsAsync(db, ct);
+        return StakeGate.IsKelly5Promoted(n, mean);
+    }
+
     /// <summary>
     /// Independent multi-venue place: DK + Kalshi + Robinhood (Kalshi prices) + Crypto.com each EV-gate alone.
     /// </summary>
@@ -144,11 +162,13 @@ public static class PaperLedger
             return [];
 
         var group = Guid.NewGuid().ToString("N")[..12];
+        var kelly5Promoted = await Kelly5PromotedAsync(db, ct);
         var placed = new List<LedgerEntry>();
         foreach (var scheme in StakeSchemes.All)
         {
             var bank = await BankrollAsync(db, scheme.Code, venue, ct);
-            var stake = StakeSchemes.StakeDollars(scheme.Code, modelProb, americanOdds, bank, absEdge, sport);
+            var stake = StakeSchemes.StakeDollars(
+                scheme.Code, modelProb, americanOdds, bank, absEdge, sport, kelly5Promoted);
             if (stake < 0.50)
                 continue; // skip dust / ruined / no-EV
 
@@ -280,6 +300,8 @@ public static class PaperLedger
     public static async Task PrintStatusAsync(AppDbContext db, CancellationToken ct = default)
     {
         Console.WriteLine($"Stake trial → {StakeTrial.HorizonEnd:yyyy-MM-dd}  seed ${StakeTrial.SeedDollars:F0}/lane/venue");
+        var (clvN, clvMean) = await LiveClvStatsAsync(db, ct);
+        Console.WriteLine(StakeGate.StatusLine(clvN, clvMean));
         foreach (var venue in PaperVenues.All)
         {
             Console.WriteLine($"--- {venue} leaderboard ---");
@@ -360,6 +382,7 @@ public static class PaperLedger
             }
 
             var have = game.Select(r => r.Scheme).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var kelly5Promoted = await Kelly5PromotedAsync(db, ct);
             foreach (var scheme in StakeSchemes.All)
             {
                 if (have.Contains(scheme.Code))
@@ -367,10 +390,10 @@ public static class PaperLedger
 
                 var bank = await BankrollAsync(db, scheme.Code, venue, ct);
                 var stake = StakeSchemes.StakeDollars(
-                    scheme.Code, sample.ModelProb, sample.AmericanOdds, bank, sample.AbsEdge, sample.Sport);
+                    scheme.Code, sample.ModelProb, sample.AmericanOdds, bank, sample.AbsEdge, sample.Sport,
+                    kelly5Promoted);
                 if (stake < 0.50)
                     continue;
-
                 db.LedgerEntries.Add(new LedgerEntry
                 {
                     PlacedAt = sample.PlacedAt,
