@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for remaining wave-2 Composer agents (T4b/c, T5, T6); `--no-ff` merge T4a+, then T7.
+**Next action:** wait for T4c + T6; then launch T7.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
