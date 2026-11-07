@@ -9,6 +9,8 @@ using PossiblyMaybe.Domain.SportPacks;
 namespace PossiblyMaybe.Cli.Paper;
 
 /// <summary>
+/// Live soft-spot slate: NBA PaceEff + NCAAB (shadow) + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA).
+/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0; all variants go to shadow ledger.
 /// Live soft-spot slate: NBA PaceEff + soccer (paper HOLD-PASS + shadow leagues).
 /// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0 for paper only; all variants go to shadow ledger.
 /// </summary>
@@ -70,6 +72,37 @@ public static class DailySlate
             await WarnIfStaleAsync("NBA", dbPath, yyyymmdd, ct);
         else
             Console.WriteLine($"Gate: w={ChampConfig.MarketWeight} |exp−line|≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0} ¼Kelly≤2%");
+
+        PrintChampGos(candidates, bankroll);
+        await RecordShadowAsync(dbPath, candidates, ct);
+    }
+
+    /// <summary>NCAAB totals slate — shadow-capable; paper GO only when data is fresh.</summary>
+    public static async Task RunNcaabAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
+    {
+        List<SlateCandidate> candidates;
+        try
+        {
+            candidates = await BuildNcaabCandidatesAsync(dbPath, yyyymmdd, ct);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"######## NCAAB SLATE {yyyymmdd} ########");
+            Console.WriteLine($"Scoreboard fetch failed: {ex.Message}");
+            return;
+        }
+
+        var pack = SportPackRegistry.Ncaab;
+        Console.WriteLine($"######## NCAAB SLATE {yyyymmdd} bankroll=${bankroll:F0} shadow {pack.Model} ########");
+        if (candidates.Count == 0)
+        {
+            Console.WriteLine("No NCAAB games on this date.");
+            return;
+        }
+        if (candidates[0].Stale)
+            await WarnIfStaleAsync("NCAAB", dbPath, yyyymmdd, ct);
+        else
+            Console.WriteLine($"Gate: w={pack.MarketWeight} |exp−line|≥{pack.MinAbsTotalEdge} EV≥{pack.MinEv:P0}");
 
         PrintChampGos(candidates, bankroll);
         await RecordShadowAsync(dbPath, candidates, ct);
@@ -152,6 +185,32 @@ public static class DailySlate
                 odds?.OverAmerican, odds?.UnderAmerican,
                 sigma,
                 ChampConfig.MarketWeight, ChampConfig.MinAbsTotalEdge, ChampConfig.MinEv,
+                stale));
+        }
+        return list;
+    }
+
+    public static async Task<List<SlateCandidate>> BuildNcaabCandidatesAsync(
+        string dbPath, string yyyymmdd, CancellationToken ct = default)
+    {
+        var pack = SportPackRegistry.Ncaab;
+        var book = await BuildNcaabScoringBookAsync(dbPath, ct);
+        var games = await FetchNcaabScoreboardAsync(yyyymmdd, ct);
+        var stale = games.Count > 0 && await IsLeagueStaleAsync("NCAAB", dbPath, yyyymmdd, ct);
+        var list = new List<SlateCandidate>();
+        foreach (var g in games)
+        {
+            var modelExp = book.ExpectedTotal(g.Home, g.Away);
+            var odds = g.Total is { } t
+                ? new EspnOdds(t, null, null)
+                : await FetchEspnOddsAsync("basketball", "mens-college-basketball", g.EspnId, ct);
+            list.Add(new SlateCandidate(
+                "NCAAB", yyyymmdd, g.Home, g.Away,
+                modelExp, null, null,
+                odds?.Total, odds?.Total,
+                odds?.OverAmerican, odds?.UnderAmerican,
+                0,
+                pack.MarketWeight, pack.MinAbsTotalEdge, pack.MinEv,
                 stale));
         }
         return list;
@@ -251,6 +310,22 @@ public static class DailySlate
             dir = dir.Parent;
         }
         return Directory.GetCurrentDirectory();
+    }
+
+    private static async Task<ScoringBook> BuildNcaabScoringBookAsync(string dbPath, CancellationToken ct)
+    {
+        var pack = SportPackRegistry.Ncaab;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "NCAAB" && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: NcaabChampConfig.LeagueInitTotal);
+        foreach (var g in games)
+            book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+        return book;
     }
 
     private static async Task<(PaceEfficiencyBook Pace, double Sigma)> BuildNbaPaceAndSigmaAsync(
@@ -387,6 +462,15 @@ public static class DailySlate
         return ParseScoreboard(doc, "NBA");
     }
 
+    private static async Task<List<SlateGame>> FetchNcaabScoreboardAsync(string yyyymmdd, CancellationToken ct)
+    {
+        var url =
+            $"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates={yyyymmdd}";
+        using var doc = await Http.GetFromJsonAsync<JsonDocument>(url, ct)
+            ?? throw new InvalidOperationException("NCAAB scoreboard empty");
+        return ParseScoreboard(doc, "NCAAB");
+    }
+
     private static async Task<List<SlateGame>> FetchSoccerScoreboardAsync(
         string sport, string espnLeague, string yyyymmdd, CancellationToken ct)
     {
@@ -459,6 +543,9 @@ public static class DailySlate
             var n = TeamCodes.TryNormalize(abbr) ?? abbr;
             return n;
         }
+
+        if (sport == "NCAAB")
+            return SportTeams.ResolveNcaa(abbr, display, shortName);
 
         return SportTeams.ResolveSoccer(sport, abbr, display, shortName);
     }

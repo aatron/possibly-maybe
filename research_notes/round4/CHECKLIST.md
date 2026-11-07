@@ -4,7 +4,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 
 ## A. Carried over from round 3
 - [ ] Serie A keep/fix/drop verdict (r3 W9) → D2
-- [ ] NCAAB totals pack (r3 W10) → C1
+- [x] NCAAB totals pack (r3 W10) → C1 (`c1_proof.md`, holdout 2021-22 locked)
 - [ ] Training-process review across all books (r2 phase 6 / r3 W11) → D3
 - [ ] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4
 - [ ] archive.org odds history (r3 W16, **agent still running**) → import in C0 / league items
