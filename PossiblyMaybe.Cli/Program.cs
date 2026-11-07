@@ -157,6 +157,7 @@ switch (command)
         }
         // `sweep-totals [db] --cal` → same-gate Platt/Ridge vs PaceEff only
         // `sweep-totals [db] --absence` → same-gate PaceEff vs tip-time DNP absence adj
+        // `sweep-totals [db] --normal-sigma` → Tier A Normal residual-σ vs logistic champ
         if (args.Any(a => a is "--cal" or "cal"))
             await TotalsSweep.CompareChampGatesAsync(dbPath);
         else if (args.Any(a => a is "--absence" or "absence"))
@@ -171,6 +172,8 @@ switch (command)
 
             await TotalsSweep.CompareAbsenceAsync(dbPath, scale);
         }
+        else if (args.Any(a => a is "--normal-sigma" or "normal-sigma"))
+            await NbaNormalSigmaTierA.RunAsync(dbPath);
         else
             await TotalsSweep.RunAsync(dbPath);
         return 0;
@@ -308,7 +311,9 @@ switch (command)
             return 3;
         }
         var betOver = edge > 0;
-        var p = betOver ? TotalsMath.OverProb(exp, openTotal) : 1 - TotalsMath.OverProb(exp, openTotal);
+        // NBA path: Normal CDF with locked expanding-train fallback σ (same as slate/backtest).
+        var pOver = TotalsMath.NormalOverProb(exp, openTotal, ExpandingResidualSigma.FallbackSigma);
+        var p = betOver ? pOver : 1 - pOver;
         var advice = BetDecider.Advise(p, juice, bankroll, ChampConfig.MinEv);
         Console.WriteLine(advice.Go ? "GO" : "NO-GO");
         Console.WriteLine($"side={(betOver ? "OVER" : "UNDER")} total={openTotal:F1} edge={edge:F2} EV={advice.Ev:P2}");
@@ -610,8 +615,8 @@ static void PrintUsage()
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
+          sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
-          sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
