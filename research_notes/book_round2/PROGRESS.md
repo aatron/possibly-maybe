@@ -46,6 +46,7 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | KEEP SERIEA/LIGUE1; FAIL LIGAMX | KEEP (per-league) | merged |
 | nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer → Sonnet (merge) | FAIL (0/8 ΔPnL; Kelly worse) | report only | — | **USER OVERRIDE 2026-11-07: merge** (same GO set; honest P/EV; smaller uncapped Kelly) | in progress |
 | daily-refresh-all-leagues | `../pm-fix-daily-refresh` `fix/daily-refresh` | Sonnet | n/a (ops) | — | — | USER 2026-11-07: daily script refreshes every league + team aliases + stale-data guard | in progress |
+| line-tracker-nfl-mlb | `../pm-feat-line-tracker` `feat/line-tracker` | Sonnet | n/a (ops: start O→C history) | — | — | USER 2026-11-07: track NFL + MLB lines (DK/ESPN, Kalshi, Crypto.com) going forward | in progress |
 | venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
 | strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
 | inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | FAIL | — | — | KILL (unmerged) | — |
@@ -124,3 +125,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-29 | `import-round2-odds`: NFL +2892 O→C overlays; MLB +25571 games. Hunts: NFL FAIL, MLB FAIL (docs). |
 | 2026-11-07 | Replay 10-30→11-06 (38 picks, 18–20, −3.64u flat) → `reports/replay_2026-10-30_to_11-06.md`. Found: soccer DB has no 2026-27 games; Le Mans→Metz mapping bug; Serie A DC not credible. Settled 4 open DK paper tickets (2W 2L). |
 | 2026-11-07 | User: daily script must refresh every league; merge NBA Normal-σ curve (override KILL); list planned-not-implemented. Two Sonnet agents launched. |
+| 2026-11-07 | User: start tracking NFL/MLB lines; asked about college sports + bet sizing. Line-tracker Sonnet agent launched. |
