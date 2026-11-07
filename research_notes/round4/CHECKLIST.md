@@ -35,7 +35,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 ## D. Leagues / markets never or not properly tested
 - [ ] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2
 - [ ] NFL: Tier A on filled O→C; `nfl-wind` alone; 1H / quarter / team totals (Kalshi lists them) → C3
-- [ ] MLB: Tier A 2011–2019 + look-once 2021 (never run); F5 + team totals for spring → C4
+- [x] MLB: Tier A 2011–2019 + look-once 2021; F5 + team totals spring ready flag → C4 (`c4_proof.md`)
 - [ ] La Liga, EFL back in **shadow** (FAILED as champs; waves may still appear) → C5
 - [ ] New leagues the venues list (EPL, Bundesliga, UCL, NHL, WNBA, NWSL, NCAAW, …), data-gated → A4 → C6
 - [ ] Spreads / moneylines (DB has ML + SPREAD; only NBA ATS was ever tracked) → C7

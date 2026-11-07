@@ -216,6 +216,32 @@ switch (command)
         await MlbTotalsBacktest.SweepAsync(dbPath, pf);
         return 0;
     }
+    case "tier-a-mlb":
+    {
+        // tier-a-mlb [db] — C4 Tier A 2011–2019 + look-once 2021
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        var pf = Path.Combine(ResolveRawRoot(), "mlb", "park_factors.csv");
+        if (!File.Exists(pf))
+        {
+            var altPf = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "data", "raw", "mlb", "park_factors.csv"));
+            if (File.Exists(altPf)) pf = altPf;
+        }
+        await MlbTotalsTierA.RunAsync(dbPath, File.Exists(pf) ? pf : null);
+        return 0;
+    }
     case "sweep-nfl":
     {
         var repoRoot = FindRepoRoot();
@@ -803,6 +829,7 @@ static void PrintUsage()
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          tier-a-mlb [db]                    C4 MLB Tier A 2011–2019 + look-once 2021
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
