@@ -46,8 +46,8 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | KEEP SERIEA/LIGUE1; FAIL LIGAMX | KEEP (per-league) | merged |
 | nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer → Sonnet (merge) | FAIL (0/8 ΔPnL; Kelly worse) | report only | — | **USER OVERRIDE 2026-11-07: merged** (same GO set; P 0.86→0.64, EV 63%→23% at 7pt edge; 64/64 tests) | ac8d180 |
 | daily-refresh-all-leagues | `../pm-fix-daily-refresh` `fix/daily-refresh` | Sonnet | n/a (ops) | — | — | USER 2026-11-07: daily script refreshes every league + team aliases + stale-data guard | in progress |
-| line-tracker-nfl-mlb | `../pm-feat-line-tracker` `feat/line-tracker` | Sonnet | n/a (ops: start O→C history) | — | — | USER 2026-11-07: track NFL + MLB lines (DK/ESPN, Kalshi, Crypto.com) going forward | in progress |
-| oregon-exclusion | `../pm-fix-oregon` `fix/oregon-exclusion` | Sonnet | n/a (user cardinal rule) | — | — | USER 2026-11-07: never bet any Oregon-based team (Ducks, Beavers, Timbers, Blazers, …) — enforce in code | in progress |
+| line-tracker-nfl-mlb | `../pm-feat-line-tracker` `feat/line-tracker` | Sonnet | n/a (ops: start O→C history) | — | — | USER 2026-11-07: track NFL + MLB lines — merged; cron NOT installed yet (see line_tracker.md); importer → OddsSnapshots TODO | 12c6487 |
+| oregon-exclusion | `../pm-fix-oregon` `fix/oregon-exclusion` | Sonnet | n/a (user cardinal rule) | — | — | USER 2026-11-07: never bet any Oregon-based team — enforced (slates, paper-go/bet, backtests); 86/86 tests | b71f641 |
 | venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
 | strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
 | inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | FAIL | — | — | KILL (unmerged) | — |
@@ -129,3 +129,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-11-07 | User: start tracking NFL/MLB lines; asked about college sports + bet sizing. Line-tracker Sonnet agent launched. |
 | 2026-11-07 | NBA Normal-σ merged (ac8d180), tests 64/64. |
 | 2026-11-07 | User cardinal rule: never bet Oregon teams → AGENTS.md, HANDOFF, memory; Sonnet agent enforcing in code. |
+| 2026-11-07 | Merged Oregon exclusion (b71f641) + line tracker (12c6487); .pyc cleanup (d006f6f). Daily-refresh agent still running. |
