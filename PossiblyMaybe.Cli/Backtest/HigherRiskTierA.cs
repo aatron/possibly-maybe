@@ -6,15 +6,19 @@ namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
 /// Tier A for B8: +conformal (empirical abs-residual) and kalman ratings vs V0 (PaceEffNormal).
-/// Keep rule (pre-registered): mean fold CLV ≥ V0; else register but document FAIL.
+/// Keep rule (pre-registered): mean fold CLV ≥ V0 and n≥40. PASS → Shadow only.
 /// </summary>
 public static class HigherRiskTierA
 {
     public static readonly string[] FoldSeasons = NbaNormalSigmaTierA.FoldSeasons;
     public const int NTrials = 2; // conformal α locked; kalman q locked to α=0.15
 
-    public static async Task RunAsync(string dbPath, CancellationToken ct = default)
+    public static async Task<(bool ConformalPass, bool KalmanPass)> RunAsync(
+        string dbPath,
+        TrialLedger? trials = null,
+        CancellationToken ct = default)
     {
+        trials ??= new TrialLedger();
         const double w = ChampConfig.MarketWeight, minEv = ChampConfig.MinEv, edge = ChampConfig.MinAbsTotalEdge;
 
         Console.WriteLine("######## Tier A: B8 higher-risk (+conformal, kalman) vs V0 ########");
@@ -25,10 +29,13 @@ public static class HigherRiskTierA
         Console.WriteLine($"Holdout {TotalsEdgeBacktest.HoldoutSeason} not used for selection.\n");
 
         Console.WriteLine(
-            $"{"fold",6} {"nV0",5} {"clvV0",7} {"nCf",5} {"clvCf",7} {"nKal",5} {"clvKal",7}");
+            $"{"fold",6} {"nV0",5} {"clvV0",7} {"pnlV0",7} {"nCf",5} {"clvCf",7} {"pnlCf",7} {"nKal",5} {"clvKal",7} {"pnlKal",7}");
 
         double sumClvV0 = 0, sumClvCf = 0, sumClvKal = 0;
+        double sumPnlV0 = 0, sumPnlCf = 0, sumPnlKal = 0;
         var nFolds = 0;
+        var foldWinsCf = 0;
+        var foldWinsKal = 0;
         var totalV0 = 0;
         var totalCf = 0;
         var totalKal = 0;
@@ -40,11 +47,16 @@ public static class HigherRiskTierA
             sumClvV0 += v0.MeanClv;
             sumClvCf += cf.MeanClv;
             sumClvKal += kal.MeanClv;
+            sumPnlV0 += v0.PaperPnlUnits;
+            sumPnlCf += cf.PaperPnlUnits;
+            sumPnlKal += kal.PaperPnlUnits;
             totalV0 += v0.Bets;
             totalCf += cf.Bets;
             totalKal += kal.Bets;
+            if (cf.PaperPnlUnits > v0.PaperPnlUnits) foldWinsCf++;
+            if (kal.PaperPnlUnits > v0.PaperPnlUnits) foldWinsKal++;
             Console.WriteLine(
-                $"{season,6} {v0.Bets,5} {v0.MeanClv,7:F2} {cf.Bets,5} {cf.MeanClv,7:F2} {kal.Bets,5} {kal.MeanClv,7:F2}");
+                $"{season,6} {v0.Bets,5} {v0.MeanClv,7:F2} {v0.PaperPnlUnits,7:F1} {cf.Bets,5} {cf.MeanClv,7:F2} {cf.PaperPnlUnits,7:F1} {kal.Bets,5} {kal.MeanClv,7:F2} {kal.PaperPnlUnits,7:F1}");
         }
 
         var meanV0 = sumClvV0 / nFolds;
@@ -52,19 +64,26 @@ public static class HigherRiskTierA
         var meanKal = sumClvKal / nFolds;
         Console.WriteLine();
         Console.WriteLine($"Mean fold CLV  V0={meanV0:F3}  +conformal={meanCf:F3}  kalman={meanKal:F3}");
+        Console.WriteLine($"Sum flat PnL   V0={sumPnlV0:F1}  +conformal={sumPnlCf:F1}  kalman={sumPnlKal:F1}");
         Console.WriteLine($"Bets total     V0={totalV0}  +conformal={totalCf}  kalman={totalKal}");
+        Console.WriteLine($"PnL>V0 folds   +conformal={foldWinsCf}/{nFolds}  kalman={foldWinsKal}/{nFolds}");
 
-        var keepCf = meanCf >= meanV0 && totalCf >= 40;
-        var keepKal = meanKal >= meanV0 && totalKal >= 40;
-        Console.WriteLine(
-            keepCf
-                ? $"+conformal KEEP (meanCLV≥V0={meanCf >= meanV0} n≥40={totalCf >= 40})"
-                : $"+conformal FAIL keep (meanCLV≥V0={meanCf >= meanV0} n≥40={totalCf >= 40}) — still registered");
-        Console.WriteLine(
-            keepKal
-                ? $"kalman KEEP (meanCLV≥V0={meanKal >= meanV0} n≥40={totalKal >= 40})"
-                : $"kalman FAIL keep (meanCLV≥V0={meanKal >= meanV0} n≥40={totalKal >= 40}) — still registered");
+        var keepCf = TierAShadowVerdict.Pass(meanCf, meanV0, totalCf);
+        var keepKal = TierAShadowVerdict.Pass(meanKal, meanV0, totalKal);
+
+        var from = FoldSeasons[0];
+        var to = FoldSeasons[^1];
+        TierAShadowVerdict.Emit(
+            trials, "+conformal", keepCf,
+            paramsJson: "{\"family\":\"b8\",\"tier\":\"A\",\"alpha\":0.1}",
+            dateFrom: from, dateTo: to, gridSize: 1);
+        TierAShadowVerdict.Emit(
+            trials, "kalman", keepKal,
+            paramsJson: "{\"family\":\"b8\",\"tier\":\"A\",\"q\":0.15}",
+            dateFrom: from, dateTo: to, gridSize: 1);
+        Console.WriteLine(trials.FormatReportFooter());
         Console.WriteLine("No Tier C. Do not place bets from this agent.");
+        return (keepCf, keepKal);
     }
 
     public static async Task<(Gate1aResult V0, Gate1aResult Conformal, Gate1aResult Kalman)> RunFoldAsync(

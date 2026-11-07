@@ -48,6 +48,14 @@ NBA family fold table completed once in Round 5 **T4b**: `research_notes/round5/
 | `V-NBA-STRICT` | **FAIL** (n=0) |
 | `V-EV-04-10` / `V-EV-10-20` / `V-EV-04-20` | **FAIL** (n=0; V0 EVs above band caps) |
 
+**`soccer-strict` fold table (Round 5 T4c):** scored once 2026-11-07 — [`../round5/t4c_proof.md`](../round5/t4c_proof.md). Verdict **FAIL** → Shadow marked FAIL (n=31&lt;40; mean CLV 0.076 &lt; V0 0.175). Remaining B7 cells (`+fitted-curve-*`, `nba-strict`, EV-bands) → Round 5 T4b.
+
+Reliability table template (fill after Tier A run):
+
+| Variant | Decile | Mean P | Hit rate | n |
+|---|---|---|---|---|
+| V-FC-NBA | … | | | |
+
 No paper promotion / re-tune from this table.
 
 ## Not in B7

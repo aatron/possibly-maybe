@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for T4c + T6; then launch T7.
+**Next action:** merge T6; then launch T7 (engine-walk + two-week replay).
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
@@ -13,7 +13,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | `t3_proof.md` — AsOfView can't see close | done | 2f63518 |
 | T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | `t4a_proof.md` — dists PASS; pooling FAIL | done | 7b68dc8 |
 | T4b | Tier A once: refs-nba, fitted / strict / EV-band | Composer | `../pm-r5-t4b` `r5/t4b` | `t4b_proof.md` — refs+FC PASS Shadow; strict/EV FAIL | done | acf5e64 |
-| T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | fold table vs V0 | running | |
+| T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | `t4c_proof.md` — kalman PASS; conformal+strict FAIL | done | fe3bfa8 |
 | T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | `t5_proof.md` — N_trials=0; CUSUM prior wired | done | 55a2a18 |
 | T6 | NHL + NFL re-test | Composer | `../pm-r5-t6` `r5/t6` | Tier A / C once | running | |
 | T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | no-peek walk test; report | planned | |
@@ -29,7 +29,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | 2026-11-07 | T2b merged `--no-ff`: `import-nfl-aus`, 2022 filled, 88.4% real prices. |
 | 2026-11-07 | T3 merged `--no-ff`: ESPN lines 2026-10-24→11-06 (406/409 O+C); AsOfView no-peek. |
 | 2026-11-07 | Wave 2 launched (Composer): T4a/b/c, T5, T6. |
-| 2026-11-07 | T5 on `r5/t5`: seasonality-scan N_trials=0 (no settled CLV); radar CUSUM prior h=7 + synthetic tests; `t5_proof.md`. |
 | 2026-11-07 | T5 merged `--no-ff`: seasonality BH prior into radar (CUSUM h 10→7); N_trials=0 settled CLV. |
-| 2026-11-07 | T4b merged `--no-ff`: refs-nba + V-FC-NBA PASS→Shadow; nba-strict + EV-bands FAIL; trial ledger +6. |
-| 2026-11-07 | T4a merged `--no-ff`: soccer dists mostly PASS→Shadow; +pooling FAIL all leagues; N_trials=17. |
+| 2026-11-07 | T4b merged `--no-ff`: refs-nba + V-FC-NBA PASS→Shadow; nba-strict + EV-bands FAIL. |
+| 2026-11-07 | T4a merged `--no-ff`: soccer dists mostly PASS→Shadow; +pooling FAIL; N_trials=17. |
+| 2026-11-07 | T4c merged `--no-ff`: kalman PASS→Shadow; +conformal + soccer-strict FAIL; N_trials=3. |
