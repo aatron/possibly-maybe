@@ -45,7 +45,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | D2 | Serie A verdict | Composer | main | `d2_serie_a_verdict.md` **cut** | done | (this commit) |
 | D3 | Training-process review | Auto / Composer | reports | `reports/training_process_review.md` | done | (this commit) |
 | D4 | Round-4 waves report | Auto / Composer | reports | `reports/round4_waves.md` | done | (this commit) |
-| D5 | Green tests, clean run, push | parent | main | — | pending | |
+| D5 | Green tests, clean run, push | parent | main | 281 tests | done | (this) |
 | r3-W16 | archive.org odds (carried) | Composer | notes + data/raw | O→C seasons | **done** — `round3/archive_org_odds.md`; NHL SBRO 15 szn + MLB 2016 + AUS NFL 2022–25 totals on disk; page snapshots rejected; PT skip; import Composer follow-up | |
 
 ## Log
@@ -77,3 +77,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | D1 true close on settle: LALIGA/EFL ResolveTeam, full-name↔abbr tracker match, VariantSettle snapshots fallback, radar blocks cross-book promotion. Proof `d1_proof.md`. |
 | 2026-11-07 | D2 Serie A verdict **cut**: Tier A poisson re-run PASS; V-SA0 for paper default; shadow+radar stay; B4 negbin/ρ folds deferred. `d2_serie_a_verdict.md`. |
 | 2026-11-07 | D3 + D4 close-out reports: `reports/training_process_review.md`, `reports/round4_waves.md` (from existing proofs; no invented Tier A). |
+| 2026-11-07 | D5: 281 tests green; pm-calculate run; push origin main. Round 4 closed. |
