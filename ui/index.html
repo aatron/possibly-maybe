@@ -42,11 +42,11 @@
   #board-table tbody tr { cursor:pointer; }
   #board-table tbody tr:hover td { background: rgba(108,182,255,0.06); }
   #board-table tbody tr.active td { background: rgba(108,182,255,0.12); }
-  #detail { display:none; }
-  #detail.open { display:block; }
+  #detail { display:block; }
   .detail-head { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; }
   .detail-head h2 { margin:0; font-size:1.05rem; font-weight:600; }
-  .detail-close { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.7rem; cursor:pointer; font:inherit; }
+  .detail-clear { background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:0.3rem 0.7rem; cursor:pointer; font:inherit; }
+  .detail-clear[hidden] { display:none; }
   .ticket-scroll { max-height: 22rem; overflow:auto; }
   .badge { display:inline-block; min-width:1.6rem; text-align:center; padding:0.1rem 0.35rem; border-radius:4px; font-size:0.75rem; font-weight:600; }
   .badge.open { background:#2a3544; color:var(--muted); }
@@ -76,7 +76,8 @@
   <p id="sub">Loading…</p>
 </header>
 <div class="tabs" id="tabs">
-  <button type="button" class="tab active" data-venue="DK">DraftKings</button>
+  <button type="button" class="tab active" data-venue="All">All</button>
+  <button type="button" class="tab" data-venue="DK">DraftKings</button>
   <button type="button" class="tab" data-venue="Kalshi">Kalshi</button>
   <button type="button" class="tab" data-venue="Robinhood">Robinhood</button>
   <button type="button" class="tab" data-venue="CryptoCom">Crypto.com</button>
@@ -116,13 +117,13 @@
         <h2 id="detail-title">Tickets</h2>
         <div class="hint rule" id="detail-hint"></div>
       </div>
-      <button type="button" class="detail-close" id="detail-close">Close</button>
+      <button type="button" class="detail-clear" id="detail-clear" hidden>All lanes</button>
     </div>
     <div class="ticket-scroll">
       <table>
         <thead>
           <tr>
-            <th>#</th><th>When</th><th>Game</th><th>Side</th><th>Line</th><th>Odds</th>
+            <th>Venue</th><th>Lane</th><th>#</th><th>When</th><th>Game</th><th>Side</th><th>Line</th><th>Odds</th>
             <th>Stake</th><th>p</th><th>Edge</th><th>Result</th><th>PnL</th><th>CLV</th>
           </tr>
         </thead>
@@ -133,7 +134,7 @@
 </main>
 <script>
 const DATA = {
-  "generatedAt": "2026-10-29T05:23:27.7388387\u002B00:00",
+  "generatedAt": "2026-11-07T16:43:55.9194440\u002B00:00",
   "horizonEnd": "2026-12-31",
   "seed": 1000,
   "venues": {
@@ -143,15 +144,15 @@ const DATA = {
           "code": "Flat",
           "name": "Level Flat",
           "rule": "$10 every GO",
-          "bank": 1016.36,
-          "reserved": 60,
-          "available": 956.36,
-          "pnl": 16.36,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 10.91,
+          "bank": 994.55,
+          "reserved": 0,
+          "available": 994.55,
+          "pnl": -5.45,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 50.91,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -180,6 +181,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1016.36
+            },
+            {
+              "t": "2026-10-29T05:11:42.3347198\u002B00:00",
+              "bank": 1006.36
+            },
+            {
+              "t": "2026-10-29T05:11:43.2870752\u002B00:00",
+              "bank": 996.36
+            },
+            {
+              "t": "2026-10-29T05:11:44.2324141\u002B00:00",
+              "bank": 986.36
+            },
+            {
+              "t": "2026-10-29T05:11:45.2150242\u002B00:00",
+              "bank": 976.36
+            },
+            {
+              "t": "2026-10-29T05:11:46.1599532\u002B00:00",
+              "bank": 985.45
+            },
+            {
+              "t": "2026-10-29T05:11:47.1226632\u002B00:00",
+              "bank": 994.55
             }
           ],
           "tickets": [
@@ -194,8 +219,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 9.09,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -212,8 +237,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 9.09,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -230,8 +255,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -248,8 +273,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -266,8 +291,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -284,8 +309,8 @@ const DATA = {
               "stake": 10,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -405,15 +430,15 @@ const DATA = {
           "code": "Kelly2",
           "name": "Quarter Cap",
           "rule": "\u00BC Kelly, max 2% bankroll",
-          "bank": 1032.73,
-          "reserved": 117.89,
-          "available": 914.84,
-          "pnl": 32.73,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 21.82,
+          "bank": 986.85,
+          "reserved": 0,
+          "available": 986.85,
+          "pnl": -13.15,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 101.99,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -442,6 +467,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1032.73
+            },
+            {
+              "t": "2026-10-29T05:11:42.3691848\u002B00:00",
+              "bank": 1012.08
+            },
+            {
+              "t": "2026-10-29T05:11:43.3202318\u002B00:00",
+              "bank": 991.84
+            },
+            {
+              "t": "2026-10-29T05:11:44.2658300\u002B00:00",
+              "bank": 972
+            },
+            {
+              "t": "2026-10-29T05:11:45.2506953\u002B00:00",
+              "bank": 952.56
+            },
+            {
+              "t": "2026-10-29T05:11:46.1936151\u002B00:00",
+              "bank": 969.88
+            },
+            {
+              "t": "2026-10-29T05:11:47.1579488\u002B00:00",
+              "bank": 986.85
             }
           ],
           "tickets": [
@@ -456,8 +505,8 @@ const DATA = {
               "stake": 18.67,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 16.97,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -474,8 +523,8 @@ const DATA = {
               "stake": 19.05,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 17.32,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -492,8 +541,8 @@ const DATA = {
               "stake": 19.44,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.44,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -510,8 +559,8 @@ const DATA = {
               "stake": 19.84,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.84,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -528,8 +577,8 @@ const DATA = {
               "stake": 20.24,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.24,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -546,8 +595,8 @@ const DATA = {
               "stake": 20.65,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.65,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -667,15 +716,15 @@ const DATA = {
           "code": "Kelly5",
           "name": "Quarter Wide",
           "rule": "\u00BC Kelly, max 5% bankroll",
-          "bank": 1088.32,
-          "reserved": 254.19,
-          "available": 834.13,
-          "pnl": 88.32,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 30.17,
+          "bank": 965.08,
+          "reserved": 0,
+          "available": 965.08,
+          "pnl": -34.92,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 215.77,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -704,6 +753,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1088.32
+            },
+            {
+              "t": "2026-10-29T05:11:42.3697925\u002B00:00",
+              "bank": 1033.9
+            },
+            {
+              "t": "2026-10-29T05:11:43.3207694\u002B00:00",
+              "bank": 988.2
+            },
+            {
+              "t": "2026-10-29T05:11:44.2663947\u002B00:00",
+              "bank": 938.79
+            },
+            {
+              "t": "2026-10-29T05:11:45.2512929\u002B00:00",
+              "bank": 902.72
+            },
+            {
+              "t": "2026-10-29T05:11:46.1941872\u002B00:00",
+              "bank": 926.5
+            },
+            {
+              "t": "2026-10-29T05:11:47.1586367\u002B00:00",
+              "bank": 965.08
             }
           ],
           "tickets": [
@@ -718,8 +791,8 @@ const DATA = {
               "stake": 42.43,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 38.57,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -736,8 +809,8 @@ const DATA = {
               "stake": 26.16,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 23.78,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -754,8 +827,8 @@ const DATA = {
               "stake": 36.07,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -36.07,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -772,8 +845,8 @@ const DATA = {
               "stake": 49.41,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -49.41,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -790,8 +863,8 @@ const DATA = {
               "stake": 45.7,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -45.7,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -808,8 +881,8 @@ const DATA = {
               "stake": 54.42,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -54.42,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -929,15 +1002,15 @@ const DATA = {
           "code": "EvProp",
           "name": "EV Proportional",
           "rule": "stake \u221D EV, floor 0.5%, cap 2%",
-          "bank": 1033.34,
-          "reserved": 117.96,
-          "available": 915.38,
-          "pnl": 33.34,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 20.13,
+          "bank": 987.43,
+          "reserved": 0,
+          "available": 987.43,
+          "pnl": -12.57,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 100.35,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -966,6 +1039,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1033.34
+            },
+            {
+              "t": "2026-10-29T05:11:42.3699905\u002B00:00",
+              "bank": 1012.67
+            },
+            {
+              "t": "2026-10-29T05:11:43.3209789\u002B00:00",
+              "bank": 992.42
+            },
+            {
+              "t": "2026-10-29T05:11:44.2665971\u002B00:00",
+              "bank": 972.57
+            },
+            {
+              "t": "2026-10-29T05:11:45.2515160\u002B00:00",
+              "bank": 953.12
+            },
+            {
+              "t": "2026-10-29T05:11:46.1943959\u002B00:00",
+              "bank": 970.44
+            },
+            {
+              "t": "2026-10-29T05:11:47.1588511\u002B00:00",
+              "bank": 987.43
             }
           ],
           "tickets": [
@@ -980,8 +1077,8 @@ const DATA = {
               "stake": 18.68,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 16.98,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -998,8 +1095,8 @@ const DATA = {
               "stake": 19.06,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 17.33,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -1016,8 +1113,8 @@ const DATA = {
               "stake": 19.45,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.45,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -1034,8 +1131,8 @@ const DATA = {
               "stake": 19.85,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.85,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -1052,8 +1149,8 @@ const DATA = {
               "stake": 20.25,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.25,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -1070,8 +1167,8 @@ const DATA = {
               "stake": 20.67,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.67,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -1191,15 +1288,15 @@ const DATA = {
           "code": "ConfBand",
           "name": "Confidence Band",
           "rule": "|p\u22120.5| \u2192 0.5\u20132% of bankroll",
-          "bank": 1019.16,
-          "reserved": 54.77,
-          "available": 964.39,
-          "pnl": 19.16,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 7.57,
+          "bank": 994.42,
+          "reserved": 0,
+          "available": 994.42,
+          "pnl": -5.58,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 46.61,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -1228,6 +1325,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1019.16
+            },
+            {
+              "t": "2026-10-29T05:11:42.3702341\u002B00:00",
+              "bank": 1006.38
+            },
+            {
+              "t": "2026-10-29T05:11:43.3212340\u002B00:00",
+              "bank": 997.85
+            },
+            {
+              "t": "2026-10-29T05:11:44.2668525\u002B00:00",
+              "bank": 988.06
+            },
+            {
+              "t": "2026-10-29T05:11:45.2518469\u002B00:00",
+              "bank": 980.12
+            },
+            {
+              "t": "2026-10-29T05:11:46.1946526\u002B00:00",
+              "bank": 986.65
+            },
+            {
+              "t": "2026-10-29T05:11:47.1591225\u002B00:00",
+              "bank": 994.42
             }
           ],
           "tickets": [
@@ -1242,8 +1363,8 @@ const DATA = {
               "stake": 8.55,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 7.77,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -1260,8 +1381,8 @@ const DATA = {
               "stake": 7.18,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 6.53,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -1278,8 +1399,8 @@ const DATA = {
               "stake": 7.94,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -7.94,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -1296,8 +1417,8 @@ const DATA = {
               "stake": 9.79,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -9.79,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -1314,8 +1435,8 @@ const DATA = {
               "stake": 8.53,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -8.53,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -1332,8 +1453,8 @@ const DATA = {
               "stake": 12.78,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -12.78,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -1453,15 +1574,15 @@ const DATA = {
           "code": "EdgeBand",
           "name": "Edge Band",
           "rule": "|model\u2212line| \u2192 0.5\u20132% (sport-scaled)",
-          "bank": 1008.22,
-          "reserved": 46.49,
-          "available": 961.73,
-          "pnl": 8.22,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 5.36,
+          "bank": 986.2,
+          "reserved": 0,
+          "available": 986.2,
+          "pnl": -13.8,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 39.03,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -1490,6 +1611,30 @@ const DATA = {
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1008.22
+            },
+            {
+              "t": "2026-10-29T05:11:42.3705524\u002B00:00",
+              "bank": 996.06
+            },
+            {
+              "t": "2026-10-29T05:11:43.3215535\u002B00:00",
+              "bank": 990.73
+            },
+            {
+              "t": "2026-10-29T05:11:44.2671883\u002B00:00",
+              "bank": 981.02
+            },
+            {
+              "t": "2026-10-29T05:11:45.2522430\u002B00:00",
+              "bank": 974.55
+            },
+            {
+              "t": "2026-10-29T05:11:46.1950002\u002B00:00",
+              "bank": 979.33
+            },
+            {
+              "t": "2026-10-29T05:11:47.1594585\u002B00:00",
+              "bank": 986.2
             }
           ],
           "tickets": [
@@ -1504,8 +1649,8 @@ const DATA = {
               "stake": 7.56,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 6.87,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -1522,8 +1667,8 @@ const DATA = {
               "stake": 5.26,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 4.78,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -1540,8 +1685,8 @@ const DATA = {
               "stake": 6.47,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -6.47,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -1558,8 +1703,8 @@ const DATA = {
               "stake": 9.71,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -9.71,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -1576,8 +1721,8 @@ const DATA = {
               "stake": 5.33,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -5.33,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -1594,8 +1739,8 @@ const DATA = {
               "stake": 12.16,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -12.16,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -2262,11 +2407,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388014\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194126\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388029\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194141\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2287,11 +2432,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388189\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194260\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388190\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194262\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2312,11 +2457,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388201\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194272\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388202\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194273\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2337,11 +2482,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388211\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194281\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388212\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194282\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2362,11 +2507,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388220\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194289\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388221\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194290\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2387,11 +2532,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388231\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194301\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388232\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194303\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2416,11 +2561,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388283\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194371\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388284\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194372\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2441,11 +2586,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388293\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194381\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388294\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194382\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2466,11 +2611,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388302\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194390\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388303\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194391\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2491,11 +2636,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388310\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194398\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388311\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194399\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2516,11 +2661,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388319\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194407\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388320\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194408\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2541,11 +2686,11 @@ const DATA = {
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388328\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194426\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388329\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194428\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2560,16 +2705,49 @@ const sportColors = {
   NBA:'#6cb6ff', MLS:'#3ecf8e', LIGUE1:'#e6b450', LIGAMX:'#d2a8ff', SERIEA:'#f07178',
   EFL:'#89ddff', LALIGA:'#ff9f7a', NFL:'#9cdcfe', MLB:'#c5e478'
 };
-let venue = 'DK';
+let venue = 'All';
 let selected = null;
 let sportFilter = 'ALL';
 let calOffset = 0;
 let equityChart;
 let leagueChart;
 
-function venueBlock() { return (DATA.venues && DATA.venues[venue]) || { lanes: [] }; }
+const VENUE_ORDER = ['DK', 'Kalshi', 'Robinhood', 'CryptoCom'];
+const VENUE_LABEL = { DK: 'DraftKings', Kalshi: 'Kalshi', Robinhood: 'Robinhood', CryptoCom: 'Crypto.com', All: 'All venues' };
+
+/** Merge every venue's tickets per scheme — "soft spots across all markets at once". */
+function allVenuesBlock() {
+  const byCode = new Map();
+  for (const v of VENUE_ORDER) {
+    const block = (DATA.venues && DATA.venues[v]) || { lanes: [] };
+    for (const lane of (block.lanes || [])) {
+      if (!byCode.has(lane.code)) {
+        byCode.set(lane.code, {
+          code: lane.code,
+          name: lane.name,
+          rule: lane.rule,
+          tickets: [],
+        });
+      }
+      for (const t of (lane.tickets || [])) {
+        byCode.get(lane.code).tickets.push({ ...t, venue: t.venue || v });
+      }
+    }
+  }
+  return { lanes: [...byCode.values()] };
+}
+
+function venueBlock() {
+  if (venue === 'All') return allVenuesBlock();
+  return (DATA.venues && DATA.venues[venue]) || { lanes: [] };
+}
 function rawLanes() { return venueBlock().lanes || []; }
-function seed() { return Number(DATA.seed) || 1000; }
+function seed() {
+  const one = Number(DATA.seed) || 1000;
+  // All = sum of independent $1000 books (one seed per venue).
+  return venue === 'All' ? one * VENUE_ORDER.length : one;
+}
+function venueTitle() { return VENUE_LABEL[venue] || venue; }
 
 function sportKey(t) { return (t && t.sport) ? String(t.sport).toUpperCase() : 'UNKNOWN'; }
 function matchSport(t) { return sportFilter === 'ALL' || sportKey(t) === sportFilter; }
@@ -2580,25 +2758,50 @@ function allSports() {
   return [...set].sort();
 }
 
-/** Rebuild lane stats from tickets (respects league filter). */
+function ticketDay(t) {
+  const m = String(t.gameKey || '').match(/^(\d{8})\b/);
+  if (m) return m[1];
+  const d = new Date(t.placedAt);
+  return isNaN(d) ? ymdLocal(new Date()) : ymdLocal(d);
+}
+function dayLabel(ymd) {
+  const y = +ymd.slice(0, 4), mo = +ymd.slice(4, 6) - 1, da = +ymd.slice(6, 8);
+  return new Date(y, mo, da).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** Rebuild lane stats from tickets (respects league filter). Equity = one point per game-day. */
 function computeLane(raw) {
   const tickets = (raw.tickets || []).filter(matchSport)
     .slice().sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
   const settled = tickets.filter(t => t.result != null)
-    .sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+    .sort((a,b) => ticketDay(a).localeCompare(ticketDay(b)) || String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
   const openRows = tickets.filter(t => t.result == null);
-  let bank = seed();
-  const t0 = settled[0]?.placedAt || tickets[0]?.placedAt || DATA.generatedAt;
-  const equity = [{ t: t0, bank }];
-  let peak = seed(), maxDd = 0, run = seed();
+
+  const byDay = new Map();
   for (const r of settled) {
-    bank += Number(r.pnl) || 0;
-    equity.push({ t: r.placedAt, bank: Math.round(bank * 100) / 100 });
-    run += Number(r.pnl) || 0;
-    peak = Math.max(peak, run);
-    maxDd = Math.max(maxDd, peak - run);
+    const d = ticketDay(r);
+    if (!byDay.has(d)) byDay.set(d, []);
+    byDay.get(d).push(r);
   }
-  if (equity.length === 1) equity.push({ t: DATA.generatedAt || new Date().toISOString(), bank: seed() });
+  const days = [...byDay.keys()].sort();
+  let bank = seed();
+  let peak = seed(), maxDd = 0, run = seed();
+  const equity = []; // { day, label, bank } — one per day with settles
+  for (const d of days) {
+    for (const r of byDay.get(d)) {
+      const p = Number(r.pnl) || 0;
+      bank += p;
+      run += p;
+      peak = Math.max(peak, run);
+      maxDd = Math.max(maxDd, peak - run);
+    }
+    equity.push({ day: d, label: dayLabel(d), bank: Math.round(bank * 100) / 100 });
+  }
+  if (equity.length === 0) {
+    const d = ymdLocal(new Date());
+    equity.push({ day: d, label: dayLabel(d), bank: seed() });
+  }
+
   const reserved = openRows.reduce((a,t) => a + Number(t.stake || 0), 0);
   return {
     ...raw,
@@ -2619,31 +2822,53 @@ function computeLane(raw) {
 function lanes() { return rawLanes().map(computeLane); }
 function byCode() { return Object.fromEntries(lanes().map(l => [l.code, l])); }
 
-/** Per-league PnL for filter chips: Flat lane when no selection, else selected lane. */
+/** Tickets for current venue, respecting lane + league filters. */
+function visibleTickets() {
+  const rows = [];
+  for (const l of rawLanes()) {
+    if (selected && l.code !== selected) continue;
+    for (const t of (l.tickets || [])) {
+      if (!matchSport(t)) continue;
+      rows.push({ ...t, scheme: l.code });
+    }
+  }
+  return rows.sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+}
+
+/** Per-league PnL for chips: all lanes unless a lane card is selected. */
 function leagueTotals() {
-  const code = selected || 'Flat';
-  const raw = rawLanes().find(l => l.code === code) || rawLanes()[0];
   const map = {};
-  for (const t of (raw?.tickets || [])) {
-    const s = sportKey(t);
-    if (!map[s]) map[s] = { sport: s, pnl: 0, wins: 0, losses: 0, open: 0, n: 0 };
-    map[s].n++;
-    if (t.result == null) map[s].open++;
-    else {
-      map[s].pnl += Number(t.pnl) || 0;
-      if (t.result === 'W') map[s].wins++;
-      if (t.result === 'L') map[s].losses++;
+  for (const l of rawLanes()) {
+    if (selected && l.code !== selected) continue;
+    for (const t of (l.tickets || [])) {
+      const s = sportKey(t);
+      if (!map[s]) map[s] = { sport: s, pnl: 0, wins: 0, losses: 0, open: 0, n: 0 };
+      map[s].n++;
+      if (t.result == null) map[s].open++;
+      else {
+        map[s].pnl += Number(t.pnl) || 0;
+        if (t.result === 'W') map[s].wins++;
+        if (t.result === 'L') map[s].losses++;
+      }
     }
   }
   return Object.values(map).sort((a,b) => a.sport.localeCompare(b.sport));
 }
 
 function filterNote() {
-  return sportFilter === 'ALL' ? 'all leagues' : sportFilter;
+  const league = sportFilter === 'ALL' ? 'all leagues' : sportFilter;
+  const lane = selected || 'all lanes';
+  return `${lane} · ${league}`;
 }
 
-document.getElementById('sub').textContent =
-  `Seed $${DATA.seed} / lane / venue · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · filter leagues to drop tanking books`;
+function refreshSub() {
+  const seedNote = venue === 'All'
+    ? `Seed $${seed()} / lane (= $${DATA.seed} × ${VENUE_ORDER.length} venues)`
+    : `Seed $${DATA.seed} / lane / venue`;
+  document.getElementById('sub').textContent =
+    `${seedNote} · through ${DATA.horizonEnd} · updated ${new Date(DATA.generatedAt).toLocaleString()} · All = every soft spot taken across DK+Kalshi+RH+Crypto`;
+}
+refreshSub();
 
 document.getElementById('tabs').addEventListener('click', e => {
   const btn = e.target.closest('[data-venue]');
@@ -2651,14 +2876,16 @@ document.getElementById('tabs').addEventListener('click', e => {
   venue = btn.dataset.venue;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.venue === venue));
   selected = null;
-  document.getElementById('detail').classList.remove('open');
+  sportFilter = 'ALL';
+  refreshSub();
   renderAll();
 });
 
 document.getElementById('league-filters').addEventListener('click', e => {
   const btn = e.target.closest('[data-sport]');
   if (!btn) return;
-  sportFilter = btn.dataset.sport;
+  const next = btn.dataset.sport;
+  sportFilter = (next !== 'ALL' && sportFilter === next) ? 'ALL' : next;
   renderAll();
 });
 
@@ -2678,13 +2905,15 @@ function betsForDay(ymd) {
   const filtered = selected ? tickets.filter(t => t.scheme === selected) : tickets;
   const byGame = new Map();
   for (const t of filtered) {
-    if (!byGame.has(t.gameKey)) {
-      byGame.set(t.gameKey, {
+    // All tab: same game on two venues = two soft spots — keep venue in the key.
+    const mapKey = venue === 'All' ? `${t.gameKey}||${t.venue || ''}` : t.gameKey;
+    if (!byGame.has(mapKey)) {
+      byGame.set(mapKey, {
         gameKey: t.gameKey, sport: t.sport, side: t.side, line: t.line,
-        result: t.result, stakes: [],
+        result: t.result, venue: t.venue, stakes: [],
       });
     }
-    byGame.get(t.gameKey).stakes.push({ scheme: t.scheme, stake: t.stake, result: t.result });
+    byGame.get(mapKey).stakes.push({ scheme: t.scheme, stake: t.stake, result: t.result, venue: t.venue });
   }
   return [...byGame.values()];
 }
@@ -2694,7 +2923,7 @@ function renderCalendar() {
   const days = [];
   for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
   const fmt = d => d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
-  const laneNote = selected ? ` · ${selected}` : ` · ${venue} all lanes`;
+  const laneNote = selected ? ` · ${selected}` : ` · ${venueTitle()} all lanes`;
   document.getElementById('cal-range').textContent = `${fmt(days[0])} – ${fmt(days[6])}${laneNote} · ${filterNote()}`;
   const todayYmd = ymdLocal(today);
   document.getElementById('cal-grid').innerHTML = days.map(d => {
@@ -2706,8 +2935,9 @@ function renderCalendar() {
       const stakeTxt = selected
         ? `$${Number(b.stakes[0].stake).toFixed(2)}`
         : `${b.stakes.length} lanes · $${b.stakes.reduce((a,s)=>a+Number(s.stake),0).toFixed(0)} total`;
+      const vLab = venue === 'All' && b.venue ? ` · ${VENUE_LABEL[b.venue] || b.venue}` : '';
       return `<div class="cal-bet"><div class="pick">${b.side} ${Number(b.line).toFixed(1)} <span class="badge ${res}">${res}</span></div>
-        <div>${match}${b.sport?` · ${b.sport}`:''}</div><div class="stake">${stakeTxt}</div></div>`;
+        <div>${match}${b.sport?` · ${b.sport}`:''}${vLab}</div><div class="stake">${stakeTxt}</div></div>`;
     }).join('');
     return `<div class="cal-day${ymd===todayYmd?' today':''}${bets.length===0?' empty':''}">
       <div class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</div>
@@ -2739,54 +2969,60 @@ function renderFilters() {
       return { sport: s, label: s, pnl: row.pnl };
     })
   ];
-  const laneHint = selected || 'Flat';
+  const laneHint = selected || 'all lanes';
   document.getElementById('league-filters').innerHTML =
     `<span class="label">League</span>` +
     chips.map(c => {
       const cls = c.pnl >= 0 ? 'pos' : 'neg';
       return `<button type="button" class="chip${sportFilter===c.sport?' active':''}" data-sport="${c.sport}">${c.label}<span class="pnl ${cls}">${fmtMoney(c.pnl)}</span></button>`;
     }).join('') +
-    `<span class="rule">PnL chips = ${laneHint} lane${selected?'':' (default Flat)'}</span>`;
+    `<span class="rule">PnL chips = ${laneHint}</span>`;
+}
+
+function ticketRowHtml(t) {
+  const res = t.result || 'open';
+  const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
+  const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
+  const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
+  const v = VENUE_LABEL[t.venue] || t.venue || venueTitle();
+  return `<tr>
+    <td>${v}</td><td>${t.scheme || '—'}</td><td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
+    <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
+    <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
+    <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
+    <td>$${Number(t.stake).toFixed(2)}</td>
+    <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
+    <td><span class="badge ${res}">${res}</span></td>
+    <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
+}
+
+function renderTickets() {
+  const rows = visibleTickets();
+  const clearBtn = document.getElementById('detail-clear');
+  if (selected) {
+    const l = byCode()[selected];
+    document.getElementById('detail-title').textContent = `${venueTitle()} · ${selected}${l ? ` — ${l.name}` : ''}`;
+    clearBtn.hidden = false;
+  } else {
+    document.getElementById('detail-title').textContent = `${venueTitle()} · all lanes`;
+    clearBtn.hidden = true;
+  }
+  document.getElementById('detail-hint').textContent =
+    `${rows.length} ticket(s) · ${filterNote()}${selected && byCode()[selected] ? ` · ${byCode()[selected].rule}` : ''}`;
+  document.getElementById('tickets').innerHTML = rows.length === 0
+    ? `<tr><td colspan="14" class="rule">No tickets for this filter on ${venueTitle()}.</td></tr>`
+    : rows.map(ticketRowHtml).join('');
 }
 
 function showLane(code) {
   if (selected === code) { clearLane(); return; }
-  const l = byCode()[code];
-  if (!l) return;
+  if (!byCode()[code]) return;
   selected = code;
-  document.querySelectorAll('.card').forEach(el => el.classList.toggle('active', el.dataset.code === code));
-  document.querySelectorAll('#board-table tbody tr').forEach(el => el.classList.toggle('active', el.dataset.code === code));
-  document.getElementById('detail').classList.add('open');
-  document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
-  document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${filterNote()} · ${l.rule}`;
-  document.getElementById('tickets').innerHTML = l.tickets.length === 0
-    ? `<tr><td colspan="12" class="rule">No tickets for this filter on ${venue}.</td></tr>`
-    : l.tickets.map(t => {
-        const res = t.result || 'open';
-        const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
-        const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
-        const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
-        return `<tr>
-          <td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
-          <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
-          <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
-          <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
-          <td>$${Number(t.stake).toFixed(2)}</td>
-          <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
-          <td><span class="badge ${res}">${res}</span></td>
-          <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
-      }).join('');
-  renderFilters();
-  renderCalendar();
-  renderCharts();
+  renderAll();
 }
 function clearLane() {
   selected = null;
-  document.querySelectorAll('.card.active, #board-table tbody tr.active').forEach(el => el.classList.remove('active'));
-  document.getElementById('detail').classList.remove('open');
-  renderFilters();
-  renderCalendar();
-  renderCharts();
+  renderAll();
 }
 
 function renderBoard() {
@@ -2818,81 +3054,94 @@ function renderBoard() {
 }
 
 function renderCharts() {
-  const ls = lanes();
-  const eqDatasets = ls.map((l,i) => ({
-    label: l.code,
-    data: l.equity.map(p => ({ x: p.t, y: p.bank })),
-    borderColor: colors[i % colors.length],
-    backgroundColor: 'transparent',
-    tension: 0.15,
-    pointRadius: 3,
-    pointHoverRadius: 5,
-  }));
+  const ls = selected ? lanes().filter(l => l.code === selected) : lanes();
+  const daySet = new Set();
+  for (const l of ls) for (const p of l.equity) daySet.add(p.day);
+  let days = [...daySet].sort();
+  if (days.length === 0) days = [ymdLocal(new Date())];
+  const labels = days.map(dayLabel);
+
+  const eqDatasets = ls.map((l, i) => {
+    const byDay = Object.fromEntries(l.equity.map(p => [p.day, p.bank]));
+    let last = seed();
+    const data = days.map(d => {
+      if (byDay[d] != null) last = byDay[d];
+      return last;
+    });
+    const color = colors[rawLanes().findIndex(r => r.code === l.code) % colors.length] || colors[i % colors.length];
+    return {
+      label: l.code,
+      data,
+      borderColor: color,
+      backgroundColor: color,
+      tension: 0,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      showLine: data.length > 1,
+    };
+  });
   if (equityChart) equityChart.destroy();
   equityChart = new Chart(document.getElementById('equity'), {
     type: 'line',
-    data: { datasets: eqDatasets },
+    data: { labels, datasets: eqDatasets },
     options: {
-      parsing: false,
-      interaction: { mode: 'nearest', intersect: false },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { type: 'time', time: { tooltipFormat: 'MMM d HH:mm' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
-        y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: venue + ' bankroll', color: '#8b9bb4' } }
+        x: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' }, title: { display: true, text: 'Game day', color: '#8b9bb4' } },
+        y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: venue + ' bankroll (EOD)', color: '#8b9bb4' } }
       },
       plugins: {
         legend: { labels: { color: '#e7ecf3' } },
-        title: { display: true, text: `${venue} equity · ${filterNote()}`, color: '#e7ecf3' }
+        title: { display: true, text: `${venue} equity by day · ${filterNote()}`, color: '#e7ecf3' }
       }
     }
   });
 
-  // League success = cumulative PnL over time (selected lane, or Flat).
-  const laneCode = selected || 'Flat';
-  const raw = rawLanes().find(l => l.code === laneCode) || rawLanes()[0];
-  const tickets = (raw?.tickets || []).filter(t => t.result != null && matchSport(t))
-    .slice().sort((a,b) => String(a.placedAt).localeCompare(String(b.placedAt)) || (a.id - b.id));
+  // League PnL: all lanes (or selected lane) — one cumulative point per game-day per sport.
+  const tickets = visibleTickets().filter(t => t.result != null);
   const sports = sportFilter === 'ALL'
     ? [...new Set(tickets.map(sportKey))].sort()
     : [sportFilter];
-  const cum = Object.fromEntries(sports.map(s => [s, 0]));
-  const series = Object.fromEntries(sports.map(s => [s, []]));
+  const dayPnl = {};
   for (const t of tickets) {
     const s = sportKey(t);
-    if (!series[s]) continue;
-    cum[s] += Number(t.pnl) || 0;
-    series[s].push({ x: t.placedAt, y: Math.round(cum[s] * 100) / 100 });
+    const d = ticketDay(t);
+    if (!dayPnl[s]) dayPnl[s] = {};
+    dayPnl[s][d] = (dayPnl[s][d] || 0) + (Number(t.pnl) || 0);
   }
-  // Seed each series at 0 before first point so the first node is visible.
-  for (const s of sports) {
-    if (series[s].length) {
-      const first = series[s][0].x;
-      series[s].unshift({ x: first, y: 0 });
-    } else {
-      series[s].push({ x: DATA.generatedAt, y: 0 });
-    }
-  }
-  const leagueDatasets = sports.map((s,i) => ({
-    label: s,
-    data: series[s],
-    borderColor: sportColors[s] || colors[i % colors.length],
-    backgroundColor: 'transparent',
-    tension: 0.15,
-    pointRadius: 3,
-  }));
+  let leagueDays = [...new Set(tickets.map(ticketDay))].sort();
+  if (leagueDays.length === 0) leagueDays = [ymdLocal(new Date())];
+  const leagueLabels = leagueDays.map(dayLabel);
+  const leagueDatasets = (sports.length ? sports : ['—']).map((s, i) => {
+    let cum = 0;
+    const data = leagueDays.map(d => {
+      if (dayPnl[s] && dayPnl[s][d] != null) cum += dayPnl[s][d];
+      return Math.round(cum * 100) / 100;
+    });
+    return {
+      label: s,
+      data,
+      borderColor: sportColors[s] || colors[i % colors.length],
+      backgroundColor: sportColors[s] || colors[i % colors.length],
+      tension: 0,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      showLine: data.length > 1,
+    };
+  });
   if (leagueChart) leagueChart.destroy();
   leagueChart = new Chart(document.getElementById('league-success'), {
     type: 'line',
-    data: { datasets: leagueDatasets },
+    data: { labels: leagueLabels, datasets: leagueDatasets },
     options: {
-      parsing: false,
-      interaction: { mode: 'nearest', intersect: false },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { type: 'time', time: { tooltipFormat: 'MMM d' }, grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' } },
+        x: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4' }, title: { display: true, text: 'Game day', color: '#8b9bb4' } },
         y: { grid: { color: '#2a3544' }, ticks: { color: '#8b9bb4', callback: v => '$'+v }, title: { display: true, text: 'Cumulative PnL', color: '#8b9bb4' } }
       },
       plugins: {
         legend: { labels: { color: '#e7ecf3' } },
-        title: { display: true, text: `League success · ${laneCode} · ${filterNote()}`, color: '#e7ecf3' }
+        title: { display: true, text: `League PnL by day · ${filterNote()}`, color: '#e7ecf3' }
       }
     }
   });
@@ -2903,31 +3152,7 @@ function renderAll() {
   renderBoard();
   renderCharts();
   renderCalendar();
-  if (selected) {
-    const l = byCode()[selected];
-    if (l) {
-      document.getElementById('detail').classList.add('open');
-      document.getElementById('detail-title').textContent = `${venue} · ${l.code} — ${l.name}`;
-      document.getElementById('detail-hint').textContent = `${l.tickets.length} ticket(s) · ${filterNote()} · ${l.rule}`;
-      document.getElementById('tickets').innerHTML = l.tickets.length === 0
-        ? `<tr><td colspan="12" class="rule">No tickets for this filter on ${venue}.</td></tr>`
-        : l.tickets.map(t => {
-            const res = t.result || 'open';
-            const pnlCls = t.pnl == null ? '' : (t.pnl >= 0 ? 'pos' : 'neg');
-            const pnlTxt = t.pnl == null ? '—' : ((t.pnl>=0?'+':'') + t.pnl.toFixed(2));
-            const clv = t.clvPts == null ? '—' : ((t.clvPts>=0?'+':'') + t.clvPts.toFixed(1));
-            return `<tr>
-              <td>${t.id}</td><td>${fmtWhen(t.placedAt)}</td>
-              <td>${t.gameKey}${t.sport?` <span class="rule">${t.sport}</span>`:''}</td>
-              <td>${t.side}</td><td>${Number(t.line).toFixed(1)}</td>
-              <td>${t.odds > 0 ? '+'+t.odds : t.odds}</td>
-              <td>$${Number(t.stake).toFixed(2)}</td>
-              <td>${fmtNum(t.modelProb, 3)}</td><td>${fmtNum(t.absEdge, 2)}</td>
-              <td><span class="badge ${res}">${res}</span></td>
-              <td class="${pnlCls}">${pnlTxt}</td><td>${clv}</td></tr>`;
-          }).join('');
-    }
-  }
+  renderTickets();
 }
 
 document.getElementById('cards').addEventListener('click', e => {
@@ -2938,7 +3163,7 @@ document.getElementById('table').addEventListener('click', e => {
   const row = e.target.closest('tr[data-code]');
   if (row) showLane(row.dataset.code);
 });
-document.getElementById('detail-close').addEventListener('click', clearLane);
+document.getElementById('detail-clear').addEventListener('click', clearLane);
 
 renderAll();
 </script>

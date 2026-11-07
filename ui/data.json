@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T05:23:27.7388387\u002B00:00",
+  "generatedAt": "2026-11-07T16:43:55.9194440\u002B00:00",
   "horizonEnd": "2026-12-31",
   "seed": 1000,
   "venues": {
@@ -9,15 +9,15 @@
           "code": "Flat",
           "name": "Level Flat",
           "rule": "$10 every GO",
-          "bank": 1016.36,
-          "reserved": 60,
-          "available": 956.36,
-          "pnl": 16.36,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 10.91,
+          "bank": 994.55,
+          "reserved": 0,
+          "available": 994.55,
+          "pnl": -5.45,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 50.91,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -46,6 +46,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1016.36
+            },
+            {
+              "t": "2026-10-29T05:11:42.3347198\u002B00:00",
+              "bank": 1006.36
+            },
+            {
+              "t": "2026-10-29T05:11:43.2870752\u002B00:00",
+              "bank": 996.36
+            },
+            {
+              "t": "2026-10-29T05:11:44.2324141\u002B00:00",
+              "bank": 986.36
+            },
+            {
+              "t": "2026-10-29T05:11:45.2150242\u002B00:00",
+              "bank": 976.36
+            },
+            {
+              "t": "2026-10-29T05:11:46.1599532\u002B00:00",
+              "bank": 985.45
+            },
+            {
+              "t": "2026-10-29T05:11:47.1226632\u002B00:00",
+              "bank": 994.55
             }
           ],
           "tickets": [
@@ -60,8 +84,8 @@
               "stake": 10,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 9.09,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -78,8 +102,8 @@
               "stake": 10,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 9.09,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -96,8 +120,8 @@
               "stake": 10,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -114,8 +138,8 @@
               "stake": 10,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -132,8 +156,8 @@
               "stake": 10,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -150,8 +174,8 @@
               "stake": 10,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -10,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -271,15 +295,15 @@
           "code": "Kelly2",
           "name": "Quarter Cap",
           "rule": "\u00BC Kelly, max 2% bankroll",
-          "bank": 1032.73,
-          "reserved": 117.89,
-          "available": 914.84,
-          "pnl": 32.73,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 21.82,
+          "bank": 986.85,
+          "reserved": 0,
+          "available": 986.85,
+          "pnl": -13.15,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 101.99,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -308,6 +332,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1032.73
+            },
+            {
+              "t": "2026-10-29T05:11:42.3691848\u002B00:00",
+              "bank": 1012.08
+            },
+            {
+              "t": "2026-10-29T05:11:43.3202318\u002B00:00",
+              "bank": 991.84
+            },
+            {
+              "t": "2026-10-29T05:11:44.2658300\u002B00:00",
+              "bank": 972
+            },
+            {
+              "t": "2026-10-29T05:11:45.2506953\u002B00:00",
+              "bank": 952.56
+            },
+            {
+              "t": "2026-10-29T05:11:46.1936151\u002B00:00",
+              "bank": 969.88
+            },
+            {
+              "t": "2026-10-29T05:11:47.1579488\u002B00:00",
+              "bank": 986.85
             }
           ],
           "tickets": [
@@ -322,8 +370,8 @@
               "stake": 18.67,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 16.97,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -340,8 +388,8 @@
               "stake": 19.05,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 17.32,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -358,8 +406,8 @@
               "stake": 19.44,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.44,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -376,8 +424,8 @@
               "stake": 19.84,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.84,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -394,8 +442,8 @@
               "stake": 20.24,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.24,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -412,8 +460,8 @@
               "stake": 20.65,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.65,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -533,15 +581,15 @@
           "code": "Kelly5",
           "name": "Quarter Wide",
           "rule": "\u00BC Kelly, max 5% bankroll",
-          "bank": 1088.32,
-          "reserved": 254.19,
-          "available": 834.13,
-          "pnl": 88.32,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 30.17,
+          "bank": 965.08,
+          "reserved": 0,
+          "available": 965.08,
+          "pnl": -34.92,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 215.77,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -570,6 +618,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1088.32
+            },
+            {
+              "t": "2026-10-29T05:11:42.3697925\u002B00:00",
+              "bank": 1033.9
+            },
+            {
+              "t": "2026-10-29T05:11:43.3207694\u002B00:00",
+              "bank": 988.2
+            },
+            {
+              "t": "2026-10-29T05:11:44.2663947\u002B00:00",
+              "bank": 938.79
+            },
+            {
+              "t": "2026-10-29T05:11:45.2512929\u002B00:00",
+              "bank": 902.72
+            },
+            {
+              "t": "2026-10-29T05:11:46.1941872\u002B00:00",
+              "bank": 926.5
+            },
+            {
+              "t": "2026-10-29T05:11:47.1586367\u002B00:00",
+              "bank": 965.08
             }
           ],
           "tickets": [
@@ -584,8 +656,8 @@
               "stake": 42.43,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 38.57,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -602,8 +674,8 @@
               "stake": 26.16,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 23.78,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -620,8 +692,8 @@
               "stake": 36.07,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -36.07,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -638,8 +710,8 @@
               "stake": 49.41,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -49.41,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -656,8 +728,8 @@
               "stake": 45.7,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -45.7,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -674,8 +746,8 @@
               "stake": 54.42,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -54.42,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -795,15 +867,15 @@
           "code": "EvProp",
           "name": "EV Proportional",
           "rule": "stake \u221D EV, floor 0.5%, cap 2%",
-          "bank": 1033.34,
-          "reserved": 117.96,
-          "available": 915.38,
-          "pnl": 33.34,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 20.13,
+          "bank": 987.43,
+          "reserved": 0,
+          "available": 987.43,
+          "pnl": -12.57,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 100.35,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -832,6 +904,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1033.34
+            },
+            {
+              "t": "2026-10-29T05:11:42.3699905\u002B00:00",
+              "bank": 1012.67
+            },
+            {
+              "t": "2026-10-29T05:11:43.3209789\u002B00:00",
+              "bank": 992.42
+            },
+            {
+              "t": "2026-10-29T05:11:44.2665971\u002B00:00",
+              "bank": 972.57
+            },
+            {
+              "t": "2026-10-29T05:11:45.2515160\u002B00:00",
+              "bank": 953.12
+            },
+            {
+              "t": "2026-10-29T05:11:46.1943959\u002B00:00",
+              "bank": 970.44
+            },
+            {
+              "t": "2026-10-29T05:11:47.1588511\u002B00:00",
+              "bank": 987.43
             }
           ],
           "tickets": [
@@ -846,8 +942,8 @@
               "stake": 18.68,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 16.98,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -864,8 +960,8 @@
               "stake": 19.06,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 17.33,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -882,8 +978,8 @@
               "stake": 19.45,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.45,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -900,8 +996,8 @@
               "stake": 19.85,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -19.85,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -918,8 +1014,8 @@
               "stake": 20.25,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.25,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -936,8 +1032,8 @@
               "stake": 20.67,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -20.67,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -1057,15 +1153,15 @@
           "code": "ConfBand",
           "name": "Confidence Band",
           "rule": "|p\u22120.5| \u2192 0.5\u20132% of bankroll",
-          "bank": 1019.16,
-          "reserved": 54.77,
-          "available": 964.39,
-          "pnl": 19.16,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 7.57,
+          "bank": 994.42,
+          "reserved": 0,
+          "available": 994.42,
+          "pnl": -5.58,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 46.61,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -1094,6 +1190,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1019.16
+            },
+            {
+              "t": "2026-10-29T05:11:42.3702341\u002B00:00",
+              "bank": 1006.38
+            },
+            {
+              "t": "2026-10-29T05:11:43.3212340\u002B00:00",
+              "bank": 997.85
+            },
+            {
+              "t": "2026-10-29T05:11:44.2668525\u002B00:00",
+              "bank": 988.06
+            },
+            {
+              "t": "2026-10-29T05:11:45.2518469\u002B00:00",
+              "bank": 980.12
+            },
+            {
+              "t": "2026-10-29T05:11:46.1946526\u002B00:00",
+              "bank": 986.65
+            },
+            {
+              "t": "2026-10-29T05:11:47.1591225\u002B00:00",
+              "bank": 994.42
             }
           ],
           "tickets": [
@@ -1108,8 +1228,8 @@
               "stake": 8.55,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 7.77,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -1126,8 +1246,8 @@
               "stake": 7.18,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 6.53,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -1144,8 +1264,8 @@
               "stake": 7.94,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -7.94,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -1162,8 +1282,8 @@
               "stake": 9.79,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -9.79,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -1180,8 +1300,8 @@
               "stake": 8.53,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -8.53,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -1198,8 +1318,8 @@
               "stake": 12.78,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -12.78,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -1319,15 +1439,15 @@
           "code": "EdgeBand",
           "name": "Edge Band",
           "rule": "|model\u2212line| \u2192 0.5\u20132% (sport-scaled)",
-          "bank": 1008.22,
-          "reserved": 46.49,
-          "available": 961.73,
-          "pnl": 8.22,
-          "settled": 6,
-          "open": 6,
-          "wins": 4,
-          "losses": 2,
-          "maxDrawdown": 5.36,
+          "bank": 986.2,
+          "reserved": 0,
+          "available": 986.2,
+          "pnl": -13.8,
+          "settled": 12,
+          "open": 0,
+          "wins": 6,
+          "losses": 6,
+          "maxDrawdown": 39.03,
           "equity": [
             {
               "t": "2026-10-26T04:17:16.9956135\u002B00:00",
@@ -1356,6 +1476,30 @@
             {
               "t": "2026-10-26T04:17:20.8975203\u002B00:00",
               "bank": 1008.22
+            },
+            {
+              "t": "2026-10-29T05:11:42.3705524\u002B00:00",
+              "bank": 996.06
+            },
+            {
+              "t": "2026-10-29T05:11:43.3215535\u002B00:00",
+              "bank": 990.73
+            },
+            {
+              "t": "2026-10-29T05:11:44.2671883\u002B00:00",
+              "bank": 981.02
+            },
+            {
+              "t": "2026-10-29T05:11:45.2522430\u002B00:00",
+              "bank": 974.55
+            },
+            {
+              "t": "2026-10-29T05:11:46.1950002\u002B00:00",
+              "bank": 979.33
+            },
+            {
+              "t": "2026-10-29T05:11:47.1594585\u002B00:00",
+              "bank": 986.2
             }
           ],
           "tickets": [
@@ -1370,8 +1514,8 @@
               "stake": 7.56,
               "modelProb": 0.616,
               "absEdge": 0.39,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 6.87,
               "closeLine": null,
               "clvPts": null,
               "group": "691e78c41770",
@@ -1388,8 +1532,8 @@
               "stake": 5.26,
               "modelProb": 0.579,
               "absEdge": 0.27,
-              "result": null,
-              "pnl": null,
+              "result": "W",
+              "pnl": 4.78,
               "closeLine": null,
               "clvPts": null,
               "group": "7ecd176a1999",
@@ -1406,8 +1550,8 @@
               "stake": 6.47,
               "modelProb": 0.597,
               "absEdge": 0.33,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -6.47,
               "closeLine": null,
               "clvPts": null,
               "group": "3ee6a087014a",
@@ -1424,8 +1568,8 @@
               "stake": 9.71,
               "modelProb": 0.642,
               "absEdge": 0.49,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -9.71,
               "closeLine": null,
               "clvPts": null,
               "group": "c4780261b376",
@@ -1442,8 +1586,8 @@
               "stake": 5.33,
               "modelProb": 0.608,
               "absEdge": 0.37,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -5.33,
               "closeLine": null,
               "clvPts": null,
               "group": "57f769997e32",
@@ -1460,8 +1604,8 @@
               "stake": 12.16,
               "modelProb": 0.711,
               "absEdge": 0.75,
-              "result": null,
-              "pnl": null,
+              "result": "L",
+              "pnl": -12.16,
               "closeLine": null,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
@@ -2128,11 +2272,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388014\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194126\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388029\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194141\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2153,11 +2297,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388189\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194260\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388190\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194262\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2178,11 +2322,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388201\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194272\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388202\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194273\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2203,11 +2347,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388211\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194281\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388212\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194282\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2228,11 +2372,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388220\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194289\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388221\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194290\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2253,11 +2397,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388231\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194301\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388232\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194303\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2282,11 +2426,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388283\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194371\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388284\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194372\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2307,11 +2451,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388293\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194381\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388294\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194382\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2332,11 +2476,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388302\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194390\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388303\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194391\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2357,11 +2501,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388310\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194398\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388311\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194399\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2382,11 +2526,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388319\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194407\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388320\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194408\u002B00:00",
               "bank": 1000
             }
           ],
@@ -2407,11 +2551,11 @@
           "maxDrawdown": 0,
           "equity": [
             {
-              "t": "2026-10-29T05:23:27.7388328\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194426\u002B00:00",
               "bank": 1000
             },
             {
-              "t": "2026-10-29T05:23:27.7388329\u002B00:00",
+              "t": "2026-11-07T16:43:55.9194428\u002B00:00",
               "bank": 1000
             }
           ],

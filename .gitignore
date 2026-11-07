@@ -78,3 +78,7 @@ library/
 
 # Python bytecode
 __pycache__/
+
+# Local DB backups and tracker log (data, not code)
+*.db.bak*
+data/*.log
