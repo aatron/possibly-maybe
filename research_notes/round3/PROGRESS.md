@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for W5 / W6 / W7 / W15 / W16. W1–W3 / W8 / W13 / W14 done. W4 deferred.
+**Next action:** wait for W5 / W7 / W15 / W16. W1–W3 / W6 / W8 / W13 / W14 done. W4 deferred.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -14,7 +14,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W3 | Tracker importer + doubleheader key | Composer | `../pm-r3-tracker-import` `r3/tracker-import` | smoke 15/15 O+C; key `yyyymmdd AWAY@HOME HHMM` | done | ca7c064 |
 | W4 | Always-on tracker (GH Actions) | Composer | `../pm-r3-always-on` | sleep-night coverage | **deferred (user: not yet)** | |
 | W5 | Live CLV fix | Composer | `../pm-r3-live-clv` `r3/live-clv` | % true close | **running** | |
-| W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` `r3/venues` | % soccer GOs priced | **running** | |
+| W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` `r3/venues` | Ligue1/SerieA/LigaMX series + RH fee skip test | done | 4f62fab |
 | W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` `r3/shutoff` | drawdown vs V3 | **running** | |
 | W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible (STAKE GATE in `paper`) | done | b3e6ca2 |
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
@@ -44,3 +44,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W2 merged (1ae2f73, 135 tests). Defaults: edge-cap 25%, NBA k=2, soccer k=0.5. NBA edge-cap fails removed-bet proof (visible loser / live absurd defense only). |
 | 2026-11-07 | User: archive.org line history → W16 launched (Opus, download only; import = Composer). Wave items are being implemented by another session, not this one. |
 | 2026-11-07 | W1 merged (48b9e5e, 141 tests). Shadow ledger + variants.html; Defaults aligned to Guards (25% / NBA k=2). W5/W6/W7 launched. |
+| 2026-11-07 | W6 merged (4f62fab, 151 tests). KXLIGUE1TOTAL / KXSERIEATOTAL / KXLIGAMXTOTAL; RH fee already on place path. |
