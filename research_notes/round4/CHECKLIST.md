@@ -55,4 +55,5 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] Checkpoint reporter → R5
 - [x] Real DK price on paper tickets → R6
 - [x] AsOfView (no DB for strategies) → R7
-- [ ] IStrategy / day engine / vault → R8–R10
+- [x] IStrategy + V0 port → R8
+- [ ] Day engine / vault → R9–R10
