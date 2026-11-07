@@ -75,6 +75,7 @@ public class SportPackTests
     }
 
 
+    [Test]
     public async Task Nfl_Pack_Matches_ChampConfig_Empty_Oregon()
     {
         var pack = SportPackRegistry.Get("NFL");
@@ -106,9 +107,6 @@ public class SportPackTests
 
 
     [Test]
-
-
-
     public async Task Mlb_Pack_Locks_Holdout_And_Spring_Ready()
     {
         var pack = SportPackRegistry.Get("MLB");
@@ -145,8 +143,6 @@ public class SportPackTests
 
 
     [Test]
-    [Test]
-
     public async Task Ncaaf_Pack_Locks_TierC_And_Oregon()
     {
         var pack = SportPackRegistry.Get("NCAAF");
