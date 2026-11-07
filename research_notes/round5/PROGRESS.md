@@ -14,7 +14,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | fold table vs V0 | running | |
 | T4b | Tier A once: refs-nba, fitted / strict / EV-band | Composer | `../pm-r5-t4b` `r5/t4b` | fold table vs V0 | running | |
 | T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | fold table vs V0 | running | |
-| T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | `t5_proof.md` — N_trials=0; CUSUM prior wired | done (branch) | |
+| T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | `t5_proof.md` — N_trials=0; CUSUM prior wired | done | 55a2a18 |
 | T6 | NHL + NFL re-test | Composer | `../pm-r5-t6` `r5/t6` | Tier A / C once | running | |
 | T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | no-peek walk test; report | planned | |
 | T8 | Green tests, clean run, push | parent | main | tests + push | planned | |
