@@ -23,9 +23,10 @@ ERA alone is weak (includes defense/luck). Prefer **FIP / xFIP / K-BB%**.
 ## Gate 0 (data)
 
 - [x] M1 downloaded → `data/raw/kaggle/mlb_closing_odds_2025/mlb_2025_closing_odds.csv` (~2477 games, open/close totals)
-- [ ] Import games + TOTAL open/close (`Sport=MLB`)
-- [ ] Lock holdout **inside 2025** (only one open/close season) — e.g. train before 2025-09-01, holdout Sep–Nov — **freeze before peeking metrics**
-- [ ] Gate 1 **only after** SP features exist (or explicitly kill “runs-only” as insufficient)
+- [x] Import games + TOTAL open/close (`Sport=MLB`) — flancast 2011–21 + later fills
+- [x] **C4 holdout lock:** Tier A 2011–2019, look-once **2021**, skip 2020 — see `research_notes/round4/c4_proof.md` (2025-09-01 cut is burned / report-only)
+- [x] Pack: `MlbSportPack` + `tier-a-mlb`; spring F5 / team-totals **ready flag** (models not fitted)
+- [ ] Gate 1 SP features still thin historically (EMA fallback on most folds)
 
 ## Gate 1 feature order (kill if no OOS CLV)
 

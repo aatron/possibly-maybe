@@ -20,12 +20,20 @@ public static class VariantShadow
 
         var candidates = new List<SlateCandidate>();
         candidates.AddRange(await DailySlate.BuildNbaCandidatesAsync(warehouseDbPath, yyyymmdd, ct));
+        try
+        {
+            candidates.AddRange(await DailySlate.BuildNcaabCandidatesAsync(warehouseDbPath, yyyymmdd, ct));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"variants-shadow: NCAAB scoreboard skipped ({ex.Message})");
+        }
         foreach (var sport in DailySlate.SoccerEspnPaths.Keys)
             candidates.AddRange(await DailySlate.BuildSoccerCandidatesAsync(sport, warehouseDbPath, yyyymmdd, ct));
 
         var n = await VariantEvaluate.RecordAsync(variantsDbPath, candidates, ct);
         Console.WriteLine($"variants-shadow: recorded {n} variant×game rows from {candidates.Count} candidates ({yyyymmdd})");
 
-        await VariantDashboard.WriteAsync(variantsDbPath, uiDir, ct);
+        await VariantDashboard.WriteAsync(variantsDbPath, uiDir, ct: ct);
     }
 }

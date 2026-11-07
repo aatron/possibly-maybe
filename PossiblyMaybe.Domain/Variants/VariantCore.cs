@@ -15,7 +15,15 @@ public sealed record Variant(
     bool LeagueShutoff,
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
-    IReadOnlySet<string>? Leagues);
+    IReadOnlySet<string>? Leagues,
+    /// <summary>B2: shrink model toward league mean on early-season / promoted phases.</summary>
+    bool Pooling = false,
+    /// <summary>B2: shrink + widen σ when <see cref="SlateCandidate.RosterFlag"/> is set.</summary>
+    bool RosterReset = false,
+    /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
+    bool InvVarBlend = false,
+    /// <summary>When true, add <see cref="SlateCandidate.RefTotalsResidual"/> to model exp (refs-nba).</summary>
+    bool UseRefTotals = false);
 
 public enum NbaOverProbKind
 {
@@ -40,7 +48,12 @@ public sealed record SlateCandidate(
     double MarketWeight,
     double MinAbsEdge,
     double MinEv,
-    bool Stale);
+    bool Stale,
+    bool? InjuryFlag = null,
+    bool? RosterFlag = null,
+    string? SeasonPhase = null,
+    /// <summary>Crew foul/pace residual pts from <see cref="RefEffects"/>; used when variant has UseRefTotals.</summary>
+    double RefTotalsResidual = 0);
 
 public sealed record VariantDecision(
     bool Pick,
@@ -65,7 +78,10 @@ public static class VariantSkip
     public const string LowEv = "LOW_EV";
 }
 
-/// <summary>Launch set for round 3 shadow ledger. Ids are permanent.</summary>
+/// <summary>
+/// Launch-set registry. Families register via <see cref="Register"/> (module initializers);
+/// wave-B adds one family file — no edit to other families.
+/// </summary>
 public static class VariantRegistry
 {
     public const string V0Id = "V0";
@@ -74,51 +90,32 @@ public static class VariantRegistry
     public const double DefaultNbaLineMoveK = Guards.RecommendedNbaLineMoveK;
     public const double DefaultSoccerLineMoveK = Guards.RecommendedSoccerLineMoveK;
 
-    private static readonly HashSet<string> NoSerieA = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly object Gate = new();
+    private static readonly List<(int Order, Variant[] Variants)> Bags = [];
+    private static IReadOnlyList<Variant>? _all;
+
+    /// <summary>Family files call this from a <c>[ModuleInitializer]</c>. Lower <paramref name="order"/> first.</summary>
+    public static void Register(int order, params Variant[] variants)
     {
-        "NBA", "MLS", "LIGUE1", "LIGAMX",
-    };
+        lock (Gate)
+        {
+            Bags.Add((order, variants));
+            _all = null;
+        }
+    }
 
-    public static Variant V0 { get; } = new(
-        V0Id, "champ-2026-11-07",
-        NbaOverProbKind.NormalSigma,
-        EdgeCap: false, EdgeCapEv: DefaultEdgeCapEv,
-        LineMove: false, NbaLineMoveK: DefaultNbaLineMoveK, SoccerLineMoveK: DefaultSoccerLineMoveK,
-        LeagueShutoff: false, UseRealJuice: false, Leagues: null);
+    public static Variant V0 => ChampFamily.V0;
 
-    public static IReadOnlyList<Variant> All { get; } =
-    [
-        V0,
-        new("V0L", "legacy-logistic-nba",
-            NbaOverProbKind.Logistic,
-            false, DefaultEdgeCapEv, false, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V1", "+edgecap",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, false, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V2", "+linemove",
-            NbaOverProbKind.NormalSigma,
-            false, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V3", "+edgecap+linemove",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        // LeagueShutoff: pause sport when V3 rolling CLV (40) < 0; resume when ≥ 0.
-        new("V4", "+shutoff",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            true, false, null),
-        new("V5", "+realjuice",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, true, null),
-        new("V-SA0", "no-seriea",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, NoSerieA),
-    ];
+    public static IReadOnlyList<Variant> All
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _all ??= Bags.OrderBy(b => b.Order).SelectMany(b => b.Variants).ToList();
+            }
+        }
+    }
 
     public static Variant Require(string id)
         => All.FirstOrDefault(v => v.Id.Equals(id, StringComparison.OrdinalIgnoreCase))
@@ -146,7 +143,8 @@ public static class VariantRegistry
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
 
-        var exp = v.MarketBlend(c, line);
+        c = PoolingFamily.Apply(v, c);
+        var exp = v.BlendedExp(c, line);
         var edge = exp - line;
         if (Math.Abs(edge) < c.MinAbsEdge)
             return Skip(VariantSkip.NoEdge);
@@ -168,8 +166,17 @@ public static class VariantRegistry
         return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
     }
 
-    private static double MarketBlend(this Variant _, SlateCandidate c, double line)
-        => c.MarketWeight * line + (1 - c.MarketWeight) * c.ModelExp;
+    private static double BlendedExp(this Variant v, SlateCandidate c, double line)
+    {
+        var model = c.ModelExp + (v.UseRefTotals ? c.RefTotalsResidual : 0);
+        if (v.InvVarBlend)
+        {
+            var (sm, sl) = BlendFamily.LockedSigmas(c.Sport);
+            return MarketBlend.InverseVariance(model, line, sm, sl);
+        }
+
+        return c.MarketWeight * line + (1 - c.MarketWeight) * model;
+    }
 
     private static double OverProb(Variant v, SlateCandidate c, double blendedExp, double line)
     {
@@ -179,6 +186,12 @@ public static class VariantRegistry
                 ? TotalsMath.NormalOverProb(blendedExp, line, c.NbaSigma)
                 : TotalsMath.OverProb(blendedExp, line, sharpness: 0.25);
         }
+
+        if (c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("NCAAF", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("NFL", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("MLB", StringComparison.OrdinalIgnoreCase))
+            return TotalsMath.OverProb(blendedExp, line, sharpness: 0.2);
 
         var lh = c.LambdaHome ?? blendedExp / 2;
         var la = c.LambdaAway ?? blendedExp / 2;
@@ -196,7 +209,10 @@ public static class VariantRegistry
     {
         if (c.OpenLine is not { } open || c.Line is not { } cur) return false;
         var move = cur - open; // + = line rose
-        var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase) ? v.NbaLineMoveK : v.SoccerLineMoveK;
+        var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase)
+                || c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
+            ? v.NbaLineMoveK
+            : v.SoccerLineMoveK;
         // OVER hurt when line drops; UNDER hurt when line rises
         return betOver ? move <= -k : move >= k;
     }

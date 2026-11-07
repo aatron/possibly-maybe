@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Snapshot logger for NFL/MLB TOTALS lines (ESPN, Kalshi, Crypto.com) -> data/line_snapshots.db.
+"""Snapshot logger for all tracked-league TOTALS lines (ESPN, Kalshi, Crypto.com) -> data/line_snapshots.db.
 
 Append-only table `line_snapshots`; open = first snapshot, close = last pre-start snapshot.
 game_key = `yyyymmdd AWAY@HOME HHMM` (ET date + kickoff; HHMM keeps doubleheaders distinct).
 Public unauthenticated GETs only. Run every 15-30 min; `--report` prints movement + best price.
-Add a sport (NCAAF, ...) by adding one SPORTS entry. Never touches paper.db.
+Add a sport by one SPORTS entry (or merge via data/line_tracker_sports.json). Never touches paper.db.
+shortcut: totals only (spread / team-total / 1H series known on Kalshi for NFL/MLB/NCAA); add when parse path stays small.
 """
 from __future__ import annotations
 
@@ -13,6 +14,8 @@ import json
 import re
 import sqlite3
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,18 +28,40 @@ ET = ZoneInfo("America/New_York")
 UA = {"User-Agent": "PossiblyMaybe/line-tracker"}
 ESPN = "https://site.api.espn.com/apis/site/v2/sports/{path}/scoreboard?dates={d}"
 CDC = "https://data-api.crypto.com/api/v1/predictions"
-DEFAULT_DB = Path(__file__).resolve().parents[1] / "data" / "line_snapshots.db"
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DB = ROOT / "data" / "line_snapshots.db"
+EXTRA_SPORTS = ROOT / "data" / "line_tracker_sports.json"
+# Rate-limit: pause between ESPN day calls and between leagues; back off on HTTP errors.
+DAY_SLEEP_S = 0.35
+LEAGUE_SLEEP_S = 0.75
+FAIL_BACKOFF_S = 2.0
 
-# shortcut: NCAAF/NCAAB add here (kalshi KXNCAAFTOTAL / KXNCAAMBTOTAL) but cdc kind + team matching untested.
-SPORTS = {
+# espn path required; kalshi / cdc optional (None → skip that venue with a log, never crash).
+SPORTS_BASE: dict[str, dict] = {
+    "NBA": {"espn": "basketball/nba", "kalshi": "KXNBATOTAL", "cdc": "NBA"},
+    "NCAAB": {"espn": "basketball/mens-college-basketball", "kalshi": "KXNCAAMBTOTAL", "cdc": None},
+    "NCAAF": {"espn": "football/college-football", "kalshi": "KXNCAAFTOTAL", "cdc": None},
     "NFL": {"espn": "football/nfl", "kalshi": "KXNFLTOTAL", "cdc": "NFL"},
     "MLB": {"espn": "baseball/mlb", "kalshi": "KXMLBTOTAL", "cdc": "MLB"},
+    "MLS": {"espn": "soccer/usa.1", "kalshi": "KXMLSTOTAL", "cdc": "MLS"},
+    "LIGUE1": {"espn": "soccer/fra.1", "kalshi": "KXLIGUE1TOTAL", "cdc": None},
+    "LIGAMX": {"espn": "soccer/mex.1", "kalshi": "KXLIGAMXTOTAL", "cdc": None},
+    "SERIEA": {"espn": "soccer/ita.1", "kalshi": "KXSERIEATOTAL", "cdc": None},
+    "LALIGA": {"espn": "soccer/esp.1", "kalshi": None, "cdc": None},  # no public Kalshi totals series known
+    "EFL": {"espn": "soccer/eng.2", "kalshi": None, "cdc": None},  # Championship; no public series known
+    "EPL": {"espn": "soccer/eng.1", "kalshi": "KXEPLTOTAL", "cdc": "EPL"},
 }
-# ESPN abbr -> repo GameKey code (SportTeams.cs conventions)
-CANON = {"NFL": {"WSH": "WAS"}, "MLB": {"CHW": "CWS", "ATH": "OAK"}}
+# ESPN abbr -> repo GameKey code (SportTeams.cs / TeamCodes conventions)
+CANON = {
+    "NFL": {"WSH": "WAS"},
+    "MLB": {"CHW": "CWS", "ATH": "OAK"},
+    "NBA": {"GS": "GSW", "NO": "NOP", "NY": "NYK", "SA": "SAS", "UTAH": "UTA", "WSH": "WAS"},
+}
 # Kalshi tickers use their own codes; treat these as the same team when matching
 ALIASES = [{"WSH", "WAS"}, {"JAX", "JAC"}, {"LAR", "LA"}, {"ARI", "AZ"}, {"ATH", "OAK"},
-           {"CWS", "CHW"}, {"KC", "KCR"}, {"SD", "SDP"}, {"SF", "SFG"}, {"TB", "TBR"}]
+           {"CWS", "CHW"}, {"KC", "KCR"}, {"SD", "SDP"}, {"SF", "SFG"}, {"TB", "TBR"},
+           {"GS", "GSW"}, {"NO", "NOP"}, {"NY", "NYK"}, {"SA", "SAS"}, {"UTAH", "UTA"},
+           {"PHO", "PHX"}, {"BK", "BKN"}, {"BRO", "BKN"}]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS line_snapshots(
@@ -54,9 +79,37 @@ def log(msg: str) -> None:
     print(msg, flush=True)
 
 
+def load_sports() -> dict[str, dict]:
+    """Table-driven SPORTS + optional JSON merge for census leagues (A4 → C6)."""
+    sports = {k: dict(v) for k, v in SPORTS_BASE.items()}
+    if EXTRA_SPORTS.exists():
+        try:
+            extra = json.loads(EXTRA_SPORTS.read_text())
+            for k, v in (extra or {}).items():
+                sports[k.upper()] = {**sports.get(k.upper(), {}), **v}
+            log(f"merged {len(extra)} sport(s) from {EXTRA_SPORTS.name}")
+        except Exception as e:  # noqa: BLE001
+            log(f"EXTRA SPORTS FAIL ({EXTRA_SPORTS}): {e}")
+    return sports
+
+
 def fetch(url: str):
     with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
         return json.load(r)
+
+
+def fetch_retry(url: str, label: str, attempts: int = 3):
+    """GET with simple backoff; returns None on exhaustion (caller logs / skips)."""
+    delay = FAIL_BACKOFF_S
+    for i in range(attempts):
+        try:
+            return fetch(url)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+            log(f"{label} FAIL ({i + 1}/{attempts}): {e}")
+            if i + 1 < attempts:
+                time.sleep(delay)
+                delay *= 2
+    return None
 
 
 def num(x):
@@ -82,18 +135,26 @@ def game_key(start: datetime, away: str, home: str) -> str:
     return f"{et:%Y%m%d} {away}@{home} {et:%H%M}"
 
 
+def _team_token(team: dict, sport: str) -> str:
+    """ESPN abbreviation, CANON-mapped; unmapped keeps own abbr (never another club's alias)."""
+    abbr = (team.get("abbreviation") or team.get("shortDisplayName") or team.get("name") or "?").strip()
+    # collapse spaces so game_key stays \\w+-friendly for the C# KeyRe
+    abbr = re.sub(r"\s+", "", abbr)
+    return CANON.get(sport, {}).get(abbr, abbr)
+
+
 def parse_espn(sb: dict, sport: str) -> list[dict]:
     """Pre-game events with a total -> game dicts incl. one espn row."""
-    canon = CANON.get(sport, {})
     out = []
     for ev in sb.get("events") or []:
         if (ev.get("status") or {}).get("type", {}).get("state") != "pre":
             continue
         comp = ev["competitions"][0]
         t = {c["homeAway"]: c["team"] for c in comp["competitors"]}
-        away, home = (canon.get(t[k]["abbreviation"], t[k]["abbreviation"]) for k in ("away", "home"))
+        away, home = (_team_token(t[k], sport) for k in ("away", "home"))
         start = datetime.fromisoformat(ev["date"].replace("Z", "+00:00"))
-        g = {"sport": sport, "start": start, "away": away, "home": home, "nick": (t["away"]["name"], t["home"]["name"]),
+        nick = (t["away"].get("name") or away, t["home"].get("name") or home)
+        g = {"sport": sport, "start": start, "away": away, "home": home, "nick": nick,
              "key": game_key(start, away, home), "rows": []}
         odds = (comp.get("odds") or [None])[0]
         line = num((odds or {}).get("overUnder"))
@@ -178,40 +239,61 @@ def cdc_rows(contracts: list[dict], event_id: str) -> list[dict]:
 
 # ---- collection ----
 
-def collect(sports: list[str], days: int, now: datetime) -> list[dict]:
+def collect(sports: list[str], days: int, now: datetime, sports_cfg: dict[str, dict] | None = None) -> list[dict]:
+    cfg_all = sports_cfg or load_sports()
     snaps = []
     today = now.astimezone(ET)
-    for sport in sports:
-        cfg = SPORTS[sport]
+    for si, sport in enumerate(sports):
+        if si:
+            time.sleep(LEAGUE_SLEEP_S)
+        cfg = cfg_all[sport]
         games: list[dict] = []
         try:
             # one call per day: ESPN rejects date ranges (400)
             for i in range(days + 1):
-                sb = fetch(ESPN.format(path=cfg["espn"], d=f"{today + timedelta(days=i):%Y%m%d}"))
+                if i:
+                    time.sleep(DAY_SLEEP_S)
+                sb = fetch_retry(ESPN.format(path=cfg["espn"], d=f"{today + timedelta(days=i):%Y%m%d}"),
+                                 f"{sport} ESPN")
+                if not sb:
+                    continue
                 games += [g for g in parse_espn(sb, sport) if g["start"] > now and g["key"] not in {x["key"] for x in games}]
         except Exception as e:  # noqa: BLE001
             log(f"{sport} ESPN FAIL: {e}")
         log(f"{sport}: {len(games)} upcoming games (ESPN)")
         if not games:
             continue  # off-season / empty slate: nothing to match
-        try:
-            kmk = kc.all_open_markets(cfg["kalshi"])
-        except Exception as e:  # noqa: BLE001
-            kmk = []
-            log(f"{sport} Kalshi FAIL: {e}")
-        try:
-            cev = fetch(f"{CDC}/events?kind={cfg['cdc']}&type=match&limit=100").get("data") or []
-        except Exception as e:  # noqa: BLE001
-            cev = []
-            log(f"{sport} Crypto.com events FAIL: {e}")
+
+        kmk: list[dict] = []
+        series = cfg.get("kalshi")
+        if not series:
+            log(f"{sport} Kalshi SKIP: no series ticker configured")
+        else:
+            try:
+                kmk = kc.all_open_markets(series)
+            except Exception as e:  # noqa: BLE001
+                log(f"{sport} Kalshi FAIL: {e}")
+                time.sleep(FAIL_BACKOFF_S)
+
+        cev: list[dict] = []
+        kind = cfg.get("cdc")
+        if not kind:
+            log(f"{sport} Crypto.com SKIP: no kind configured")
+        else:
+            body = fetch_retry(f"{CDC}/events?kind={kind}&type=match&limit=100", f"{sport} Crypto.com events")
+            cev = (body or {}).get("data") or []
+
         for g in games:
-            g["rows"] += kalshi_rows(kalshi_match(kmk, g))
-            ev = cdc_match(cev, g)
-            if ev:
-                try:
-                    g["rows"] += cdc_rows(fetch(f"{CDC}/events/{ev['id']}/contracts?limit=1000").get("data") or [], ev["id"])
-                except Exception as e:  # noqa: BLE001
-                    log(f"{g['key']} Crypto.com contracts FAIL: {e}")
+            if kmk:
+                g["rows"] += kalshi_rows(kalshi_match(kmk, g))
+            if cev:
+                ev = cdc_match(cev, g)
+                if ev:
+                    body = fetch_retry(f"{CDC}/events/{ev['id']}/contracts?limit=1000",
+                                       f"{g['key']} Crypto.com contracts")
+                    if body:
+                        g["rows"] += cdc_rows(body.get("data") or [], ev["id"])
+                    time.sleep(DAY_SLEEP_S)
             venues = sorted({r["venue"] for r in g["rows"]})
             log(f"  {g['key']}: {len(g['rows'])} rows {venues}")
             snaps.append(g)
@@ -287,8 +369,10 @@ def report(con: sqlite3.Connection, now: datetime) -> None:
 
 
 def main() -> int:
+    sports_cfg = load_sports()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--sports", default="NFL,MLB")
+    ap.add_argument("--sports", default="ALL",
+                    help="Comma sports, or ALL for every configured league")
     ap.add_argument("--days", type=int, default=5, help="look-ahead window (days)")
     ap.add_argument("--db", default=str(DEFAULT_DB))
     ap.add_argument("--report", action="store_true", help="print movement/best price from stored snapshots; no fetch")
@@ -300,15 +384,23 @@ def main() -> int:
     if a.report:
         report(con, now)
         return 0
-    sports = [s.strip().upper() for s in a.sports.split(",") if s.strip()]
-    bad = [s for s in sports if s not in SPORTS]
+    if a.sports.strip().upper() == "ALL":
+        sports = list(sports_cfg)
+    else:
+        sports = [s.strip().upper() for s in a.sports.split(",") if s.strip()]
+    bad = [s for s in sports if s not in sports_cfg]
     if bad:
-        log(f"unknown sport(s) {bad}; known: {sorted(SPORTS)}")
+        log(f"unknown sport(s) {bad}; known: {sorted(sports_cfg)}")
         return 2
-    n = store(con, collect(sports, a.days, now), now)
+    # module-level SPORTS kept for tests / callers that read it
+    global SPORTS  # noqa: PLW0603
+    SPORTS = sports_cfg
+    n = store(con, collect(sports, a.days, now, sports_cfg), now)
     log(f"stored {n} rows -> {a.db}")
     return 0
 
+
+SPORTS = load_sports()
 
 if __name__ == "__main__":
     sys.exit(main())

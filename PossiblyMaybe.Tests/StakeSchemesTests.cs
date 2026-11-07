@@ -52,8 +52,10 @@ public class StakeSchemesTests
         var k5 = StakeSchemes.StakeDollars("Kelly5", 0.65, -110, 1000, kelly5Promoted: true);
         await Assert.That(k5).IsGreaterThan(k2);
         await Assert.That(k5).IsLessThanOrEqualTo(50.0);
-        var ok = StakeGate.IsKelly5Promoted(100, 0.01);
-        var zeroMean = StakeGate.IsKelly5Promoted(100, 0);
+        var tooSoon = StakeGate.IsKelly5Promoted(100, 0.01);
+        var ok = StakeGate.IsKelly5Promoted(Checkpoints.PnlConfirmsN, 0.01);
+        var zeroMean = StakeGate.IsKelly5Promoted(Checkpoints.PnlConfirmsN, 0);
+        await Assert.That(tooSoon).IsFalse();
         await Assert.That(ok).IsTrue();
         await Assert.That(zeroMean).IsFalse();
     }

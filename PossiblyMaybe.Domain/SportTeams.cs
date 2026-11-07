@@ -182,6 +182,12 @@ public static class SportTeams
         if (string.IsNullOrWhiteSpace(raw)) return null;
         var t = raw.Trim();
         return Efl.TryGetValue(t, out var c) ? c : null;
+    /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
+    public static string? TryEpl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Epl.TryGetValue(t, out var c) ? c : null;
     }
 
     private static readonly Dictionary<string, string> Ligue1 = new(StringComparer.OrdinalIgnoreCase)
@@ -335,6 +341,43 @@ public static class SportTeams
         ["Wrexham"] = "Wrexham", ["Wrexham AFC"] = "Wrexham",
         ["Wycombe Wanderers"] = "Wycombe Wanderers", ["Wycombe"] = "Wycombe Wanderers",
         ["Lincoln City"] = "Lincoln City", ["Lincoln"] = "Lincoln City",
+    private static readonly Dictionary<string, string> Epl = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth", ["BOU"] = "AFC Bournemouth",
+        ["Arsenal"] = "Arsenal", ["ARS"] = "Arsenal",
+        ["Aston Villa"] = "Aston Villa", ["Villa"] = "Aston Villa", ["AVL"] = "Aston Villa",
+        ["Brentford"] = "Brentford", ["BRE"] = "Brentford",
+        ["Brighton Hove Albion"] = "Brighton Hove Albion",
+        ["Brighton & Hove Albion"] = "Brighton Hove Albion", ["Brighton"] = "Brighton Hove Albion", ["BHA"] = "Brighton Hove Albion",
+        ["Burnley"] = "Burnley", ["BUR"] = "Burnley",
+        ["Cardiff City"] = "Cardiff City", ["Cardiff"] = "Cardiff City",
+        ["Chelsea"] = "Chelsea", ["CHE"] = "Chelsea",
+        ["Crystal Palace"] = "Crystal Palace", ["Palace"] = "Crystal Palace", ["CRY"] = "Crystal Palace",
+        ["Everton"] = "Everton", ["EVE"] = "Everton",
+        ["Fulham"] = "Fulham", ["FUL"] = "Fulham",
+        ["Huddersfield Town"] = "Huddersfield Town", ["Huddersfield"] = "Huddersfield Town",
+        ["Ipswich Town"] = "Ipswich Town", ["Ipswich"] = "Ipswich Town", ["IPS"] = "Ipswich Town",
+        ["Leeds United"] = "Leeds United", ["Leeds"] = "Leeds United", ["LEE"] = "Leeds United",
+        ["Leicester City"] = "Leicester City", ["Leicester"] = "Leicester City", ["LEI"] = "Leicester City",
+        ["Liverpool"] = "Liverpool", ["LIV"] = "Liverpool",
+        ["Luton Town"] = "Luton Town", ["Luton"] = "Luton Town",
+        ["Manchester City"] = "Manchester City", ["Man City"] = "Manchester City", ["MCI"] = "Manchester City",
+        ["Manchester United"] = "Manchester United", ["Man United"] = "Manchester United",
+        ["Man Utd"] = "Manchester United", ["MUN"] = "Manchester United",
+        ["Newcastle United"] = "Newcastle United", ["Newcastle"] = "Newcastle United", ["NEW"] = "Newcastle United",
+        ["Norwich City"] = "Norwich City", ["Norwich"] = "Norwich City",
+        ["Nottingham Forest"] = "Nottingham Forest", ["Nott'm Forest"] = "Nottingham Forest",
+        ["Nott Forest"] = "Nottingham Forest", ["NFO"] = "Nottingham Forest",
+        ["Sheffield United"] = "Sheffield United", ["Sheffield Utd"] = "Sheffield United", ["SHU"] = "Sheffield United",
+        ["Southampton"] = "Southampton", ["SOU"] = "Southampton",
+        ["Sunderland A.F.C"] = "Sunderland A.F.C", ["Sunderland"] = "Sunderland A.F.C", ["Sunderland AFC"] = "Sunderland A.F.C",
+        ["Tottenham Hotspur"] = "Tottenham Hotspur", ["Tottenham"] = "Tottenham Hotspur",
+        ["Spurs"] = "Tottenham Hotspur", ["TOT"] = "Tottenham Hotspur",
+        ["Watford"] = "Watford", ["WAT"] = "Watford",
+        ["West Bromwich(WBA)"] = "West Bromwich(WBA)",
+        ["West Bromwich Albion"] = "West Bromwich(WBA)", ["West Brom"] = "West Bromwich(WBA)", ["WBA"] = "West Bromwich(WBA)",
+        ["West Ham United"] = "West Ham United", ["West Ham"] = "West Ham United", ["WHU"] = "West Ham United",
+        ["Wolves"] = "Wolves", ["Wolverhampton Wanderers"] = "Wolves", ["Wolverhampton"] = "Wolves", ["WOL"] = "Wolves",
     };
 
     /// <summary>
@@ -348,6 +391,7 @@ public static class SportTeams
         {
             "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx,
             "LALIGA" => TryLaLiga, "EFL" => TryEfl, _ => _ => null,
+            "EPL" => TryEpl, _ => _ => null,
         };
         var hit = map(display) ?? map(shortName);
         if (hit is not null) return hit;
@@ -360,7 +404,8 @@ public static class SportTeams
 
     /// <summary>
     /// Minimal NCAA school → short code for GameKey. Oregon spellings map to exclusion codes;
-    /// everything else gets a stable sanitized token from the SBRO name.
+    /// everything else gets a stable sanitized token from the SBRO/ESPN name.
+    /// Unmapped schools never resolve onto another school's code (only Oregon cardinal aliases are listed).
     /// </summary>
     public static string NcaaCode(string? raw)
     {
@@ -369,6 +414,26 @@ public static class SportTeams
         if (Ncaa.TryGetValue(spaced, out var code) || Ncaa.TryGetValue(raw.Trim(), out code))
             return code;
         return SanitizeNcaa(spaced);
+    }
+
+    /// <summary>Known NCAA alias → code, or null (never invent a hit onto another club).</summary>
+    public static string? TryNcaa(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var spaced = SplitCamel(raw.Trim());
+        if (Ncaa.TryGetValue(spaced, out var code) || Ncaa.TryGetValue(raw.Trim(), out code))
+            return code;
+        return null;
+    }
+
+    /// <summary>ESPN / display → warehouse NCAAB code. Unknown clubs keep their own sanitized name.</summary>
+    public static string ResolveNcaa(string? abbr, string? display, string? shortName)
+    {
+        var hit = TryNcaa(display) ?? TryNcaa(shortName) ?? TryNcaa(abbr);
+        if (hit is not null) return hit;
+        if (!string.IsNullOrWhiteSpace(display)) return NcaaCode(display);
+        if (!string.IsNullOrWhiteSpace(shortName)) return NcaaCode(shortName);
+        return NcaaCode(abbr);
     }
 
     static string SplitCamel(string raw)
@@ -396,15 +461,23 @@ public static class SportTeams
         return s.Length == 0 ? "unk" : s.Length <= 16 ? s : s[..16];
     }
 
+    // Only Oregon-cardinal aliases. Do not add other schools here — SanitizeNcaa keeps them distinct.
     private static readonly Dictionary<string, string> Ncaa = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Oregon cardinal set → codes OregonExclusion already knows
         ["Oregon"] = "ore", ["Oregon Ducks"] = "ore", ["Ducks"] = "ore",
+        ["University of Oregon"] = "ore", ["ORE"] = "ore",
         ["Oregon State"] = "orst", ["OregonState"] = "orst", ["Oregon St"] = "orst",
         ["Oregon St."] = "orst", ["Oregon State Beavers"] = "orst", ["Beavers"] = "orst",
+        ["Oregon State University"] = "orst", ["ORST"] = "orst",
         ["Portland State"] = "port", ["PortlandState"] = "port", ["Portland St"] = "port",
         ["Portland St."] = "port", ["Portland State Vikings"] = "port",
+        ["Portland State University"] = "port", ["PORT"] = "port",
+        ["Oregon St."] = "orst", ["OregonSt"] = "orst", ["Oregon State Beavers"] = "orst",
+        ["Oregon St Beavers"] = "orst", ["Beavers"] = "orst",
+        ["Portland State"] = "port", ["PortlandState"] = "port", ["Portland St"] = "port",
+        ["Portland St."] = "port", ["PortlandSt"] = "port", ["Portland State Vikings"] = "port",
         ["Portland U"] = "up", ["PortlandU"] = "up", ["University of Portland"] = "up",
         ["Portland Pilots"] = "up", ["Pilots"] = "up", ["Portlandu"] = "up",
+        ["U of Portland"] = "up", ["UP"] = "up", ["PORTLANDU"] = "up",
     };
 }
