@@ -14,13 +14,18 @@ public static class VariantEvaluate
         var (db, _) = await VariantLedger.OpenAsync(variantsDbPath, ct);
         await using (db)
         {
+            // Freeze pause map for this slate; signal = V3 settled shadow CLV.
+            HashSet<string>? paused = null;
+            if (VariantRegistry.All.Any(v => v.LeagueShutoff))
+                paused = await VariantLedger.PausedLeaguesAsync(db, ct: ct);
+
             var n = 0;
             foreach (var c in candidates)
             {
                 var key = VariantRegistry.GameKey(c);
                 foreach (var v in VariantRegistry.All)
                 {
-                    var d = VariantRegistry.Evaluate(v, c);
+                    var d = VariantRegistry.Evaluate(v, c, v.LeagueShutoff ? paused : null);
                     await VariantLedger.UpsertAsync(db, v.Id, c.Sport, key, d, c.OpenLine, c.Line, ct);
                     n++;
                 }

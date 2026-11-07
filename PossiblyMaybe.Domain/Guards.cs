@@ -64,4 +64,28 @@ public static class Guards
         double kStrike = RecommendedStrikeMove)
         => LineMovedAgainst(side, openLine, currentLine, kGoals)
            || StrikeMovedAgainst(openAmerican, currentAmerican, kStrike);
+
+    /// <summary>Rolling window for per-league CLV shutoff (V4).</summary>
+    public const int ShutoffWindow = 40;
+
+    /// <summary>
+    /// Signal stream for shutoff is V3 (same filters without pause). Using the paused
+    /// variant's own bets would freeze the window and never resume.
+    /// </summary>
+    public const string ShutoffSignalVariantId = "V3";
+
+    /// <summary>
+    /// Pause when the last <see cref="ShutoffWindow"/> settled CLV points average &lt; 0.
+    /// Fewer than 40 observations → not paused. Extra leading points are ignored.
+    /// </summary>
+    public static bool LeaguePausedByRollingClv(IReadOnlyList<double> recentClvPts)
+    {
+        if (recentClvPts.Count < ShutoffWindow)
+            return false;
+        var start = recentClvPts.Count - ShutoffWindow;
+        double sum = 0;
+        for (var i = start; i < recentClvPts.Count; i++)
+            sum += recentClvPts[i];
+        return sum / ShutoffWindow < 0;
+    }
 }

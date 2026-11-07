@@ -105,7 +105,7 @@ public static class VariantRegistry
             NbaOverProbKind.NormalSigma,
             true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
             false, false, null),
-        // LeagueShutoff on; pause logic is a stub until W7 (never pauses).
+        // LeagueShutoff: pause sport when V3 rolling CLV (40) < 0; resume when ≥ 0.
         new("V4", "+shutoff",
             NbaOverProbKind.NormalSigma,
             true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
@@ -126,7 +126,12 @@ public static class VariantRegistry
 
     public static string GameKey(SlateCandidate c) => $"{c.Yyyymmdd} {c.Away}@{c.Home}";
 
-    public static VariantDecision Evaluate(Variant v, SlateCandidate c)
+    /// <param name="pausedLeagues">
+    /// Sports currently paused by rolling-CLV shutoff (from <see cref="Guards.ShutoffSignalVariantId"/> shadow).
+    /// Ignored unless <see cref="Variant.LeagueShutoff"/> is true.
+    /// </param>
+    public static VariantDecision Evaluate(
+        Variant v, SlateCandidate c, IReadOnlySet<string>? pausedLeagues = null)
     {
         if (OregonExclusion.IsExcluded(c.Sport, c.Home, c.Away))
             return Skip(VariantSkip.Excluded);
@@ -134,8 +139,9 @@ public static class VariantRegistry
             return Skip(VariantSkip.Stale);
         if (v.Leagues is not null && !v.Leagues.Contains(c.Sport))
             return Skip(VariantSkip.LeagueOff);
-        // shortcut: W7 fills rolling-CLV pause; for now flag is on but never pauses
-        if (v.LeagueShutoff && LeagueIsPausedStub(v, c.Sport))
+        if (v.LeagueShutoff
+            && pausedLeagues is not null
+            && pausedLeagues.Contains(c.Sport))
             return Skip(VariantSkip.LeaguePaused);
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
@@ -194,8 +200,6 @@ public static class VariantRegistry
         // OVER hurt when line drops; UNDER hurt when line rises
         return betOver ? move <= -k : move >= k;
     }
-
-    private static bool LeagueIsPausedStub(Variant _, string __) => false;
 
     private static VariantDecision Skip(string reason)
         => new(false, null, null, -110, 0, 0, 0, reason);

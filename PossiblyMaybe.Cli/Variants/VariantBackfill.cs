@@ -63,12 +63,14 @@ public static class VariantBackfill
 
         var pace = new PaceEfficiencyBook();
         var resid = new ExpandingResidualSigma();
+        var shutoffSignal = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
         var n = 0;
         foreach (var g in games)
         {
             byGame.TryGetValue(g.Id, out var snaps);
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
             var modelExp = pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
             var day = g.TipoffUtc.UtcDateTime.ToString("yyyyMMdd");
 
@@ -83,7 +85,7 @@ public static class VariantBackfill
                     resid.Sigma,
                     ChampConfig.MarketWeight, ChampConfig.MinAbsTotalEdge, ChampConfig.MinEv,
                     Stale: false);
-                n += await WriteAllAsync(vdb, c, ct);
+                n += await WriteAllAsync(vdb, c, close?.Line ?? line, shutoffSignal, ct);
 
                 var exp = ChampConfig.MarketWeight * line + (1 - ChampConfig.MarketWeight) * modelExp;
                 if (g.HomeScore is { } hs && g.AwayScore is { } as_)
@@ -137,6 +139,7 @@ public static class VariantBackfill
         var xgSeen = new HashSet<string>(StringComparer.Ordinal);
         var dc = useDc ? new DixonColesBook(alpha: alpha) : null;
         var serieCutoff = DateTimeOffset.UtcNow.AddYears(-3);
+        var shutoffSignal = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
         var n = 0;
 
         foreach (var g in games)
@@ -144,6 +147,7 @@ public static class VariantBackfill
             byGame.TryGetValue(g.Id, out var snaps);
             snaps ??= [];
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
             double lh, la;
             if (sport == "MLS" && xgBook is not null
                 && xgSeen.Contains(g.HomeTeam) && xgSeen.Contains(g.AwayTeam))
@@ -168,7 +172,7 @@ public static class VariantBackfill
                     line, line,
                     -110, -110,
                     0, w, minEdge, minEv, Stale: false);
-                n += await WriteAllAsync(vdb, c, ct);
+                n += await WriteAllAsync(vdb, c, close?.Line ?? line, shutoffSignal, ct);
             }
 
             goals.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
@@ -184,16 +188,45 @@ public static class VariantBackfill
         return n;
     }
 
-    private static async Task<int> WriteAllAsync(VariantDbContext vdb, SlateCandidate c, CancellationToken ct)
+    private static async Task<int> WriteAllAsync(
+        VariantDbContext vdb,
+        SlateCandidate c,
+        double closeLine,
+        Dictionary<string, List<double>> shutoffSignal,
+        CancellationToken ct)
     {
         var key = VariantRegistry.GameKey(c);
+        shutoffSignal.TryGetValue(c.Sport, out var window);
+        var paused = window is not null && Guards.LeaguePausedByRollingClv(window)
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) { c.Sport }
+            : null;
+
+        VariantDecision? signal = null;
         var n = 0;
         foreach (var v in VariantRegistry.All)
         {
-            var d = VariantRegistry.Evaluate(v, c);
+            var d = VariantRegistry.Evaluate(v, c, v.LeagueShutoff ? paused : null);
             await VariantLedger.UpsertAsync(vdb, v.Id, c.Sport, key, d, c.OpenLine, c.Line, ct);
+            if (v.Id.Equals(Guards.ShutoffSignalVariantId, StringComparison.OrdinalIgnoreCase))
+                signal = d;
             n++;
         }
+
+        // Advance V3 CLV signal even when V4 is paused (so resume is possible).
+        if (signal is { Pick: true, Side: not null, Line: not null })
+        {
+            var overClv = TotalsMath.OverClvPoints(signal.Line.Value, closeLine);
+            var clv = signal.Side.Equals("OVER", StringComparison.OrdinalIgnoreCase) ? overClv : -overClv;
+            if (window is null)
+            {
+                window = [];
+                shutoffSignal[c.Sport] = window;
+            }
+            window.Add(clv);
+            if (window.Count > Guards.ShutoffWindow)
+                window.RemoveAt(0);
+        }
+
         return n;
     }
 }
