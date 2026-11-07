@@ -86,7 +86,9 @@ public sealed record SlateCandidate(
     double? CryptoOverAsk = null,
     double? CryptoUnderAsk = null,
     double? ConformalHalfWidth = null,
-    double? KalmanModelExp = null);
+    double? KalmanModelExp = null,
+    /// <summary>TOTAL (default), SPREAD, or ML. Same GameKey may have one row per market.</summary>
+    string Market = "TOTAL");
 
 public sealed record VariantDecision(
     bool Pick,
@@ -109,6 +111,8 @@ public static class VariantSkip
     public const string NoLine = "NO_LINE";
     public const string NoEdge = "NO_EDGE";
     public const string LowEv = "LOW_EV";
+    /// <summary>Launch-set variants are totals filters; SPREAD/ML rows stay stored only.</summary>
+    public const string WrongMarket = "WRONG_MARKET";
     public const string Injury = "INJURY";
     public const string NoFollow = "NO_FOLLOW";
     public const string NoVenueAsks = "NO_VENUE_ASKS";
@@ -164,6 +168,9 @@ public static class VariantRegistry
     {
         if (OregonExclusion.IsExcluded(c.Sport, c.Home, c.Away))
             return Skip(VariantSkip.Excluded);
+        // Launch-set Evaluate is totals O/U; C7 SPREAD/ML candidates are store-only until a market family lands.
+        if (!c.Market.Equals("TOTAL", StringComparison.OrdinalIgnoreCase))
+            return Skip(VariantSkip.WrongMarket);
         if (c.Stale)
             return Skip(VariantSkip.Stale);
         if (v.Leagues is not null && !v.Leagues.Contains(c.Sport))

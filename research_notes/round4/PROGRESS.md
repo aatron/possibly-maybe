@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** finish A5 + C7 worktrees; Wave R (R1/R2/R6–R10). D* at end.
+**Next action:** Wave R (R1/R2/R6–R10); D1–D5. r3-W16 Composer-only handoff.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -11,7 +11,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | A2 | Line tracker all leagues + importer | Composer | `../pm-r4-a2` `r4/a2` | O+C coverage ≥ 80% | done | 597cd2a |
 | A3 | Wave radar + BH + trial registry + ladder | Composer | `../pm-r4-a3` `r4/a3` | synthetic detection | done | 3ddce67 |
 | A4 | League / venue census | Auto / Composer | notes | ranked list | done | league_census.md |
-| A5 | Seasonality scan | Composer | `../pm-r4-a5` `r4/a5` | phase table (BH) | running | |
+| A5 | Seasonality scan | Composer | `../pm-r4-a5` `r4/a5` | phase table (BH) | done | (this commit) |
 | B1 | Availability: +absence, +injury-guard | Composer | `../pm-r4-b1` `r4/b1` | Tier A / live | done | unified VariantCore |
 | B2 | +pooling, +roster-reset | Composer | `../pm-r4-b2` `r4/b2` | Tier A / live | done | ef60fef |
 | B3 | nba-volume, nba-volume-efg | Composer | `../pm-r4-b3` `r4/b3` | Tier A | done | unified VariantCore |
@@ -30,7 +30,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | C6-epl | EPL pack (A4 #1 ready) | Composer | `../pm-r4-c6-epl` `r4/c6-epl` | Tier A | done | (batch land) |
 | C6-bundesliga | Bundesliga pack (A4 #2 ready) | Composer | `../pm-r4-c6-bundesliga` `r4/c6-bundesliga` | Tier A | done | d6799f7 |
 | C6-nhl | NHL pack (A4 #3; Tier A O→C-gated) | Composer | `../pm-r4-c6-nhl` `r4/c6-nhl` | shadow + tracker | done | (this merge) |
-| C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | running | |
+| C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | done | (this commit) |
 | R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
 | R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | done | (batch land) |
@@ -67,3 +67,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | Batch land: C1, C3, C5, C6-epl, R3, R5 on main. C6-bundesliga/nhl + B1/B3/B4/B6/B7/B8 still in worktrees (VariantCore/SportTeams merge debt). |
 | 2026-11-07 | Unified VariantCore + landed B1/B3/B4/B6/B7/B8 families on main (236 tests). C6-bundesliga/nhl + A5/C7 remain. |
 | 2026-11-07 | C6-bundesliga + C6-nhl merged (244 tests). A5/C7 + Wave R remain. |
+| 2026-11-07 | A5 seasonality-scan + C7 SPREAD/ML candidate store landed (254 tests). Wave R next. |

@@ -25,6 +25,7 @@ public static class Gate1ComboBacktest
         double loadWeight = 0.3,
         double minMlEv = 0.03,
         double minSpreadEv = 0.05,
+        string? sport = "NBA", // null = all sports; C7 Tier A uses NBA
         CancellationToken ct = default)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -32,15 +33,21 @@ public static class Gate1ComboBacktest
             .Options;
         await using var db = new AppDbContext(options);
 
-        var games = (await db.Games.AsNoTracking()
-                .Where(g => g.HomeScore != null && g.AwayScore != null)
-                .ToListAsync(ct))
+        var gamesQuery = db.Games.AsNoTracking()
+            .Where(g => g.HomeScore != null && g.AwayScore != null);
+        if (sport is not null)
+            gamesQuery = gamesQuery.Where(g => g.Sport == sport);
+
+        var games = (await gamesQuery.ToListAsync(ct))
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
 
-        var odds = await db.OddsSnapshots.AsNoTracking().ToListAsync(ct);
+        var ids = games.Select(g => g.Id).ToHashSet();
+        var odds = await db.OddsSnapshots.AsNoTracking()
+            .Where(o => ids.Contains(o.GameId)).ToListAsync(ct);
         var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
-        var refs = await db.RefereeAssignments.AsNoTracking().ToListAsync(ct);
+        var refs = await db.RefereeAssignments.AsNoTracking()
+            .Where(r => ids.Contains(r.GameId)).ToListAsync(ct);
         var byRefs = refs.GroupBy(r => r.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
         var elo = new EloBook();
@@ -63,16 +70,20 @@ public static class Gate1ComboBacktest
             var acc = g.Season == HoldoutSeason ? hold : train;
             acc.AddPrediction(p, homeWon);
 
-            var cands = new List<Cand>();
-            if (mode is BetMarketMode.Moneyline or BetMarketMode.ComboBest)
-                AddMlCands(cands, snaps, p, homeWon, minMlEv);
-            if (mode is BetMarketMode.Spread or BetMarketMode.ComboBest)
-                AddSpreadCands(cands, snaps, p, hs, ascore, minSpreadEv);
-
-            if (cands.Count > 0)
+            // Cardinal rule: never bet Oregon — still advance Elo/refs after skip.
+            if (!OregonExclusion.IsExcluded(g.Sport, g.HomeTeam, g.AwayTeam))
             {
-                var pick = cands.OrderByDescending(c => c.Ev).First();
-                acc.AddBet(pick);
+                var cands = new List<Cand>();
+                if (mode is BetMarketMode.Moneyline or BetMarketMode.ComboBest)
+                    AddMlCands(cands, snaps, p, homeWon, minMlEv);
+                if (mode is BetMarketMode.Spread or BetMarketMode.ComboBest)
+                    AddSpreadCands(cands, snaps, p, hs, ascore, minSpreadEv);
+
+                if (cands.Count > 0)
+                {
+                    var pick = cands.OrderByDescending(c => c.Ev).First();
+                    acc.AddBet(pick);
+                }
             }
 
             Finish(g, homeWon, crew, elo, refFx, rest);

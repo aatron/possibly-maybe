@@ -53,6 +53,9 @@ public static class VariantEvaluate
         var n = 0;
         foreach (var c in candidates)
         {
+            // Totals launch-set only; SPREAD/ML candidates are stored, not shadowed here.
+            if (!c.Market.Equals("TOTAL", StringComparison.OrdinalIgnoreCase))
+                continue;
             var key = VariantRegistry.GameKey(c);
             foreach (var v in VariantRegistry.All)
             {

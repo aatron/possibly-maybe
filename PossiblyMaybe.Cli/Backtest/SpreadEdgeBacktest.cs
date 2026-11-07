@@ -22,16 +22,18 @@ public static class SpreadEdgeBacktest
         await using var db = new AppDbContext(options);
 
         var games = (await db.Games.AsNoTracking()
-                .Where(g => g.HomeScore != null && g.AwayScore != null)
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null && g.AwayScore != null)
                 .ToListAsync(ct))
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
 
+        var ids = games.Select(g => g.Id).ToHashSet();
         var odds = await db.OddsSnapshots.AsNoTracking()
-            .Where(o => o.Market == "SPREAD" || o.Market == "ML")
+            .Where(o => ids.Contains(o.GameId) && (o.Market == "SPREAD" || o.Market == "ML"))
             .ToListAsync(ct);
         var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
-        var refs = await db.RefereeAssignments.AsNoTracking().ToListAsync(ct);
+        var refs = await db.RefereeAssignments.AsNoTracking()
+            .Where(r => ids.Contains(r.GameId)).ToListAsync(ct);
         var byRefs = refs.GroupBy(r => r.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
         var elo = new EloBook();
@@ -54,7 +56,8 @@ public static class SpreadEdgeBacktest
             var sp = snaps.Where(s => s.Market == "SPREAD").ToList();
             var openHome = Pick(sp, "home", PriceKind.Open);
             var closeHome = Pick(sp, "home", PriceKind.Close);
-            if (openHome?.Line is not null && closeHome?.Line is not null
+            if (!OregonExclusion.IsExcluded(g.Sport, g.HomeTeam, g.AwayTeam)
+                && openHome?.Line is not null && closeHome?.Line is not null
                 && Math.Abs(openHome.Line.Value - closeHome.Line.Value) >= 0.25)
             {
                 var line = openHome.Line.Value;

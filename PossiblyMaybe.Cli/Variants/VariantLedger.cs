@@ -32,12 +32,14 @@ public sealed class ShadowEntry
     public DateTimeOffset? SettledAt { get; set; }
 }
 
-/// <summary>One stored model/line snapshot per game; variants are filters over these rows.</summary>
+/// <summary>One stored model/line snapshot per game×market; variants are filters over these rows.</summary>
 public sealed class CandidateEntry
 {
     public int Id { get; set; }
     public string Sport { get; set; } = "";
     public string GameKey { get; set; } = "";
+    /// <summary>TOTAL / SPREAD / ML — C7 extends store; no new tables.</summary>
+    public string Market { get; set; } = "TOTAL";
     public string Yyyymmdd { get; set; } = "";
     public string Home { get; set; } = "";
     public string Away { get; set; } = "";
@@ -79,9 +81,10 @@ public sealed class VariantDbContext(DbContextOptions<VariantDbContext> options)
         });
         modelBuilder.Entity<CandidateEntry>(e =>
         {
-            e.HasIndex(x => new { x.Sport, x.GameKey }).IsUnique();
+            e.HasIndex(x => new { x.Sport, x.GameKey, x.Market }).IsUnique();
             e.Property(x => x.Sport).HasMaxLength(16);
             e.Property(x => x.GameKey).HasMaxLength(128);
+            e.Property(x => x.Market).HasMaxLength(16);
             e.Property(x => x.Yyyymmdd).HasMaxLength(8);
             e.Property(x => x.Home).HasMaxLength(64);
             e.Property(x => x.Away).HasMaxLength(64);
@@ -131,6 +134,7 @@ public static class VariantLedger
                 "Id" INTEGER NOT NULL CONSTRAINT "PK_CandidateEntries" PRIMARY KEY AUTOINCREMENT,
                 "Sport" TEXT NOT NULL,
                 "GameKey" TEXT NOT NULL,
+                "Market" TEXT NOT NULL DEFAULT 'TOTAL',
                 "Yyyymmdd" TEXT NOT NULL,
                 "Home" TEXT NOT NULL,
                 "Away" TEXT NOT NULL,
@@ -152,10 +156,22 @@ public static class VariantLedger
                 "StoredAt" TEXT NOT NULL
             );
             """, ct);
+        // Additive C7: Market column on DBs created by A1 without it.
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                """ALTER TABLE "CandidateEntries" ADD COLUMN "Market" TEXT NOT NULL DEFAULT 'TOTAL';""", ct);
+        }
+        catch
+        {
+            // Column already present.
+        }
+        await db.Database.ExecuteSqlRawAsync(
+            """DROP INDEX IF EXISTS "IX_CandidateEntries_Sport_GameKey";""", ct);
         await db.Database.ExecuteSqlRawAsync(
             """
-            CREATE UNIQUE INDEX IF NOT EXISTS "IX_CandidateEntries_Sport_GameKey"
-            ON "CandidateEntries" ("Sport", "GameKey");
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_CandidateEntries_Sport_GameKey_Market"
+            ON "CandidateEntries" ("Sport", "GameKey", "Market");
             """, ct);
     }
 
@@ -164,20 +180,22 @@ public static class VariantLedger
         e.ModelExp, e.LambdaHome, e.LambdaAway,
         e.Line, e.OpenLine, e.DkOverAmerican, e.DkUnderAmerican,
         e.NbaSigma, e.MarketWeight, e.MinAbsEdge, e.MinEv, e.Stale,
-        e.InjuryFlag, e.RosterFlag, e.SeasonPhase);
+        e.InjuryFlag, e.RosterFlag, e.SeasonPhase, Market: e.Market);
 
     public static async Task UpsertCandidateAsync(
         VariantDbContext db, SlateCandidate c, CancellationToken ct = default)
     {
         var key = VariantRegistry.GameKey(c);
+        var market = string.IsNullOrEmpty(c.Market) ? "TOTAL" : c.Market;
         var row = await db.CandidateEntries
-            .FirstOrDefaultAsync(x => x.Sport == c.Sport && x.GameKey == key, ct);
+            .FirstOrDefaultAsync(x => x.Sport == c.Sport && x.GameKey == key && x.Market == market, ct);
         if (row is null)
         {
-            row = new CandidateEntry { Sport = c.Sport, GameKey = key };
+            row = new CandidateEntry { Sport = c.Sport, GameKey = key, Market = market };
             db.CandidateEntries.Add(row);
         }
 
+        row.Market = market;
         row.Yyyymmdd = c.Yyyymmdd;
         row.Home = c.Home;
         row.Away = c.Away;

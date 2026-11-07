@@ -37,13 +37,13 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] NFL: Tier A on filled O→C; `nfl-wind` alone; 1H / quarter / team totals (Kalshi lists them) → C3
 - [ ] MLB: Tier A 2011–2019 + look-once 2021 (never run); F5 + team totals for spring → C4
 - [x] La Liga, EFL back in **shadow** (FAILED as champs; waves may still appear) → C5
-- [ ] New leagues the venues list (EPL, Bundesliga, UCL, NHL, WNBA, NWSL, NCAAW, …), data-gated → A4 → C6
-- [ ] Spreads / moneylines (DB has ML + SPREAD; only NBA ATS was ever tracked) → C7
+- [x] New leagues the venues list (EPL, Bundesliga, UCL, NHL, WNBA, NWSL, NCAAW, …), data-gated → A4 → C6
+- [x] Spreads / moneylines (DB has ML + SPREAD; only NBA ATS was ever tracked) → C7
 - [ ] Line tracker covers NFL / MLB only; needs **every** league for live CLV / consensus → A2
 
 ## E. Infrastructure for "waves of soft spots"
 - [ ] Shadow ledger stores **every candidate** (all games × all model outputs), so a variant is a filter, not a re-run → A1
 - [ ] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3
-- [ ] Seasonality scan: historical CLV by season phase → wave calendar → A5
+- [x] Seasonality scan: historical CLV by season phase → wave calendar → A5
 - [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
 - [x] Generic sport-pack template so a league is a config, not a project → C0

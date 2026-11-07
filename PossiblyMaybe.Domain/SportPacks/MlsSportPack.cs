@@ -25,7 +25,7 @@ public static class MlsSportPack
             "POR",
         ],
         ResolveAlias: SportTeams.TryMls,
-        // shortcut: placeholders until A5 seasonality scan fills real windows
+        // Locked in research_notes/round4/a5_proof.md (A5); windows in SeasonalityPhases.
         SeasonPhases:
         [
             "opening-weeks",

@@ -56,11 +56,11 @@ switch (command)
             return 2;
         }
 
-        Console.WriteLine("NOTE: ML+spread open→close from ESPN/B; combo picks best EV per game.");
+        Console.WriteLine("NOTE: NBA ML+spread open→close; Oregon excluded; combo = best EV/game.");
         foreach (var mode in new[] { BetMarketMode.Moneyline, BetMarketMode.Spread, BetMarketMode.ComboBest })
         {
-            var (train, holdout) = await Gate1ComboBacktest.RunAsync(dbPath, mode);
-            Console.WriteLine($"===== market={mode} model=MarketEloRefsLoad =====");
+            var (train, holdout) = await Gate1ComboBacktest.RunAsync(dbPath, mode, sport: "NBA");
+            Console.WriteLine($"===== sport=NBA market={mode} model=MarketEloRefsLoad =====");
             PrintSlice(train);
             PrintSlice(holdout);
         }
@@ -919,6 +919,38 @@ switch (command)
             VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"), RadarStore.DefaultDbPath(root));
         return 0;
     }
+    case "variants-backfill-spreadml":
+    {
+        // C7: CandidateEntries for SPREAD + ML (Market column); Oregon skipped.
+        var root = FindRepoRoot();
+        var warehouse = args.Length > 1 ? args[1] : Path.Combine(root, "possiblymaybe.db");
+        if (!File.Exists(warehouse))
+        {
+            var alt = Path.GetFullPath(Path.Combine(root, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) warehouse = alt;
+        }
+        var vdb = args.Length > 2 ? args[2] : VariantLedger.DefaultDbPath(root);
+        if (!File.Exists(warehouse))
+        {
+            Console.Error.WriteLine($"DB not found: {warehouse}");
+            return 2;
+        }
+        await SpreadMlCandidateBackfill.RunAsync(warehouse, vdb);
+        return 0;
+    }
+    case "seasonality-scan":
+    {
+        // A5: pre-registered season phases × V3 CLV; BH q=0.10; prints N_trials.
+        var root = FindRepoRoot();
+        var vdb = args.Length > 1 ? args[1] : VariantLedger.DefaultDbPath(root);
+        if (!File.Exists(vdb))
+        {
+            Console.Error.WriteLine($"variants.db not found: {vdb}");
+            return 2;
+        }
+        await SeasonalityScan.RunAsync(vdb);
+        return 0;
+    }
     case "variants-radar":
     {
         var root = FindRepoRoot();
@@ -1043,6 +1075,8 @@ static void PrintUsage()
           variants-reeval [variants.db]  Re-filter variants over stored candidates (no model re-run)
           variants-settle [db]       Auto-settle open shadow picks (no confirm)
           variants-dashboard         Write ui/variants.html
+          variants-backfill-spreadml [db]  C7: store SPREAD+ML candidates (NBA/NFL/NCAA)
+          seasonality-scan [vdb]     A5 phase × CLV table (BH q=0.10, prints N_trials)
           variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
