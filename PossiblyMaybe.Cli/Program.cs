@@ -94,7 +94,7 @@ switch (command)
     }
     case "refresh-results":
     {
-        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA finals from ESPN (+NBA box, MLS xG)
+        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL finals from ESPN (+NBA box, MLS xG)
         var repoRoot = FindRepoRoot();
         var through = args.Length > 1 && args[1].Length == 8
             ? DateOnly.ParseExact(args[1], "yyyyMMdd")
@@ -427,10 +427,10 @@ switch (command)
     }
     case "slate-soccer":
     {
-        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA
+        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA|EPL
         if (args.Length < 2)
         {
-            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA> [yyyymmdd] [bank]");
+            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|EPL> [yyyymmdd] [bank]");
             return 1;
         }
         var repoRoot = FindRepoRoot();
@@ -815,7 +815,7 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
-          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA (ESPN; NBA box, MLS xG)
+          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL (ESPN; NBA box, MLS xG)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
@@ -829,7 +829,7 @@ static void PrintUsage()
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
-          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA HOLD-PASS slates
+          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; EPL shadow
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
