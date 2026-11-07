@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PossiblyMaybe.Domain\PossiblyMaybe.Domain.csproj" />
     <ProjectReference Include="..\PossiblyMaybe.Data\PossiblyMaybe.Data.csproj" />
+    <ProjectReference Include="..\PossiblyMaybe.Cli\PossiblyMaybe.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -90,6 +90,17 @@ switch (command)
         await Gate0Importer.ImportBoxOnlyAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "refresh-results":
+    {
+        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA finals from ESPN (+NBA box, MLS xG)
+        var repoRoot = FindRepoRoot();
+        var through = args.Length > 1 && args[1].Length == 8
+            ? DateOnly.ParseExact(args[1], "yyyyMMdd")
+            : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+        var dbPath = args.Length > 2 ? args[2] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await ResultsRefresh.RunAsync(dbPath, through);
+        return 0;
+    }
     case "import-mlb":
     {
         var repoRoot = FindRepoRoot();
@@ -609,6 +620,7 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
+          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA (ESPN; NBA box, MLS xG)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           sweep-totals [db]          NBA O/U + ISLP cal same-gate vs PaceEff champ

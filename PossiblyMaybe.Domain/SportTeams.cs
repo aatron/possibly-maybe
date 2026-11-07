@@ -108,7 +108,7 @@ public static class SportTeams
         ["New England Revolution"] = "NE", ["New York City FC"] = "NYC",
         ["New York Red Bulls"] = "RBNY", ["Red Bull New York"] = "RBNY",
         ["Orlando City"] = "ORL", ["Orlando City SC"] = "ORL",
-        ["Philadelphia Union"] = "PHI", ["Portland Timbers"] = "POR",
+        ["Philadelphia Union"] = "PHI", ["Portland Timbers"] = "POR", ["Portland Timbers FC"] = "POR",
         ["Real Salt Lake"] = "RSL", ["San Diego FC"] = "SD",
         ["San Jose Earthquakes"] = "SJ",
         ["Seattle Sounders"] = "SEA", ["Seattle Sounders FC"] = "SEA",
@@ -158,7 +158,7 @@ public static class SportTeams
         ["Lille"] = "Lille", ["LOSC Lille"] = "Lille", ["LILL"] = "Lille", ["LIL"] = "Lille",
         ["Lyon"] = "Lyon", ["Olympique Lyonnais"] = "Lyon", ["OL"] = "Lyon", ["LYON"] = "Lyon",
         ["Marseille"] = "Marseille", ["Olympique de Marseille"] = "Marseille", ["OLM"] = "Marseille", ["OM"] = "Marseille",
-        ["Metz"] = "Metz", ["FC Metz"] = "Metz", ["MNS"] = "Metz",
+        ["Metz"] = "Metz", ["FC Metz"] = "Metz",
         ["Monaco"] = "Monaco", ["AS Monaco"] = "Monaco", ["MON"] = "Monaco",
         ["Nantes"] = "Nantes", ["FC Nantes"] = "Nantes",
         ["Nice"] = "Nice", ["OGC Nice"] = "Nice", ["NICE"] = "Nice",
@@ -172,7 +172,7 @@ public static class SportTeams
         ["Strasbourg"] = "Strasbourg", ["RC Strasbourg"] = "Strasbourg", ["RC Strasbourg Alsace"] = "Strasbourg", ["STR"] = "Strasbourg",
         ["Toulouse"] = "Toulouse", ["Toulouse FC"] = "Toulouse", ["TOU"] = "Toulouse",
         ["Troyes"] = "Troyes", ["TRY"] = "Troyes",
-        ["Lorient"] = "Lorient", ["Montpellier"] = "Montpellier", ["Clermont"] = "Clermont",
+        ["Le Mans"] = "Le Mans", ["Lorient"] = "Lorient", ["Montpellier"] = "Montpellier", ["Clermont"] = "Clermont",
     };
 
     private static readonly Dictionary<string, string> SerieA = new(StringComparer.OrdinalIgnoreCase)
@@ -205,8 +205,8 @@ public static class SportTeams
 
     private static readonly Dictionary<string, string> LigaMx = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Atlas"] = "Atlas", ["Atlas FC"] = "Atlas", ["ATS"] = "Atlas",
-        ["Atletico San Luis"] = "Atletico San Luis", ["Atlético San Luis"] = "Atletico San Luis",
+        ["Atlante"] = "Atlante", ["Atlas"] = "Atlas", ["Atlas FC"] = "Atlas", ["ATS"] = "Atlas",
+        ["Atletico San Luis"] = "Atletico San Luis", ["Atlético San Luis"] = "Atletico San Luis", ["Atlético de San Luis"] = "Atletico San Luis", ["Atl. San Luis"] = "Atletico San Luis",
         ["San Luis"] = "Atletico San Luis", ["ASL"] = "Atletico San Luis",
         ["CDSyC Cruz Azul"] = "CDSyC Cruz Azul", ["Cruz Azul"] = "CDSyC Cruz Azul", ["CAZ"] = "CDSyC Cruz Azul",
         ["Chivas Guadalajara"] = "Chivas Guadalajara", ["Guadalajara"] = "Chivas Guadalajara",
@@ -221,12 +221,29 @@ public static class SportTeams
         ["Necaxa"] = "Necaxa", ["Club Necaxa"] = "Necaxa", ["NCX"] = "Necaxa",
         ["Pachuca"] = "Pachuca", ["CF Pachuca"] = "Pachuca", ["PAC"] = "Pachuca",
         ["Puebla"] = "Puebla", ["Puebla FC"] = "Puebla", ["PUE"] = "Puebla",
-        ["Pumas U.N.A.M."] = "Pumas U.N.A.M.", ["Pumas"] = "Pumas U.N.A.M.", ["UNAM"] = "Pumas U.N.A.M.",
+        ["Pumas U.N.A.M."] = "Pumas U.N.A.M.", ["Pumas UNAM"] = "Pumas U.N.A.M.", ["Pumas"] = "Pumas U.N.A.M.", ["UNAM"] = "Pumas U.N.A.M.",
         ["Queretaro FC"] = "Queretaro FC", ["Querétaro"] = "Queretaro FC", ["Queretaro"] = "Queretaro FC", ["QRO"] = "Queretaro FC",
         ["Santos Laguna"] = "Santos Laguna", ["Santos"] = "Santos Laguna", ["SAN"] = "Santos Laguna",
         ["Tigres UANL"] = "Tigres UANL", ["Tigres"] = "Tigres UANL", ["UANL"] = "Tigres UANL",
         ["Toluca"] = "Toluca", ["Deportivo Toluca"] = "Toluca", ["TOL"] = "Toluca",
     };
+
+    /// <summary>
+    /// Canonical soccer team name from ESPN fields. Names win over abbreviations (ESPN reuses/changes codes, e.g. Le Mans = MNS
+    /// once collided with Metz); a club not in the table keeps its own display name (new team, default rating) and is never
+    /// aliased to another club.
+    /// </summary>
+    public static string? ResolveSoccer(string sport, string? abbr, string? display, string? shortName)
+    {
+        Func<string?, string?> map = sport.ToUpperInvariant() switch
+        {
+            "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx, _ => _ => null,
+        };
+        var hit = map(display) ?? map(shortName);
+        if (hit is not null) return hit;
+        if (string.IsNullOrWhiteSpace(display)) return map(abbr) ?? abbr;
+        return display.Trim();
+    }
 
     public static string GameKey(string sport, DateOnly date, string home, string away)
         => $"{sport.ToLowerInvariant()}:{date:yyyy-MM-dd}:{home}:{away}";

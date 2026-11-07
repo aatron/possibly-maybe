@@ -27,11 +27,30 @@ public static class DailySlate
             ["SERIEA"] = "ita.1",
         };
 
+    public const int StaleDays = 10;
+
+    /// <summary>True when the newest scored game is more than <see cref="StaleDays"/> before the slate date (or missing).</summary>
+    public static bool IsStale(DateTimeOffset? latestResult, string yyyymmdd)
+        => latestResult is null
+           || DateTime.ParseExact(yyyymmdd, "yyyyMMdd", null).Date - latestResult.Value.UtcDateTime.Date > TimeSpan.FromDays(StaleDays);
+
+    private static async Task<bool> WarnIfStaleAsync(string sport, string dbPath, string yyyymmdd, CancellationToken ct)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var latest = await Import.ResultsRefresh.LatestResultAsync(db, sport, ct);
+        if (!IsStale(latest, yyyymmdd)) return false;
+        Console.WriteLine($"STALE DATA: {sport} newest result in DB is {(latest is null ? "NONE" : latest.Value.ToString("yyyy-MM-dd"))}"
+            + $" (> {StaleDays} days before {yyyymmdd}) — NO GOs for {sport}. Run: refresh-results");
+        return true;
+    }
+
     public static async Task RunNbaAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         var pace = await BuildNbaPaceAsync(dbPath, ct);
         var games = await FetchNbaScoreboardAsync(yyyymmdd, ct);
         Console.WriteLine($"######## NBA SLATE {yyyymmdd} bankroll=${bankroll:F0} champ PaceEff ########");
+        if (games.Count > 0 && await WarnIfStaleAsync("NBA", dbPath, yyyymmdd, ct)) return;
         Console.WriteLine($"Gate: w={ChampConfig.MarketWeight} |exp−line|≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0} ¼Kelly≤2%");
         var gos = 0;
         foreach (var g in games)
@@ -106,6 +125,7 @@ public static class DailySlate
             Console.WriteLine($"No {sport} games on this date.");
             return;
         }
+        if (await WarnIfStaleAsync(sport, dbPath, yyyymmdd, ct)) return;
 
         var gos = 0;
         foreach (var g in games)
@@ -343,18 +363,7 @@ public static class DailySlate
             return n;
         }
 
-        return sport.ToUpperInvariant() switch
-        {
-            "MLS" => SportTeams.TryMls(abbr) ?? SportTeams.TryMls(display) ?? SportTeams.TryMls(shortName)
-                     ?? (display is null ? null : "?" + display),
-            "LIGUE1" => SportTeams.TryLigue1(abbr) ?? SportTeams.TryLigue1(display) ?? SportTeams.TryLigue1(shortName)
-                        ?? (display is null ? null : "?" + display),
-            "SERIEA" => SportTeams.TrySerieA(abbr) ?? SportTeams.TrySerieA(display) ?? SportTeams.TrySerieA(shortName)
-                        ?? (display is null ? null : "?" + display),
-            "LIGAMX" => SportTeams.TryLigaMx(abbr) ?? SportTeams.TryLigaMx(display) ?? SportTeams.TryLigaMx(shortName)
-                        ?? (display is null ? null : "?" + display),
-            _ => display,
-        };
+        return SportTeams.ResolveSoccer(sport, abbr, display, shortName);
     }
 
     private static async Task<double?> FetchEspnTotalAsync(string sport, string league, string espnId, CancellationToken ct)
