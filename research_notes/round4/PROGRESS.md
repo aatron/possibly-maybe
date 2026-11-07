@@ -33,9 +33,9 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | running | |
 | R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
-| R3 | Same-book close | Composer | after A2 `../pm-r4-r3` | % same-book close | pending (A2) | |
+| R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | running | |
 | R4 | replay --asof command | Composer | `../pm-r4-r4` | 11-07 diff = 0 | pending (A1, R1, R2) | |
-| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` | stage test | pending (A3) | |
+| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | running | |
 | R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
