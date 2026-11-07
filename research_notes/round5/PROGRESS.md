@@ -30,3 +30,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | 2026-11-07 | T3 merged `--no-ff`: ESPN lines 2026-10-24→11-06 (406/409 O+C); AsOfView no-peek. |
 | 2026-11-07 | Wave 2 launched (Composer): T4a/b/c, T5, T6. |
 | 2026-11-07 | T5 on `r5/t5`: seasonality-scan N_trials=0 (no settled CLV); radar CUSUM prior h=7 + synthetic tests; `t5_proof.md`. |
+| 2026-11-07 | T5 merged `--no-ff`: seasonality BH prior into radar (CUSUM h 10→7); N_trials=0 settled CLV. |
