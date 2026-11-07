@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for W5 / W7 / W16. W1–W3 / W6 / W8 / W13–W15 done. W4 deferred.
+**Next action:** wait for W5 / W16. W1–W3 / W6–W8 / W13–W15 done. W4 deferred.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -15,7 +15,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W4 | Always-on tracker (GH Actions) | Composer | `../pm-r3-always-on` | sleep-night coverage | **deferred (user: not yet)** | |
 | W5 | Live CLV fix | Composer | `../pm-r3-live-clv` `r3/live-clv` | % true close | **running** | |
 | W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` `r3/venues` | Ligue1/SerieA/LigaMX series + RH fee skip test | done | 4f62fab |
-| W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` `r3/shutoff` | drawdown vs V3 | **running** | |
+| W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` `r3/shutoff` | all 5 leagues DD≤V3 and PnL≥V3 (w7_shutoff_proof.md) | done | 6fd030e |
 | W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible (STAKE GATE in `paper`) | done | b3e6ca2 |
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
@@ -46,4 +46,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W1 merged (48b9e5e, 141 tests). Shadow ledger + variants.html; Defaults aligned to Guards (25% / NBA k=2). W5/W6/W7 launched. |
 | 2026-11-07 | W6 merged (4f62fab, 151 tests). KXLIGUE1TOTAL / KXSERIEATOTAL / KXLIGAMXTOTAL; RH fee already on place path. |
 | 2026-11-07 | W15 merged (a830d85, 155 tests) + live `import-disk-odds` (backup possiblymaybe.db.bak-pre-w15-*). NFL 14→18, NBA 16→17, MLB 12→15, NCAAB 0→15, NCAAF 0→16. ~17 NFL rows still unmapped (LosAngeles/NewYork). |
+| 2026-11-07 | W7 merged (6fd030e, 158 tests). V4 pauses on V3 rolling-40 CLV&lt;0; NBA/Ligue1 DD cut. |
 | 2026-11-07 | Wrote revisit_candidates.md (2-month signal math; past approaches by closeness; injury/trade live-only variants). Spec input for Composer. |
