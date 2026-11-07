@@ -115,6 +115,105 @@ public static class SoccerLeagueTotalsBacktest
         return (train.ToResult(), hold.ToResult());
     }
 
+    /// <summary>
+    /// Pre-holdout fold with Oregon + optional edge-cap / line-move (open→close proxy).
+    /// Does not alter <see cref="RunAsync"/> champ paths.
+    /// </summary>
+    public static async Task<(Gate1aResult Kept, Gate1aResult Removed)> RunSeasonFoldGuardedAsync(
+        string dbPath,
+        string sport,
+        string testSeason,
+        string holdoutSeason,
+        double marketWeight,
+        double minEv,
+        double minAbsEdge,
+        double? edgeCap,
+        double? lineMoveK,
+        bool useDixonColes = false,
+        double alpha = 0.18,
+        double dcAlpha = 0.12,
+        CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == sport && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var odds = await db.OddsSnapshots.AsNoTracking().Where(o => o.Market == "TOTAL").ToListAsync(ct);
+        var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var goalsBook = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var dcBook = useDixonColes ? new DixonColesBook(alpha: dcAlpha) : null;
+        var kept = new Acc($"{sport}_kept_{testSeason}");
+        var removed = new Acc($"{sport}_removed_{testSeason}");
+
+        foreach (var g in games)
+        {
+            var season = g.Season ?? "";
+            if (string.CompareOrdinal(season, holdoutSeason) >= 0)
+            {
+                goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                continue;
+            }
+
+            byOdds.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
+            if (open?.Line is not { } line || close?.Line is not { } closeLine
+                || Math.Abs(line - closeLine) < 0.25)
+            {
+                goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+                continue;
+            }
+
+            var (lh, la) = dcBook?.ExpectedLambdas(g.HomeTeam, g.AwayTeam)
+                ?? goalsBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            var modelExp = lh + la;
+            var exp = marketWeight * line + (1 - marketWeight) * modelExp;
+            var edge = exp - line;
+            var juiceOpen = open.AmericanOdds == 0 ? -110 : open.AmericanOdds;
+            var juiceClose = close.AmericanOdds == 0 ? juiceOpen : close.AmericanOdds;
+            var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
+            var clv = TotalsMath.OverClvPoints(line, closeLine);
+            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line, sport);
+
+            if (season == testSeason
+                && Math.Abs(edge) >= minAbsEdge
+                && !OregonExclusion.IsExcluded(sport, g.HomeTeam, g.AwayTeam))
+            {
+                void Place(string side, double p, double sideClv, bool won, double pnl)
+                {
+                    var ev = OddsMath.ExpectedValue(p, juiceOpen);
+                    if (ev < minEv) return;
+                    var edgeHit = edgeCap is { } cap && Guards.ExceedsEdgeCap(ev, cap);
+                    var moveHit = lineMoveK is { } k
+                        && Guards.SoccerMovedAgainst(side, line, closeLine, k, juiceOpen, juiceClose);
+                    var acc = edgeHit || moveHit ? removed : kept;
+                    acc.AddBet(sideClv, won, pnl, p);
+                }
+
+                if (edge > 0)
+                    Place("over", pOver, clv, ou > 0, TotalsMath.OuPnL(juiceOpen, ou));
+                else
+                    Place("under", 1 - pOver, -clv, ou < 0, TotalsMath.OuPnL(juiceOpen, -ou));
+            }
+
+            if (season == testSeason)
+                kept.AddGame();
+
+            goalsBook.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            dcBook?.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+        }
+
+        return (kept.ToResult(), removed.ToResult());
+    }
+
     /// <summary>Soft-threshold OLS residual~B2B on train only. Drop if |β|&lt;thresh.</summary>
     public static async Task<double> FitRestB2bGoalsAsync(
         string dbPath, string sport, string holdoutSeason, double alpha = 0.18,
