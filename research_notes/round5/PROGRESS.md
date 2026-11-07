@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for T7 Composer agent; `--no-ff` merge, then T8 close-out.
+**Next action:** `--no-ff` merge T7 to main, then T8 close-out.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
@@ -16,7 +16,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | `t4c_proof.md` — kalman PASS; conformal+strict FAIL | done | fe3bfa8 |
 | T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | `t5_proof.md` — N_trials=0; CUSUM prior wired | done | 55a2a18 |
 | T6 | NHL + NFL re-test | Composer | `../pm-r5-t6` `r5/t6` | `t6_proof.md` — NHL FAIL/TierC PASS; NFL FAIL; wind PASS | done | c5da041 |
-| T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | no-peek walk test; report | running | |
+| T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | `t7_proof.md` — no-peek; report before/after | done | |
 | T8 | Green tests, clean run, push | parent | main | tests + push | planned | |
 
 ## Log
@@ -31,3 +31,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | 2026-11-07 | T4a merged: soccer dists mostly PASS→Shadow; +pooling FAIL; N_trials=17. |
 | 2026-11-07 | T4c merged: kalman PASS→Shadow; +conformal + soccer-strict FAIL; N_trials=3. |
 | 2026-11-07 | T6 merged: NHL Tier A FAIL / Tier C look-once PASS (vault burned); NFL FAIL; nfl-wind PASS. Wave 2 complete; T7 launched. |
+| 2026-11-07 | T7 done on `r5/t7`: `engine-walk` + report `reports/replay_r5_2026-10-24_to_11-06.md`; 321 tests; before V0-paper flat +0.83u / CLV +0.18. |

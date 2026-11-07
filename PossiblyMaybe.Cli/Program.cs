@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Cli.Backtest;
 using PossiblyMaybe.Cli.Import;
 using PossiblyMaybe.Cli.Paper;
@@ -1176,6 +1177,68 @@ switch (command)
             return 3;
         }
     }
+    case "engine-walk":
+    {
+        // T7: multi-day AsOfView → Decide → stake lanes → reveal/settle. Never touches paper.db.
+        // usage: engine-walk <from=yyyyMMdd> <to=yyyyMMdd> [strategies…] [db] [--report path]
+        var root = FindRepoRoot();
+        var warehouse = Path.Combine(root, "possiblymaybe.db");
+        // Default warehouse is the shared project DB (T3 lines live there after merge/copy).
+        var shared = Path.Combine(Directory.GetParent(root)?.FullName ?? root, "possibly-maybe", "possiblymaybe.db");
+        if (!File.Exists(warehouse) && File.Exists(shared))
+            warehouse = shared;
+        DateOnly? from = null, to = null;
+        var strategies = new List<string>();
+        string? reportPath = null;
+        for (var i = 1; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a is "--report" && i + 1 < args.Length)
+            {
+                reportPath = args[++i];
+                continue;
+            }
+            if (a.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            {
+                warehouse = a;
+                continue;
+            }
+            if (a.Length == 8 && a.All(char.IsDigit)
+                && DateOnly.TryParseExact(a, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            {
+                if (from is null) from = d;
+                else if (to is null) to = d;
+                continue;
+            }
+            strategies.Add(a);
+        }
+        if (!File.Exists(warehouse))
+        {
+            Console.Error.WriteLine($"DB not found: {warehouse}");
+            return 2;
+        }
+        Console.WriteLine(
+            $"engine-walk {from?.ToString("yyyyMMdd") ?? EngineWalk.DefaultFrom.ToString("yyyyMMdd")}→" +
+            $"{to?.ToString("yyyyMMdd") ?? EngineWalk.DefaultTo.ToString("yyyyMMdd")} " +
+            $"beforeSHA={EngineWalk.Round4CloseSha} db={warehouse} (no paper ledger)");
+        var report = await EngineWalk.RunAsync(
+            warehouse, from, to, strategies.Count > 0 ? strategies : null);
+        foreach (var arm in report.Before.Concat(report.AfterPaper).Concat(report.AfterShadow))
+        {
+            Console.WriteLine(
+                $"  {arm.Role,-14} {arm.StrategyId,-14} bets={arm.Bets} W-L-P={arm.Wins}-{arm.Losses}-{arm.Pushes} " +
+                $"flat={arm.FlatUnits:+0.00;-0.00} lane$={arm.LanePnlAllVenues:+0.00;-0.00} " +
+                $"CLV={(arm.MeanClv is { } m ? m.ToString("+0.000;-0.000") : "—")} " +
+                $"flagged={arm.ClvFlagged} cp={arm.Checkpoint.Stage}/{arm.Checkpoint.Verdict}");
+        }
+        Console.WriteLine($"  oregonExcluded={report.OregonExcludedGames} closeOnlySkip={report.CloseOnlySkipped}");
+        reportPath ??= Path.Combine(root, "reports",
+            $"replay_r5_{report.FromYyyymmdd[..4]}-{report.FromYyyymmdd[4..6]}-{report.FromYyyymmdd[6..]}_to_{report.ToYyyymmdd[4..6]}-{report.ToYyyymmdd[6..]}.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+        await File.WriteAllTextAsync(reportPath, EngineWalk.FormatMarkdown(report));
+        Console.WriteLine($"  wrote {reportPath}");
+        return 0;
+    }
     case "ensure-db":
     {
         var dbPath = args.Length > 1 ? args[1] : "possiblymaybe.db";
@@ -1293,6 +1356,7 @@ static void PrintUsage()
           seasonality-scan [vdb]     A5 phase × CLV table (BH q=0.10, prints N_trials)
           variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
           engine-day [yyyymmdd] [strategy] [db] [--sim] [--final]  R9/R10 day engine (vault on --sim)
+          engine-walk <from> <to> [strategies…] [db] [--report path]  T7 multi-day walk (no paper)
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);

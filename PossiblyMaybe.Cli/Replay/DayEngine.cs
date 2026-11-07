@@ -20,8 +20,17 @@ public sealed record DayEngineResult(
     IReadOnlyList<DayLeagueReportStub> ReportByLeague,
     string? TrialFooter = null);
 
-/// <summary>shortcut: n / CLV / PnL stages stubbed — upgrade when R5 reporter wires settle closes.</summary>
-public sealed record DayLeagueReportStub(string League, int N, double? ClvMean, double? FlatPnl);
+/// <summary>Per-league day report (T7 fills CLV / flat PnL after settle; engine-day alone still null).</summary>
+public sealed record DayLeagueReportStub(
+    string League,
+    int N,
+    double? ClvMean,
+    double? FlatPnl,
+    int? Wins = null,
+    int? Losses = null,
+    int? Pushes = null,
+    double? LanePnl = null,
+    CheckpointStage? Checkpoint = null);
 
 public static class DayEngine
 {
@@ -76,7 +85,7 @@ public static class DayEngine
             throw new ArgumentException("yyyymmdd must be 8 digits.", nameof(yyyymmdd));
         ArgumentException.ThrowIfNullOrWhiteSpace(warehouseDbPath);
 
-        var strategy = StrategyRegistry.Require(strategyId);
+        var strategy = VariantStrategy.Resolve(strategyId);
         var asOf = PointInTime.SlateAsOf(yyyymmdd);
         // shortcut: SlateAsOf = UTC midnight of the day (same as DailySlate ratings cutoff), not wall-clock EOD;
         // upgrade to per-game tipoff decision times when live locks pre-tip.
@@ -131,9 +140,42 @@ public static class DayEngine
         if (skips > 0)
             Console.WriteLine($"  ({skips} skips)");
         foreach (var r in result.ReportByLeague)
-            Console.WriteLine($"  report {r.League}: n={r.N} CLV=stub flatPnL=stub");
+        {
+            var clv = r.ClvMean is { } m ? m.ToString("+0.000;-0.000") : "—";
+            var flat = r.FlatPnl is { } f ? f.ToString("+0.00;-0.00") : "—";
+            var wlp = r.Wins is null ? "" : $" W-L-P={r.Wins}-{r.Losses}-{r.Pushes}";
+            var lane = r.LanePnl is { } lp ? $" lane$={lp:+0.00;-0.00}" : "";
+            var cp = r.Checkpoint is { } c ? $" cp={c}" : "";
+            Console.WriteLine($"  report {r.League}: n={r.N} CLV={clv} flatPnL={flat}{wlp}{lane}{cp}");
+        }
         if (!string.IsNullOrEmpty(result.TrialFooter))
             Console.WriteLine($"  {result.TrialFooter}");
+    }
+
+    /// <summary>Rebuild league stubs from settled walk tickets (Flat @ DK for CLV/flat; all lanes for $).</summary>
+    public static IReadOnlyList<DayLeagueReportStub> ReportFromTickets(IEnumerable<WalkTicket> tickets)
+    {
+        var list = tickets.ToList();
+        return list
+            .GroupBy(t => t.Sport, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var flatDk = g.Where(t => t.Venue == PaperVenues.DraftKings && t.Scheme == "Flat").ToList();
+                var clvs = flatDk.Where(t => t.ClvPts is not null).Select(t => t.ClvPts!.Value).ToList();
+                var cp = Checkpoints.Evaluate(clvs);
+                return new DayLeagueReportStub(
+                    g.Key,
+                    flatDk.Count,
+                    clvs.Count == 0 ? null : clvs.Average(),
+                    flatDk.Sum(t => t.FlatPnlUnits ?? 0),
+                    flatDk.Count(t => t.Result == "W"),
+                    flatDk.Count(t => t.Result == "L"),
+                    flatDk.Count(t => t.Result == "P"),
+                    g.Sum(t => t.LanePnlDollars),
+                    cp.Stage);
+            })
+            .ToList();
     }
 
     static void ApplyVaultAndTrials(
