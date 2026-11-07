@@ -9,7 +9,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4
 - [ ] archive.org odds history (r3 W16, **agent still running**) → import in C0 / league items
 - [ ] Always-on tracker while laptop sleeps (r3 W4), **deferred by user**, stays parked
-- [ ] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
+- [x] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
 
 ## B. Variants never built (backtestable)
 - [ ] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
@@ -39,10 +39,10 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] La Liga, EFL back in **shadow** (FAILED as champs; waves may still appear) → C5
 - [ ] New leagues the venues list (EPL, Bundesliga, UCL, NHL, WNBA, NWSL, NCAAW, …), data-gated → A4 → C6
 - [ ] Spreads / moneylines (DB has ML + SPREAD; only NBA ATS was ever tracked) → C7
-- [ ] Line tracker covers NFL / MLB only; needs **every** league for live CLV / consensus → A2
+- [x] Line tracker covers NFL / MLB only; needs **every** league for live CLV / consensus → A2
 
 ## E. Infrastructure for "waves of soft spots"
-- [ ] Shadow ledger stores **every candidate** (all games × all model outputs), so a variant is a filter, not a re-run → A1
+- [x] Shadow ledger stores **every candidate** (all games × all model outputs), so a variant is a filter, not a re-run → A1
 - [ ] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3
 - [ ] Seasonality scan: historical CLV by season phase → wave calendar → A5
 - [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
