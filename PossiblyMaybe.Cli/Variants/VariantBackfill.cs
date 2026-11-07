@@ -57,7 +57,7 @@ public static class VariantBackfill
             }
         }
 
-        var settled = await VariantSettle.SettleOpenAsync(variantsDbPath, warehouseDbPath, ct);
+        var settled = await VariantSettle.SettleOpenAsync(variantsDbPath, warehouseDbPath, ct: ct);
         Console.WriteLine($"  settled {settled} shadow picks");
     }
 

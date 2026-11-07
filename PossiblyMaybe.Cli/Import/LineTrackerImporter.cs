@@ -119,21 +119,31 @@ public static class LineTrackerImporter
     }
 
     /// <summary>
-    /// Last pre-start total from line_snapshots.db for a paper game key (sport + yyyymmdd away@home).
+    /// Last pre-start total from line_snapshots.db for a paper/shadow game key (sport + yyyymmdd away@home).
     /// When <paramref name="trackerVenue"/> is set (espn/kalshi/cryptocom), only that venue is used (R3).
+    /// Matches exact/prefix keys, then team-resolved keys (soccer full name ↔ ESPN abbr — D1).
     /// </summary>
     public static (double Line, int American, double? MinutesToStart)? TryCloseFromSnapshots(
         string snapshotsDbPath, string sport, string gameKey, string? trackerVenue = null)
     {
         if (!File.Exists(snapshotsDbPath)) return null;
-        var raw = ReadSnapshots(snapshotsDbPath)
-            .Where(r => (string.IsNullOrEmpty(sport)
-                         || r.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase))
-                        && (r.GameKey.Equals(gameKey, StringComparison.OrdinalIgnoreCase)
-                            || r.GameKey.StartsWith(gameKey + " ", StringComparison.OrdinalIgnoreCase)))
+        var all = ReadSnapshots(snapshotsDbPath)
+            .Where(r => string.IsNullOrEmpty(sport)
+                        || r.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase))
             .ToList();
         if (!string.IsNullOrEmpty(trackerVenue))
-            raw = raw.Where(r => r.Venue.Equals(trackerVenue, StringComparison.OrdinalIgnoreCase)).ToList();
+            all = all.Where(r => r.Venue.Equals(trackerVenue, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var raw = all.Where(r =>
+                r.GameKey.Equals(gameKey, StringComparison.OrdinalIgnoreCase)
+                || r.GameKey.StartsWith(gameKey + " ", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        // Paper/shadow soccer keys use full names; tracker uses ESPN abbrs (+ optional HHMM).
+        if (raw.Count == 0 && TryParseLooseGameKey(gameKey, out var ymd, out var away, out var home))
+        {
+            raw = all.Where(r => GameKeyTeamsMatch(sport, ymd, away, home, r.GameKey)).ToList();
+        }
+
         if (raw.Count == 0) return null;
         var preferEspn = raw.Any(r => r.Venue.Equals("espn", StringComparison.OrdinalIgnoreCase));
         var oc = ResolveOpenClose(raw, preferEspnOpenLine: preferEspn);
@@ -147,6 +157,44 @@ public static class LineTrackerImporter
         }
 
         return (cl, oc.CloseAmerican ?? -110, mins);
+    }
+
+    /// <summary>yyyymmdd away@home, optional trailing HHMM (tracker) or spaced full names (paper).</summary>
+    public static bool TryParseLooseGameKey(string key, out string ymd, out string away, out string home)
+    {
+        ymd = away = home = "";
+        var sp = key.IndexOf(' ');
+        if (sp <= 0) return false;
+        ymd = key[..sp];
+        var rest = key[(sp + 1)..].Trim();
+        var lastSp = rest.LastIndexOf(' ');
+        if (lastSp > 0 && rest.Length - lastSp == 5
+            && rest[(lastSp + 1)..].All(char.IsDigit))
+            rest = rest[..lastSp];
+        var at = rest.IndexOf('@');
+        if (at <= 0) return false;
+        away = rest[..at].Trim();
+        home = rest[(at + 1)..].Trim();
+        return ymd.Length == 8 && away.Length > 0 && home.Length > 0;
+    }
+
+    public static bool GameKeyTeamsMatch(
+        string sport, string ymd, string away, string home, string snapKey)
+    {
+        if (!TryParseLooseGameKey(snapKey, out var snapYmd, out var snapAway, out var snapHome))
+            return false;
+        if (!ymd.Equals(snapYmd, StringComparison.Ordinal)) return false;
+        return TeamTokenMatch(sport, away, snapAway) && TeamTokenMatch(sport, home, snapHome);
+    }
+
+    static bool TeamTokenMatch(string sport, string a, string b)
+    {
+        if (a.Equals(b, StringComparison.OrdinalIgnoreCase)) return true;
+        var ra = ResolveTeam(sport, a);
+        var rb = ResolveTeam(sport, b);
+        return ra.Equals(rb, StringComparison.OrdinalIgnoreCase)
+               || ra.Equals(b, StringComparison.OrdinalIgnoreCase)
+               || rb.Equals(a, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Open = earliest capture; close = last with minutes_to_start &gt; 0. ESPN may use open_line.</summary>
@@ -275,6 +323,8 @@ public static class LineTrackerImporter
         "LIGUE1" => SportTeams.TryLigue1(code) ?? code,
         "SERIEA" => SportTeams.TrySerieA(code) ?? code,
         "LIGAMX" => SportTeams.TryLigaMx(code) ?? code,
+        "LALIGA" => SportTeams.TryLaLiga(code) ?? code,
+        "EFL" => SportTeams.TryEfl(code) ?? code,
         "BUNDESLIGA" => SportTeams.TryBundesliga(code) ?? code,
         "EPL" => SportTeams.TryEpl(code) ?? code,
         "NCAAB" or "NCAAF" => SportTeams.NcaaCode(code),

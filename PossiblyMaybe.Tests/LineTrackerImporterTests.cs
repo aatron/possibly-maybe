@@ -12,11 +12,52 @@ public class LineTrackerImporterTests
         await Assert.That(LineTrackerImporter.ResolveTeam("NBA", "GS")).IsEqualTo("GSW");
         await Assert.That(LineTrackerImporter.ResolveTeam("MLS", "LAFC")).IsEqualTo("LAFC");
         await Assert.That(LineTrackerImporter.ResolveTeam("LIGUE1", "AUX")).IsEqualTo("AJ Auxerre");
+        await Assert.That(LineTrackerImporter.ResolveTeam("LALIGA", "BAR")).IsEqualTo("FC Barcelona");
+        await Assert.That(LineTrackerImporter.ResolveTeam("EFL", "WBA")).IsEqualTo("West Bromwich(WBA)");
+        await Assert.That(LineTrackerImporter.ResolveTeam("EPL", "ARS")).IsEqualTo("Arsenal");
         // unmapped keeps own token — never aliases onto another club
         await Assert.That(LineTrackerImporter.ResolveTeam("LALIGA", "XYZFC")).IsEqualTo("XYZFC");
         await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "TB")).IsEqualTo("TB");
         await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "TBL")).IsEqualTo("TB");
         await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "ZZZ")).IsEqualTo("ZZZ");
+    }
+
+    [Test]
+    public async Task TryCloseFromSnapshots_MatchesFullNamePaperKey_ToEspnAbbr()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"pm-snap-{Guid.NewGuid():N}.db");
+        try
+        {
+            await using (var con = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path}"))
+            {
+                await con.OpenAsync();
+                await using var cmd = con.CreateCommand();
+                cmd.CommandText = """
+                    CREATE TABLE line_snapshots(
+                      captured_at TEXT NOT NULL, sport TEXT NOT NULL, game_key TEXT NOT NULL,
+                      start_utc TEXT NOT NULL, minutes_to_start REAL, venue TEXT NOT NULL,
+                      source TEXT, line REAL NOT NULL, over_bid REAL, over_ask REAL,
+                      under_bid REAL, under_ask REAL, over_american INTEGER, under_american INTEGER,
+                      open_line REAL, ticker TEXT);
+                    INSERT INTO line_snapshots VALUES
+                      ('2026-11-08T08:00:00+00:00','LIGUE1','20261108 NICE@ANG 1115',
+                       '2026-11-08T18:15:00+00:00',615,'espn','DK',2.5,null,null,null,null,-110,-110,null,null),
+                      ('2026-11-08T17:00:00+00:00','LIGUE1','20261108 NICE@ANG 1115',
+                       '2026-11-08T18:15:00+00:00',75,'espn','DK',3.0,null,null,null,null,-105,-115,null,null);
+                    """;
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            var hit = LineTrackerImporter.TryCloseFromSnapshots(
+                path, "LIGUE1", "20261108 Nice@Angers", "espn");
+            await Assert.That(hit).IsNotNull();
+            await Assert.That(hit!.Value.Line).IsEqualTo(3.0);
+            await Assert.That(hit.Value.American).IsEqualTo(-105);
+        }
+        finally
+        {
+            try { File.Delete(path); } catch { /* ignore */ }
+        }
     }
 
     [Test]

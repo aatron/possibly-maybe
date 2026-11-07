@@ -12,8 +12,10 @@ public static class RadarShadowSource
     public static async Task<IReadOnlyList<ClvObservation>> LoadAsync(
         VariantDbContext db, CancellationToken ct = default)
     {
+        // D1: CLV / promotion only from same-book true closes (never CrossBookClose / Consensus-as-close).
         var rows = await db.ShadowEntries.AsNoTracking()
-            .Where(e => e.Result != null && e.ClvPts != null && e.SkipReason == null)
+            .Where(e => e.Result != null && e.ClvPts != null && e.CloseLine != null
+                        && !e.CrossBookClose && e.SkipReason == null)
             .Select(e => new { e.Sport, e.VariantId, e.ClvPts, e.SettledAt, e.EvaluatedAt })
             .ToListAsync(ct);
 

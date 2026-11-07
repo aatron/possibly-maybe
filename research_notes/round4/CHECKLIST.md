@@ -58,3 +58,10 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] IStrategy + V0 port → R8
 - [x] Day engine (R9 skeleton + `engine-day`) → R9
 - [x] Vault + trial ledger → R10
+
+## G. Wave D (verdicts / close-out)
+- [x] True market close on every league's settle; no promotion without it → D1 (`d1_proof.md`)
+- [x] Serie A verdict → D2 (**cut**)
+- [x] Training-process review → D3
+- [x] Round-4 waves report → D4
+- [ ] Green tests, clean run, push → D5

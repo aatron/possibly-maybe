@@ -15,7 +15,7 @@ public static class VariantShadow
         string yyyymmdd,
         CancellationToken ct = default)
     {
-        var settled = await VariantSettle.SettleOpenAsync(variantsDbPath, warehouseDbPath, ct);
+        var settled = await VariantSettle.SettleOpenAsync(variantsDbPath, warehouseDbPath, ct: ct);
         Console.WriteLine($"variants-shadow: settled {settled}");
 
         var candidates = new List<SlateCandidate>();

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PossiblyMaybe.Cli.Import;
 using PossiblyMaybe.Cli.Paper;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
@@ -7,15 +8,19 @@ namespace PossiblyMaybe.Cli.Variants;
 
 /// <summary>
 /// Auto-settle shadow picks from warehouse finals. No user confirmation (hypothetical ledger).
-/// Closing line prefers DraftKings same-book (R3); cross-book closes flagged, CLV null.
+/// Closing line prefers DraftKings same-book (R3); tracker line_snapshots fill gaps (D1);
+/// cross-book closes flagged, CLV null.
 /// </summary>
 public static class VariantSettle
 {
     public static async Task<int> SettleOpenAsync(
         string variantsDbPath,
         string warehouseDbPath,
+        string? snapshotsDbPath = null,
         CancellationToken ct = default)
     {
+        snapshotsDbPath ??= DefaultSnapshotsPath(warehouseDbPath);
+
         var (vdb, _) = await VariantLedger.OpenAsync(variantsDbPath, ct);
         await using (vdb)
         {
@@ -43,19 +48,44 @@ public static class VariantSettle
                     .Where(o => o.GameId == game.Id && o.Market == "TOTAL" && o.Line != null)
                     .ToListAsync(ct);
                 var same = PickClose(snaps, Book.DraftKings, game.TipoffUtc);
-                var other = same is null
-                    ? snaps
+                double? closeLine;
+                string? closeBook;
+                DateTimeOffset? captured;
+                double? mins;
+                var sameBook = false;
+
+                if (same is not null)
+                {
+                    sameBook = true;
+                    closeLine = same.Line;
+                    closeBook = SameBookClose.BookLabel(same.Book);
+                    captured = same.CapturedAt;
+                    mins = (game.TipoffUtc - same.CapturedAt).TotalMinutes;
+                }
+                else if (!string.IsNullOrEmpty(snapshotsDbPath)
+                         && LineTrackerImporter.TryCloseFromSnapshots(
+                             snapshotsDbPath, sport, key, SameBookClose.TrackerVenueForBook(Book.DraftKings))
+                             is { } tr)
+                {
+                    // Tracker ESPN → DraftKings same-book (D1); works for abbr and full-name keys.
+                    sameBook = true;
+                    closeLine = tr.Line;
+                    closeBook = SameBookClose.BookLabel(Book.DraftKings);
+                    mins = tr.MinutesToStart;
+                    captured = mins is { } m ? game.TipoffUtc.AddMinutes(-m) : null;
+                }
+                else
+                {
+                    var other = snaps
                         .Where(s => s.PriceKind == PriceKind.Close || s.CapturedAt <= game.TipoffUtc)
                         .OrderByDescending(s => s.PriceKind == PriceKind.Close)
                         .ThenByDescending(s => s.CapturedAt)
-                        .FirstOrDefault()
-                    : null;
-                var pick = same ?? other;
-                var sameBook = same is not null;
-                double? closeLine = pick?.Line;
-                var closeBook = pick is null ? null : SameBookClose.BookLabel(pick.Book);
-                DateTimeOffset? captured = pick?.CapturedAt;
-                double? mins = pick is null ? null : (game.TipoffUtc - pick.CapturedAt).TotalMinutes;
+                        .FirstOrDefault();
+                    closeLine = other?.Line;
+                    closeBook = other is null ? null : SameBookClose.BookLabel(other.Book);
+                    captured = other?.CapturedAt;
+                    mins = other is null ? null : (game.TipoffUtc - other.CapturedAt).TotalMinutes;
+                }
 
                 foreach (var row in group)
                 {
@@ -129,6 +159,13 @@ public static class VariantSettle
         }
     }
 
+    static string? DefaultSnapshotsPath(string warehouseDbPath)
+    {
+        var root = Path.GetDirectoryName(Path.GetFullPath(warehouseDbPath)) ?? ".";
+        var p = Path.Combine(root, "data", "line_snapshots.db");
+        return File.Exists(p) ? p : null;
+    }
+
     static OddsSnapshot? PickClose(
         IReadOnlyList<OddsSnapshot> snaps, Book want, DateTimeOffset tipoff)
     {
@@ -151,14 +188,20 @@ public static class VariantSettle
         if (!DateTime.TryParseExact(yyyymmdd, "yyyyMMdd", null,
                 System.Globalization.DateTimeStyles.None, out var day))
             return null;
-        var start = new DateTimeOffset(DateTime.SpecifyKind(day, DateTimeKind.Utc));
-        var end = start.AddDays(1);
+        // Team match in SQL; tipoff ±1 day in memory (SQLite DateTimeOffset ranges flake — same as PaperLedger).
         var games = await db.Games.AsNoTracking()
-            .Where(g => g.Sport == sport && g.TipoffUtc >= start && g.TipoffUtc < end)
+            .Where(g => g.Sport == sport && g.HomeTeam == home && g.AwayTeam == away)
             .ToListAsync(ct);
-        return games.FirstOrDefault(g =>
-            g.HomeTeam.Equals(home, StringComparison.OrdinalIgnoreCase)
-            && g.AwayTeam.Equals(away, StringComparison.OrdinalIgnoreCase));
+        var start = new DateTimeOffset(DateTime.SpecifyKind(day.AddDays(-1), DateTimeKind.Utc));
+        var end = start.AddDays(3);
+        var hits = games.Where(g => g.TipoffUtc >= start && g.TipoffUtc < end).ToList();
+        if (hits.Count == 0) return null;
+        var dayOnly = DateOnly.FromDateTime(day);
+        return hits
+            .OrderBy(g => Math.Abs(
+                DateOnly.FromDateTime(g.TipoffUtc.UtcDateTime).DayNumber - dayOnly.DayNumber))
+            .ThenBy(g => g.TipoffUtc)
+            .First();
     }
 
     private static bool TryParseGameKey(string key, out string day, out string away, out string home)
