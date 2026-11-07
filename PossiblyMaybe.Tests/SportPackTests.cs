@@ -44,6 +44,42 @@ public class SportPackTests
     }
 
     [Test]
+    public async Task Mlb_Pack_Locks_Holdout_And_Spring_Ready()
+    {
+        var pack = SportPackRegistry.Get("MLB");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("MLB");
+        await Assert.That(pack.Market).IsEqualTo(MlbChampConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(MlbChampConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(MlbChampConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(MlbChampConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(MlbChampConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(MlbChampConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(MlbChampConfig.BankrollSeed);
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2019");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2021");
+        await Assert.That(pack.SkipSeason).IsEqualTo("2020");
+        await Assert.That(pack.TierAFolds).IsEquivalentTo(
+            ["2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"]);
+        await Assert.That(pack.ResolveAlias("Yankees")).IsEqualTo("NYY");
+        await Assert.That(pack.ResolveAlias("Dodgers")).IsEqualTo("LAD");
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("MLB", "Hillsboro Hops")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("MLB", "Eugene Emeralds")).IsTrue();
+
+        await Assert.That(MlbSportPack.SpringSubMarketsReady).IsTrue();
+        await Assert.That(MlbSportPack.F5ModelReady).IsFalse();
+        await Assert.That(MlbSportPack.TeamTotalsModelReady).IsFalse();
+        // Market / series labels are consts — length checks keep them non-empty without TUnit const assert
+        await Assert.That(MlbSportPack.F5Market.Length).IsGreaterThan(0);
+        await Assert.That(MlbSportPack.TeamTotalMarket.Length).IsGreaterThan(0);
+        await Assert.That(MlbSportPack.F5KalshiSeries.StartsWith("KXMLB")).IsTrue();
+        await Assert.That(MlbSportPack.TeamTotalKalshiSeries.StartsWith("KXMLB")).IsTrue();
+        await Assert.That(SportPackRegistry.Mlb.TierCHoldoutSeason).IsEqualTo("2021");
+    }
+
+
+    [Test]
     public async Task Ncaaf_Pack_Locks_TierC_And_Oregon()
     {
         var pack = SportPackRegistry.Get("NCAAF");
