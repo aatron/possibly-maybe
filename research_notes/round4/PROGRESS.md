@@ -23,7 +23,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 (archive.org) 
 | B9 | inv-var-blend | Composer | `../pm-r4-b9` | Tier A | pending (A1) | |
 | C0 | Sport-pack template | Composer | `../pm-r4-c0` `r4/c0` | MLS identical | done | eb3ad96 |
 | C1 | NCAAB totals | Composer | `../pm-r4-c1` `r4/c1` | Tier A / C | running | |
-| C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C | running | |
+| C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C; holdout `2022-23` locked | done (branch) | |
 | C3 | NFL redo + wind + sub-markets | Composer | `../pm-r4-c3` `r4/c3` | Tier A | running | |
 | C4 | MLB redo + F5 ready | Composer | `../pm-r4-c4` `r4/c4` | Tier A / C | running | |
 | C5 | La Liga + EFL shadow | Composer | `../pm-r4-c5` `r4/c5` | Tier A | running | |
@@ -43,3 +43,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 (archive.org) 
 | 2026-11-07 | Wave A launched: worktrees `pm-r4-a1/a2/a3/c0` on `r4/*`; A4 census research started. |
 | 2026-11-07 | Plan: no Opus — Auto/Composer only. A4 Opus could not be interrupted mid-run; fresh Auto/Composer A4 launched (overwrite any Opus census). r3-W16 still on external Claude Code — reassign off Opus when that session can stop. |
 | 2026-11-07 | C0 merged `--no-ff` → main @ eb3ad96 (162 tests). Launched C1–C5 worktrees. |
+| 2026-11-07 | C2 on `r4/c2`: `NcaafSportPack` + Scoring EMA backtest + Oregon SBRO name tests; Tier C locked `2022-23` before train sweep. Proof `c2_proof.md`. No merge/push. |

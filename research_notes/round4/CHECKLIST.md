@@ -33,7 +33,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] `line-move-follow`: bet only when the line moved toward us → B6
 
 ## D. Leagues / markets never or not properly tested
-- [ ] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2
+- [x] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2 (pack + backtest on `r4/c2`; Tier C=`2022-23` locked)
 - [ ] NFL: Tier A on filled O→C; `nfl-wind` alone; 1H / quarter / team totals (Kalshi lists them) → C3
 - [ ] MLB: Tier A 2011–2019 + look-once 2021 (never run); F5 + team totals for spring → C4
 - [ ] La Liga, EFL back in **shadow** (FAILED as champs; waves may still appear) → C5
