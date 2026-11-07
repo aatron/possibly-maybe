@@ -16,6 +16,10 @@ public sealed record Variant(
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
     IReadOnlySet<string>? Leagues,
+    /// <summary>B2: shrink model toward league mean on early-season / promoted phases.</summary>
+    bool Pooling = false,
+    /// <summary>B2: shrink + widen σ when <see cref="SlateCandidate.RosterFlag"/> is set.</summary>
+    bool RosterReset = false,
     /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
     bool InvVarBlend = false);
 
@@ -135,6 +139,7 @@ public static class VariantRegistry
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
 
+        c = PoolingFamily.Apply(v, c);
         var exp = v.BlendedExp(c, line);
         var edge = exp - line;
         if (Math.Abs(edge) < c.MinAbsEdge)
