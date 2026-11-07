@@ -168,6 +168,14 @@ public static class SportTeams
         return LigaMx.TryGetValue(t, out var c) ? c : null;
     }
 
+    /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
+    public static string? TryEpl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Epl.TryGetValue(t, out var c) ? c : null;
+    }
+
     private static readonly Dictionary<string, string> Ligue1 = new(StringComparer.OrdinalIgnoreCase)
     {
         ["AJ Auxerre"] = "AJ Auxerre", ["Auxerre"] = "AJ Auxerre", ["AUX"] = "AJ Auxerre",
@@ -247,6 +255,45 @@ public static class SportTeams
         ["Toluca"] = "Toluca", ["Deportivo Toluca"] = "Toluca", ["TOL"] = "Toluca",
     };
 
+    private static readonly Dictionary<string, string> Epl = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth", ["BOU"] = "AFC Bournemouth",
+        ["Arsenal"] = "Arsenal", ["ARS"] = "Arsenal",
+        ["Aston Villa"] = "Aston Villa", ["Villa"] = "Aston Villa", ["AVL"] = "Aston Villa",
+        ["Brentford"] = "Brentford", ["BRE"] = "Brentford",
+        ["Brighton Hove Albion"] = "Brighton Hove Albion",
+        ["Brighton & Hove Albion"] = "Brighton Hove Albion", ["Brighton"] = "Brighton Hove Albion", ["BHA"] = "Brighton Hove Albion",
+        ["Burnley"] = "Burnley", ["BUR"] = "Burnley",
+        ["Cardiff City"] = "Cardiff City", ["Cardiff"] = "Cardiff City",
+        ["Chelsea"] = "Chelsea", ["CHE"] = "Chelsea",
+        ["Crystal Palace"] = "Crystal Palace", ["Palace"] = "Crystal Palace", ["CRY"] = "Crystal Palace",
+        ["Everton"] = "Everton", ["EVE"] = "Everton",
+        ["Fulham"] = "Fulham", ["FUL"] = "Fulham",
+        ["Huddersfield Town"] = "Huddersfield Town", ["Huddersfield"] = "Huddersfield Town",
+        ["Ipswich Town"] = "Ipswich Town", ["Ipswich"] = "Ipswich Town", ["IPS"] = "Ipswich Town",
+        ["Leeds United"] = "Leeds United", ["Leeds"] = "Leeds United", ["LEE"] = "Leeds United",
+        ["Leicester City"] = "Leicester City", ["Leicester"] = "Leicester City", ["LEI"] = "Leicester City",
+        ["Liverpool"] = "Liverpool", ["LIV"] = "Liverpool",
+        ["Luton Town"] = "Luton Town", ["Luton"] = "Luton Town",
+        ["Manchester City"] = "Manchester City", ["Man City"] = "Manchester City", ["MCI"] = "Manchester City",
+        ["Manchester United"] = "Manchester United", ["Man United"] = "Manchester United",
+        ["Man Utd"] = "Manchester United", ["MUN"] = "Manchester United",
+        ["Newcastle United"] = "Newcastle United", ["Newcastle"] = "Newcastle United", ["NEW"] = "Newcastle United",
+        ["Norwich City"] = "Norwich City", ["Norwich"] = "Norwich City",
+        ["Nottingham Forest"] = "Nottingham Forest", ["Nott'm Forest"] = "Nottingham Forest",
+        ["Nott Forest"] = "Nottingham Forest", ["NFO"] = "Nottingham Forest",
+        ["Sheffield United"] = "Sheffield United", ["Sheffield Utd"] = "Sheffield United", ["SHU"] = "Sheffield United",
+        ["Southampton"] = "Southampton", ["SOU"] = "Southampton",
+        ["Sunderland A.F.C"] = "Sunderland A.F.C", ["Sunderland"] = "Sunderland A.F.C", ["Sunderland AFC"] = "Sunderland A.F.C",
+        ["Tottenham Hotspur"] = "Tottenham Hotspur", ["Tottenham"] = "Tottenham Hotspur",
+        ["Spurs"] = "Tottenham Hotspur", ["TOT"] = "Tottenham Hotspur",
+        ["Watford"] = "Watford", ["WAT"] = "Watford",
+        ["West Bromwich(WBA)"] = "West Bromwich(WBA)",
+        ["West Bromwich Albion"] = "West Bromwich(WBA)", ["West Brom"] = "West Bromwich(WBA)", ["WBA"] = "West Bromwich(WBA)",
+        ["West Ham United"] = "West Ham United", ["West Ham"] = "West Ham United", ["WHU"] = "West Ham United",
+        ["Wolves"] = "Wolves", ["Wolverhampton Wanderers"] = "Wolves", ["Wolverhampton"] = "Wolves", ["WOL"] = "Wolves",
+    };
+
     /// <summary>
     /// Canonical soccer team name from ESPN fields. Names win over abbreviations (ESPN reuses/changes codes, e.g. Le Mans = MNS
     /// once collided with Metz); a club not in the table keeps its own display name (new team, default rating) and is never
@@ -256,7 +303,8 @@ public static class SportTeams
     {
         Func<string?, string?> map = sport.ToUpperInvariant() switch
         {
-            "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx, _ => _ => null,
+            "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx,
+            "EPL" => TryEpl, _ => _ => null,
         };
         var hit = map(display) ?? map(shortName);
         if (hit is not null) return hit;

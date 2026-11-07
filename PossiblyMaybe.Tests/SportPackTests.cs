@@ -44,6 +44,37 @@ public class SportPackTests
     }
 
     [Test]
+    public async Task Epl_Pack_Holdout_Locked_Before_Tuning()
+    {
+        var pack = SportPackRegistry.Get("EPL");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("EPL");
+        await Assert.That(pack.Market).IsEqualTo(EplChampConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(EplChampConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(EplChampConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(EplChampConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(EplChampConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(EplChampConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(EplChampConfig.BankrollSeed);
+        // Tier C locked in proof before any gate tuning
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2024-2025");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2025-2026");
+        await Assert.That(pack.RatingBookKind).IsEqualTo("ScoringBook-goals-EMA");
+        await Assert.That(pack.OregonNames.Count).IsEqualTo(0);
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+        await Assert.That(pack.ResolveAlias("Brighton")).IsEqualTo("Brighton Hove Albion");
+        await Assert.That(pack.ResolveAlias("Spurs")).IsEqualTo("Tottenham Hotspur");
+        await Assert.That(pack.ResolveAlias("Wolverhampton Wanderers")).IsEqualTo("Wolves");
+        await Assert.That(SportTeams.ResolveSoccer("EPL", "ARS", "Arsenal", "Arsenal")).IsEqualTo("Arsenal");
+
+        // Cardinal rule still fires under EPL even with no Oregon clubs in the league
+        await Assert.That(OregonExclusion.IsExcluded("EPL", "Portland Timbers")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("EPL", "Oregon Ducks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("EPL", "Arsenal")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("EPL", "Liverpool")).IsFalse();
+    }
+
+
     public async Task Nfl_Pack_Matches_ChampConfig_Empty_Oregon()
     {
         var pack = SportPackRegistry.Get("NFL");
@@ -72,6 +103,10 @@ public class SportPackTests
         await Assert.That(NflWind.AdjustExpectedTotal(45, 10)).IsEqualTo(45);
         await Assert.That(NflWind.AdjustExpectedTotal(45, null)).IsEqualTo(45);
     }
+
+
+    [Test]
+
 
 
     public async Task Mlb_Pack_Locks_Holdout_And_Spring_Ready()
