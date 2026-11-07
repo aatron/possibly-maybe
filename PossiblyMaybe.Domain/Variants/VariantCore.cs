@@ -15,7 +15,9 @@ public sealed record Variant(
     bool LeagueShutoff,
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
-    IReadOnlySet<string>? Leagues);
+    IReadOnlySet<string>? Leagues,
+    /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
+    bool InvVarBlend = false);
 
 public enum NbaOverProbKind
 {
@@ -133,7 +135,7 @@ public static class VariantRegistry
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
 
-        var exp = v.MarketBlend(c, line);
+        var exp = v.BlendedExp(c, line);
         var edge = exp - line;
         if (Math.Abs(edge) < c.MinAbsEdge)
             return Skip(VariantSkip.NoEdge);
@@ -155,8 +157,16 @@ public static class VariantRegistry
         return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
     }
 
-    private static double MarketBlend(this Variant _, SlateCandidate c, double line)
-        => c.MarketWeight * line + (1 - c.MarketWeight) * c.ModelExp;
+    private static double BlendedExp(this Variant v, SlateCandidate c, double line)
+    {
+        if (v.InvVarBlend)
+        {
+            var (sm, sl) = BlendFamily.LockedSigmas(c.Sport);
+            return MarketBlend.InverseVariance(c.ModelExp, line, sm, sl);
+        }
+
+        return c.MarketWeight * line + (1 - c.MarketWeight) * c.ModelExp;
+    }
 
     private static double OverProb(Variant v, SlateCandidate c, double blendedExp, double line)
     {

@@ -24,7 +24,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] NBA absence / DNP adjustment (`AbsenceBook.cs` wired to backtest, **no result recorded**) → B1
 - [ ] Conformal-interval bet filter (r2 deferred) → B8
 - [ ] Kalman / adaptive-rate team ratings (r2 deferred) → B8
-- [ ] Inverse-variance blend weight (coin flip 7/14 folds) → B9
+- [x] Inverse-variance blend weight (coin flip 7/14 folds) → B9
 
 ## C. Variants never built (live-only)
 - [ ] `+injury-guard`: ESPN injury / status changes in the last 24h (NBA, NFL, NCAA) → B1
