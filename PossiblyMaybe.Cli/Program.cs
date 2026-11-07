@@ -733,6 +733,16 @@ switch (command)
         await VariantDashboard.WriteAsync(VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"));
         return 0;
     }
+    case "variants-reeval":
+    {
+        // Re-filter all registered variants over stored candidates (no model re-run).
+        var root = FindRepoRoot();
+        var vdb = args.Length > 1 ? args[1] : VariantLedger.DefaultDbPath(root);
+        var n = await VariantEvaluate.ReEvalStoredAsync(vdb);
+        Console.WriteLine($"variants-reeval: {n} variant×candidate rows");
+        await VariantDashboard.WriteAsync(vdb, Path.Combine(root, "ui"));
+        return 0;
+    }
     case "ensure-db":
     {
         var dbPath = args.Length > 1 ? args[1] : "possiblymaybe.db";
@@ -825,6 +835,7 @@ static void PrintUsage()
           dashboard                Write ui/index.html equity + leaderboard
           variants-shadow [yyyymmdd] Settle + eval slate → data/variants.db + ui/variants.html
           variants-backfill [db]     Walk-forward + replay week into shadow ledger
+          variants-reeval [variants.db]  Re-filter variants over stored candidates (no model re-run)
           variants-settle [db]       Auto-settle open shadow picks (no confirm)
           variants-dashboard         Write ui/variants.html
           ensure-db [path]           Create SQLite schema only
