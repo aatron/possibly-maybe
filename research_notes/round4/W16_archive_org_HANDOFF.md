@@ -1,6 +1,6 @@
 # Handoff: r3-W16, archive.org odds history (stopped mid-run)
 
-**Status:** stopped by the user's request on 2026-11-07 (Claude Code / Opus run halted). **Composer only** — no Opus, no Auto, no Task/subagents. Do the remaining work in this Composer session (or a fresh Composer chat). Research + download only: **no code changes, no DB imports**; commit notes when the notes file is ready (data stays gitignored). Importing is a separate Composer step (extends r3 W15 / round-4 C0 league packs).
+**Status:** **done** 2026-11-07 (Composer). Deliverable: `research_notes/round3/archive_org_odds.md`. Data under `data/raw/round3_odds/archive_org/` (gitignored). Importing is a separate Composer step (extends r3 W15 / round-4 C0 league packs).
 **Original spec:** `research_notes/round3/PLAN.md` § W16. **Ledger row:** `research_notes/round4/PROGRESS.md` → `r3-W16`.
 
 ## Rules (unchanged)
@@ -37,19 +37,7 @@ Successful (HTTP 200) captures per year, and the distinct days captured:
 Even the best page has captures on fewer than half the days, at random times, so you can't know whether a capture shows the open, the close or neither. **Page snapshots are unusable for CLV.** Only archived **files** with explicit open / close columns count.
 
 ## Remaining work (in order)
-1. **Download the SBRO files not yet on disk.** Compare the CDX list against `data/raw/` from r2 D1 / r3 W13 / W15 first. Priority gap fillers: **`nba odds 2022-23.xlsx`** (check whether W15 already imported NBA 2022-23), **`mlb odds 2022.xlsx`**, **`ncaa football 2022-23.xlsx`** (bowls), MLB **2016** (from SBRO `mlb+odds+2016.xlsx` or sports-statistics), and any NFL seasons the CDX list has beyond what's imported.
-2. **Verify every downloaded file** with `python3 -I`. `openpyxl` is **not installed system-wide**; use the project `.venv` if present, else parse the xlsx as zip + XML. Record rows, seasons, columns, whether open AND close totals are present, whether prices are present, and 3 sample rows.
-3. **Assess `cdx_predictiontracker.txt`** (prediction / line archives). Keep it only if it holds files with open and close.
-4. **advancedsearch pass** for uploaded items / datasets (queries such as `odds AND (nba OR nfl OR mlb OR ncaa)`, `sportsbook`, `betting lines`). Record licence per item.
-5. **Write `research_notes/round3/archive_org_odds.md`:**
-   - file table (URL, archive timestamp, sport, seasons, rows, open / close / price columns);
-   - O→C seasons per sport, before → after, vs what's on disk / imported (r3 W15 ledger: NFL +4, NBA +1, MLB +3, NCAAB +15, NCAAF +16);
-   - the density table above;
-   - Oregon spellings seen;
-   - archive.org terms clause;
-   - ranked import list for Composer;
-   - a direct answer per sport: is this enough to evaluate?
-6. Update `round4/PROGRESS.md` row `r3-W16` → done, with a one-line summary. Commit the notes file only (data stays gitignored).
+**All done** (Composer 2026-11-07). See `research_notes/round3/archive_org_odds.md`. Summary: NHL SBRO downloaded; MLB 2016 filled; MLB 2022 SBRO unrecoverable (301/gzip); AUS NFL has Total Score O→C through 2025; predictiontracker = spreads only (skip); notes + PROGRESS updated.
 
 ## Known gaps no archive covers (from r3 W13)
 NBA 2023-24 / 2025-26, NFL 2022 / 2025 with real prices, first-half / F5 / team totals. Live line tracker (round-4 A2) fills these going forward.

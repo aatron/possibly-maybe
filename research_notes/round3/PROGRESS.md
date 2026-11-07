@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for W16 (archive.org research). Wave 1–2 build items done except W4 deferred. Then W9/W10/W11/W12.
+**Next action:** W16 done — Composer import follow-up (NHL SBRO + AUS NFL totals; see `archive_org_odds.md`). Then W9/W10/W11/W12 (W4 deferred).
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -22,7 +22,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | done — getstam/Covers/OddsShark prohibited; SBRO NCAA O→C downloaded (NCAAB 15 szn, NCAAF 16 szn) | notes |
 | W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` `r3/oregon-ncaa` | SBRO CamelCase + Pilots match; PSU not excluded | done | 3ba836a |
 | W15 | Import on-disk odds (round-2 NFL/MLB/NBA files, SBRO NCAA) | Composer | `../pm-r3-import-odds` `r3/import-odds` | NFL +4, NBA +1, MLB +3, NCAAB +15, NCAAF +16 seasons (live DB) | done | a830d85 |
-| W16 | archive.org odds history (search + CDX, download only) | Opus | main (notes + data/raw) | O→C seasons gained | running | |
+| W16 | archive.org odds history (search + CDX, download only) | Composer | main (notes + data/raw) | O→C seasons gained | done — `archive_org_odds.md`; NHL SBRO + AUS NFL 2022–25 totals; import separate | |
 | W11 | Write-ups (book review, training review, round3 value) | Opus | main | — | pending | |
 | W12 | Green tests, clean run, push | parent | main | — | pending | |
 
@@ -49,3 +49,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W7 merged (6fd030e, 158 tests). V4 pauses on V3 rolling-40 CLV&lt;0; NBA/Ligue1 DD cut. |
 | 2026-11-07 | W5 merged (753f507, 161 tests) + `backfill-clv` on paper.db (backup paper.db.bak-pre-w5-*). True-close 0/90; STAKE GATE clv_n=0 until real market closes exist. |
 | 2026-11-07 | Wrote revisit_candidates.md (2-month signal math; past approaches by closeness; injury/trade live-only variants). Spec input for Composer. |
+| 2026-11-07 | W16 done (Composer): `archive_org_odds.md`; NHL SBRO + MLB 2016 + AUS NFL 2022–25 totals on disk; import = separate Composer step. |
