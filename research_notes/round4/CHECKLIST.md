@@ -57,4 +57,4 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] AsOfView (no DB for strategies) → R7
 - [x] IStrategy + V0 port → R8
 - [x] Day engine (R9 skeleton + `engine-day`) → R9
-- [ ] Vault + trial ledger → R10
+- [x] Vault + trial ledger → R10

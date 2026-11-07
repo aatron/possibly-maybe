@@ -979,17 +979,22 @@ switch (command)
     }
     case "engine-day":
     {
-        // R9: run the day-stepping engine for one date (no paper-go / settle).
-        // usage: engine-day [yyyymmdd] [strategyId] [db]
+        // R9/R10: day engine (no paper-go / settle). Live by default.
+        // usage: engine-day [yyyymmdd] [strategyId] [db] [--sim] [--final]
+        // --sim enforces vault on TierC holdout dates; --final burns one look-once use.
         var root = FindRepoRoot();
         var day = args.Length > 1 && args[1].Length == 8 ? args[1]
             : DateTime.UtcNow.ToString("yyyyMMdd");
         var strategyId = "V0";
         var warehouse = Path.Combine(root, "possiblymaybe.db");
+        var sim = false;
+        var final = false;
         for (var i = 1; i < args.Length; i++)
         {
             var a = args[i];
-            if (a.Length == 8 && a.All(char.IsDigit)) day = a;
+            if (a is "--sim") sim = true;
+            else if (a is "--final") final = true;
+            else if (a.Length == 8 && a.All(char.IsDigit)) day = a;
             else if (a.EndsWith(".db", StringComparison.OrdinalIgnoreCase)) warehouse = a;
             else strategyId = a;
         }
@@ -998,9 +1003,28 @@ switch (command)
             Console.Error.WriteLine($"DB not found: {warehouse}");
             return 2;
         }
-        var result = await DayEngine.RunDayAsync(day, strategyId, warehouse);
-        DayEngine.Print(result);
-        return 0;
+        EngineRunOptions? opts = null;
+        if (sim)
+        {
+            var hash = Vault.StrategyHash(strategyId);
+            opts = EngineRunOptions.Sim(hash, new VaultStore(), new TrialLedger(), final);
+        }
+        try
+        {
+            var result = await DayEngine.RunDayAsync(day, strategyId, warehouse, opts);
+            DayEngine.Print(result);
+            return 0;
+        }
+        catch (VaultSealedException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
+        catch (VaultAlreadyUsedException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
     }
     case "ensure-db":
     {
@@ -1111,7 +1135,7 @@ static void PrintUsage()
           variants-backfill-spreadml [db]  C7: store SPREAD+ML candidates (NBA/NFL/NCAA)
           seasonality-scan [vdb]     A5 phase × CLV table (BH q=0.10, prints N_trials)
           variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
-          engine-day [yyyymmdd] [strategy] [db]  R9 day engine (AsOfView→Learn→slate→Decide; no paper)
+          engine-day [yyyymmdd] [strategy] [db] [--sim] [--final]  R9/R10 day engine (vault on --sim)
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);
