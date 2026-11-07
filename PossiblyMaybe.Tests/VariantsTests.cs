@@ -53,7 +53,8 @@ public class VariantsTests
     [Test]
     public async Task Filter_LeaguePaused_OnV4()
     {
-        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 15);
+        // sigma 19 keeps EV under Guards.RecommendedEdgeCap (0.25); V3 must still pick.
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 19);
         var paused = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "NBA" };
         var v3 = VariantRegistry.Evaluate(VariantRegistry.Require("V3"), c, paused);
         var v4 = VariantRegistry.Evaluate(VariantRegistry.Require("V4"), c, paused);
