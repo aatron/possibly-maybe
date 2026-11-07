@@ -255,6 +255,10 @@ echo ">>> dashboard → ui/index.html"
 "${CLI[@]}" dashboard || true
 
 echo
+echo ">>> shadow variants (settle + eval $DAY → data/variants.db + ui/variants.html)"
+"${CLI[@]}" variants-shadow "$DAY" || true
+
+echo
 echo "========================================"
 echo " Next actions"
 echo "========================================"
