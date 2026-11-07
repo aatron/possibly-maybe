@@ -1,4 +1,5 @@
-﻿using PossiblyMaybe.Cli.Backtest;
+﻿using Microsoft.EntityFrameworkCore;
+using PossiblyMaybe.Cli.Backtest;
 using PossiblyMaybe.Cli.Import;
 using PossiblyMaybe.Cli.Paper;
 using PossiblyMaybe.Cli.Variants;
@@ -543,42 +544,99 @@ switch (command)
     }
     case "settle-go":
     {
-        // Settle every lane for a game key or ticket group
-        // settle-go <gameKey|group> <W|L|P> [closeLine] [closeOdds]
+        // settle-go <gameKey|group> <W|L|P> [finalTotal] [closeLine] [closeOdds]
+        // CloseLine is market close only; omit to auto-resolve from warehouse / line_snapshots.
         if (args.Length < 3)
         {
-            Console.Error.WriteLine("usage: settle-go <gameKey|ticketGroup> <W|L|P> [closeLine] [closeOdds]");
+            Console.Error.WriteLine(
+                "usage: settle-go <gameKey|ticketGroup> <W|L|P> [finalTotal] [closeLine] [closeOdds]");
             return 1;
         }
-        double? closeLine = args.Length > 3 && double.TryParse(args[3], out var cl) ? cl : null;
-        int? closeOdds = args.Length > 4 && int.TryParse(args[4], out var co) ? co : null;
-        var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
+        double? finalTotal = args.Length > 3 && double.TryParse(args[3], out var ft) ? ft : null;
+        double? closeLine = args.Length > 4 && double.TryParse(args[4], out var cl) ? cl : null;
+        int? closeOdds = args.Length > 5 && int.TryParse(args[5], out var co) ? co : null;
+        var root = FindRepoRoot();
+        var paperPath = PaperLedger.DefaultDbPath(root);
+        var warehouse = Path.Combine(root, "possiblymaybe.db");
+        var snaps = Path.Combine(root, "data", "line_snapshots.db");
         var (db, _) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
-            var rows = await PaperLedger.SettleGroupAsync(db, args[1], args[2], closeLine, closeOdds);
-            Console.WriteLine($"SETTLED-GO n={rows.Count} {args[1]} → {args[2]}");
+            var probe = await db.LedgerEntries.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Result == null
+                    && (r.TicketGroup == args[1] || r.GameKey == args[1]));
+            if (probe is not null && (finalTotal is null || closeLine is null))
+            {
+                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
+                    warehouse, snaps, probe.GameKey, probe.Sport);
+                finalTotal ??= autoFinal;
+                if (closeLine is null)
+                {
+                    closeLine = autoClose;
+                    closeOdds ??= autoAm;
+                }
+            }
+
+            var rows = await PaperLedger.SettleGroupAsync(
+                db, args[1], args[2], finalTotal, closeLine, closeOdds);
+            Console.WriteLine(
+                $"SETTLED-GO n={rows.Count} {args[1]} → {args[2]} final={finalTotal} close={closeLine}");
             foreach (var row in rows)
-                Console.WriteLine($"  #{row.Id} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00}");
+                Console.WriteLine(
+                    $"  #{row.Id} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
     case "settle":
     {
-        // settle <id> <W|L|P> [closeLine] [closeOdds]
+        // settle <id> <W|L|P> [finalTotal] [closeLine] [closeOdds]
         if (args.Length < 3 || !int.TryParse(args[1], out var id))
         {
-            Console.Error.WriteLine("usage: settle <id> <W|L|P> [closeLine] [closeOdds]");
+            Console.Error.WriteLine("usage: settle <id> <W|L|P> [finalTotal] [closeLine] [closeOdds]");
             return 1;
         }
-        double? closeLine = args.Length > 3 && double.TryParse(args[3], out var cl) ? cl : null;
-        int? closeOdds = args.Length > 4 && int.TryParse(args[4], out var co) ? co : null;
-        var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
+        double? finalTotal = args.Length > 3 && double.TryParse(args[3], out var ft) ? ft : null;
+        double? closeLine = args.Length > 4 && double.TryParse(args[4], out var cl) ? cl : null;
+        int? closeOdds = args.Length > 5 && int.TryParse(args[5], out var co) ? co : null;
+        var root = FindRepoRoot();
+        var paperPath = PaperLedger.DefaultDbPath(root);
+        var warehouse = Path.Combine(root, "possiblymaybe.db");
+        var snaps = Path.Combine(root, "data", "line_snapshots.db");
         var (db, _) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
-            var row = await PaperLedger.SettleAsync(db, id, args[2], closeLine, closeOdds);
-            Console.WriteLine($"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
+            var existing = await db.LedgerEntries.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            if (existing is not null && (finalTotal is null || closeLine is null))
+            {
+                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
+                    warehouse, snaps, existing.GameKey, existing.Sport);
+                finalTotal ??= autoFinal;
+                if (closeLine is null)
+                {
+                    closeLine = autoClose;
+                    closeOdds ??= autoAm;
+                }
+            }
+
+            var row = await PaperLedger.SettleAsync(db, id, args[2], finalTotal, closeLine, closeOdds);
+            Console.WriteLine(
+                $"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} final={row.FinalTotal} close={row.CloseLine} clvPts={row.ClvPts:+0.0;-0.0}");
+        }
+        return 0;
+    }
+    case "backfill-clv":
+    {
+        // Null fake CloseLine(=finals); refill from warehouse/tracker when knowable; set FinalTotal.
+        var root = FindRepoRoot();
+        var paperPath = args.Length > 1 ? args[1] : PaperLedger.DefaultDbPath(root);
+        var warehouse = args.Length > 2 ? args[2] : Path.Combine(root, "possiblymaybe.db");
+        var snaps = Path.Combine(root, "data", "line_snapshots.db");
+        var (db, _) = await PaperLedger.OpenAsync(paperPath);
+        await using (db)
+        {
+            var (n, with) = await PaperLedger.BackfillLiveClvAsync(db, warehouse, snaps);
+            var pct = n == 0 ? 0.0 : 100.0 * with / n;
+            Console.WriteLine($"BACKFILL-CLV settled={n} true-close={with} ({pct:0.#}%)");
         }
         return 0;
     }
@@ -727,9 +785,11 @@ static void PrintUsage()
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
           paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport>
                                  Independent DK + Kalshi place (each venue EV-gates / sizes alone)
-          settle-go <key|group> <W|L|P> [closeLine] [closeOdds]
+          settle-go <key|group> <W|L|P> [finalTotal] [closeLine] [closeOdds]
+                                 final=score total; close=market only (auto from warehouse/tracker)
           paper-bet …              Legacy single Flat lane
           settle <id> <W|L|P> …    Settle one ledger id
+          backfill-clv [paper.db] [warehouse.db]  Null fake closes; refill true CloseLine + FinalTotal
           paper [paper.db]         Leaderboard of all stake lanes
           dashboard                Write ui/index.html equity + leaderboard
           variants-shadow [yyyymmdd] Settle + eval slate → data/variants.db + ui/variants.html
