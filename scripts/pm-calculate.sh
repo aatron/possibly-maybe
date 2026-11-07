@@ -135,7 +135,7 @@ def mls_board(yyyymmdd):
 
 # Map common paper keys like CIN@MIA onto ESPN abbrs when possible (best-effort).
 print()
-print("--- ESPN probe (finals → settle-go when total known) ---")
+print("--- ESPN probe (W/L from finals; do NOT pass final as closeLine) ---")
 for d in dates:
     games = nba_board(d) + mls_board(d)
     if not games:
@@ -177,8 +177,10 @@ for d in dates:
                 result = "W" if total < line else ("P" if total == line else "L")
             else:
                 result = "?"
-            print(f"    => SETTLE {key}  total={total:.1f} vs {side} {line} → {result}")
-            print(f"       dotnet run --project PossiblyMaybe.Cli -c Release -- settle-go \"{key}\" {result} {total}")
+            print(f"    => SETTLE {key}  final_total={total:.1f} vs {side} {line} → {result}")
+            # closeLine arg is market close, not final score (audit_overcorrection). Omit until we have close.
+            print(f"       dotnet run --project PossiblyMaybe.Cli -c Release -- settle-go \"{key}\" {result}")
+            print(f"       # optional: append [closeLine] [closeOdds] when market close is known — never use final_total")
         else:
             print(f"    .. open {key} still {hit['status']} ({hit['away_score']}-{hit['home_score']})")
 PY

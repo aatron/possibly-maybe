@@ -94,10 +94,15 @@ public static class CryptoComQuotes
         }
 
         if (candidates.Count == 0) return null;
-        var best = candidates
+        // Reject nearest-strike when Δ > MaxNbaDelta (0.5) / MaxSoccerDelta (0.25).
+        var maxDelta = StrikeMatch.MaxDelta(sport);
+        var within = candidates
+            .Where(x => Math.Abs(x.Strike - line) <= maxDelta)
             .OrderBy(x => Math.Abs(x.Strike - line))
             .ThenBy(x => x.Strike)
-            .First();
+            .ToList();
+        if (within.Count == 0) return null;
+        var best = within[0];
 
         return new Quote(
             ev.Value.Id,

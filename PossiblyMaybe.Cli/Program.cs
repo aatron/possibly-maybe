@@ -111,6 +111,14 @@ switch (command)
         await MultiSportImporter.ImportMlsAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-round2-odds":
+    {
+        // D1 flancast O→C: NFL overlay + MLB 2011–2021 append (no wipe)
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await Round2OddsImporter.ImportFlancastAsync(ResolveRawRoot(), dbPath);
+        return 0;
+    }
     case "import-soccer":
     {
         // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
@@ -220,6 +228,51 @@ switch (command)
             await MlsTotalsBacktest.SweepDixonColesAsync(dbPath);
         else
             await SoccerLeagueTotalsBacktest.SweepDixonColesAsync(dbPath, sport, args[2]);
+        return 0;
+    }
+    case "tier-a-poisson":
+    {
+        // tier-a-poisson [SPORT|all] [db] — Tier A walk-forward poisson-cdf-pover (no Tier C)
+        var repoRoot = FindRepoRoot();
+        var filter = args.Length > 1 && !args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            && !args[1].Equals("all", StringComparison.OrdinalIgnoreCase)
+            ? args[1]
+            : null;
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            // worktree often has no local db — try main checkout
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await PoissonCdfTierA.RunAsync(dbPath, filter);
+        return 0;
+    }
+    case "tier-c-poisson":
+    {
+        // Parent look-once only. Do not re-run after results are logged.
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await PoissonCdfTierC.RunAsync(dbPath);
         return 0;
     }
     case "sweep-decay":
@@ -345,9 +398,10 @@ switch (command)
             return 3;
         }
         var betOver = edge > 0;
-        var p = betOver
-            ? TotalsMath.OverProb(exp, openTotal, sharpness: 1.2)
-            : 1 - TotalsMath.OverProb(exp, openTotal, sharpness: 1.2);
+        // advise-mls has only total μ — split evenly for Poisson path
+        var half = modelExp / 2.0;
+        var pOver = SoccerOverProbConfig.OverProb(half, half, exp, openTotal, "MLS");
+        var p = betOver ? pOver : 1 - pOver;
         var advice = BetDecider.Advise(p, juice, bankroll, MlsChampConfig.MinEv);
         Console.WriteLine(advice.Go ? "GO" : "NO-GO");
         Console.WriteLine($"sport=MLS side={(betOver ? "OVER" : "UNDER")} total={openTotal:F1} edge={edge:F2} EV={advice.Ev:P2}");
@@ -562,8 +616,10 @@ static void PrintUsage()
           import-box [db]            Load pace box (nba_box/box_games.csv)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
+          import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
+          tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)

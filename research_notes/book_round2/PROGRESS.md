@@ -5,11 +5,13 @@ Final write-up → `reports/book_topics_review.md`.
 
 ## ▶ RESUME HERE (read after any interruption)
 
-**Next action:** Phase 4 experiments running (Composer worktrees). D1 still out. Settle-CLV fix needs user OK (touches WIP `PaperLedger.cs`). When a session restarts, background agents from the old session are gone:
+**Next action (2026-11-07):** two Sonnet agents running — `nba-normal-sigma-pover` merge-main + `daily-refresh-all-leagues`. When both report: review diff, `dotnet test`, merge into main, run `bash scripts/pm-calculate.sh`, update ledger. Then phase 5/6.
+
+**Previous:** Phase 4b hunts done (NFL/MLB FAIL with filled O→C). Settle-CLV script fixed (no PaperLedger). Phase 5/6 write-ups still pending. When a session restarts, background agents from the old session are gone:
 for each row still `running`, check whether its output file exists and is complete (ends with a shortlist/summary).
 - File complete → mark `done`, commit it.
 - File missing/partial → relaunch that one agent with the prompt in `agent_prompts.md` (same file name; Auto).
-Phase 4 starts only when E1–E4 + audit are `done`. Never re-run a `done` row. Tier C (soccer 2025–26 / MLS 2026) never scored yet — check the Tier C ledger below before scoring.
+Never re-run a `done` row. Tier C soccer 2025–26 scored once for poisson (see ledger) — never re-score.
 Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 
 ### Agent ledger
@@ -22,7 +24,7 @@ Code-change agents (phase 4+): Composer. Research/eval/audit: Auto.
 | E4 | Forecasting / markets (fpp3, conformal, scoring rules, Kaunitz, penaltyblog, Thorp) | Auto | `eval_forecast_markets.md` | done — `1e7297b3-a373-4afe-b281-1a1718342cd3` |
 | A1 | Overcorrection / training audit | Auto | `audit_overcorrection.md` | done — `7751b52c-3e9d-4e0e-89de-02e2dd285307` |
 | V1 | Venue placement (Kalshi / RH / Crypto.com) | Auto | `venue_placement.md` | done — `0f2e5c1d-9b92-42fc-be9d-ed68197fca64` |
-| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | running — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
+| D1 | NBA/NFL/MLB odds data sources (download only → `data/raw/round2_odds/`) | Auto | `hunt_data_sources.md` | done — `b211375a-626d-4f98-97ac-5b8ff9c52719` |
 
 ### Phase 4 picks (merged E1–E4 + A1/V1; money × testability × low overfit)
 
@@ -41,17 +43,18 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 
 | Slug | Branch / worktree | Model | Tier A | Tier B | Tier C | Decision | Merge commit |
 |---|---|---|---|---|---|---|---|
-| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer | pending | | | | |
-| nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer | pending | | | | |
-| venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer | pending | | | | |
-| strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer | pending | | | | |
-| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer | pending | | | | |
+| poisson-cdf-pover | `../pm-exp-poisson-cdf-pover` `exp/poisson-cdf-pover` | Composer `8220e1bf-5332-4c2f-9cf8-aaed1e4a8eb5` | PASS SERIEA/LIGUE1/LIGAMX; FAIL MLS | — | KEEP SERIEA/LIGUE1; FAIL LIGAMX | KEEP (per-league) | merged |
+| nba-normal-sigma-pover | `../pm-exp-nba-normal-sigma-pover` `exp/nba-normal-sigma-pover` | Composer → Sonnet (merge) | FAIL (0/8 ΔPnL; Kelly worse) | report only | — | **USER OVERRIDE 2026-11-07: merge** (same GO set; honest P/EV; smaller uncapped Kelly) | in progress |
+| daily-refresh-all-leagues | `../pm-fix-daily-refresh` `fix/daily-refresh` | Sonnet | n/a (ops) | — | — | USER 2026-11-07: daily script refreshes every league + team aliases + stale-data guard | in progress |
+| venue-fee-ev | `../pm-exp-venue-fee-ev` `exp/venue-fee-ev` | Composer `5d87e728-6e42-4062-8268-c8093b21d395` | N/A (no hist binary asks) | N/A | N/A | KEEP/SHIP | merged |
+| strike-max-delta | `../pm-exp-strike-max-delta` `exp/strike-max-delta` | Composer `9148a074-d970-4e38-8869-d46182183b53` | N/A (live hygiene) | N/A | N/A | KEEP/SHIP | merged |
+| inv-var-blend-w | `../pm-exp-inv-var-blend-w` `exp/inv-var-blend-w` | Composer `d526bf5c-8ec4-4562-83df-fae1dd8d753c` | FAIL | — | — | KILL (unmerged) | — |
 
 ### Tier C ledger (look-once; append before scoring, never re-score)
 
 | Date | Candidates scored | Result file |
 |---|---|---|
-| — | | |
+| 2026-10-28 | `poisson-cdf-pover` on SERIEA / LIGUE1 / LIGAMX only (MLS Tier A FAIL — not scored). Holdout 2025-2026. | `tier_c_poisson-cdf-pover.md` |
 
 ## Phases
 
@@ -61,8 +64,8 @@ Deferred: NB φ / DC ρ / conformal / Kaunitz / Kalman / train-sharpness (after 
 | 2 | Topic evaluation (4 subagents, by book group) | done | `eval_*.md` |
 | 3a | Over-correction / training audit | done — protocol tightened in PLAN | `audit_overcorrection.md` |
 | 3b | Venue placement research (Kalshi / Robinhood / Crypto.com) | done | `venue_placement.md` |
-| 4 | Pick candidates, worktree experiments | running — see experiment ledger | `exp_*.md` |
-| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | D1 running (Auto); hunts after 4 | `hunt_*.md` |
+| 4 | Pick candidates, worktree experiments | done — see experiment ledger | `exp_*.md` |
+| 4b | NBA / NFL / MLB soft-spot hunt (data first, then models) | done — NFL/MLB FAIL; NBA 2022–23 SBRO not imported | `hunt_*.md` |
 | 5 | Merge winners, write final review | pending | `reports/book_topics_review.md` |
 | 6 | (very end) Training-practice review across all books → check our process, fix if needed | pending | `reports/training_process_review.md` |
 
@@ -110,3 +113,14 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | E3 done: `eval_ml_general.md`. Same #1 distributional OverProb; NBA logistic badly overconfident vs residual σ≈22.8. |
 | 2026-10-28 | V1 done: `venue_placement.md`. Top code gaps: fee-adjusted BE, exact strike gate, EU/MX Kalshi series. |
 | 2026-10-28 | E2 done: `eval_bayesian.md`. Same #1 poisson-cdf-pover. Phase 2+3a gate clear → phase 4 picks locked. |
+| 2026-10-28 | D1 progress: SBRO NFL xlsx 2007–08…2021–22 downloaded; NBA CDX shows through 2022–23; MLB CDX still 504. |
+| 2026-10-28 | `strike-max-delta` KEEP/SHIP merged (live hygiene; N_trials=1; Tier A N/A). |
+| 2026-10-28 | `venue-fee-ev` KEEP/SHIP merged (fee into EV/Kelly; N_trials=2; Tier A N/A). User WIP PaperLedger/ui restored cleanly. |
+| 2026-10-28 | D1 done: `hunt_data_sources.md`. P0: NFL SBRO 2007–21 + MLB flancast/Arnav O→C fill prior FAILs; NBA only 2022–23 free O→C patch. |
+| 2026-10-28 | `inv-var-blend-w` KILL — Tier A FAIL NBA 7/14 PnL folds, MLS 2/5; branch unmerged; exp doc on main. |
+| 2026-10-28 | `poisson-cdf-pover` Tier A PASS SerieA/Ligue1/LigaMX (FAIL MLS); **await Tier C batch** before merge. |
+| 2026-10-28 | Tier C poisson: KEEP SERIEA+LIGUE1; LIGAMX FAIL CLV. nba-normal-sigma KILL. |
+| 2026-10-29 | Settle hint: `pm-calculate.sh` no longer passes final_total as closeLine. |
+| 2026-10-29 | `import-round2-odds`: NFL +2892 O→C overlays; MLB +25571 games. Hunts: NFL FAIL, MLB FAIL (docs). |
+| 2026-11-07 | Replay 10-30→11-06 (38 picks, 18–20, −3.64u flat) → `reports/replay_2026-10-30_to_11-06.md`. Found: soccer DB has no 2026-27 games; Le Mans→Metz mapping bug; Serie A DC not credible. Settled 4 open DK paper tickets (2W 2L). |
+| 2026-11-07 | User: daily script must refresh every league; merge NBA Normal-σ curve (override KILL); list planned-not-implemented. Two Sonnet agents launched. |

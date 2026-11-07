@@ -54,9 +54,11 @@ public static class KalshiQuotes
         if (eventMarkets.Count == 0)
             return null;
 
+        // Reject nearest-strike when Δ > MaxNbaDelta (0.5) / MaxSoccerDelta (0.25).
+        var maxDelta = StrikeMatch.MaxDelta(sport);
         var mkt = eventMarkets
             .Select(m => (m, dist: Math.Abs((m.FloorStrike ?? double.NaN) - line)))
-            .Where(t => !double.IsNaN(t.dist))
+            .Where(t => !double.IsNaN(t.dist) && t.dist <= maxDelta)
             .OrderBy(t => t.dist)
             .ThenBy(t => t.m.FloorStrike)
             .Select(t => t.m)

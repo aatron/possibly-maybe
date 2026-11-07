@@ -27,6 +27,17 @@ public static class SportTeams
         ["MIA"] = "MIA", ["MIN"] = "MIN", ["NE"] = "NE", ["NO"] = "NO", ["NYG"] = "NYG", ["NYJ"] = "NYJ",
         ["PHI"] = "PHI", ["PIT"] = "PIT", ["SF"] = "SF", ["SEA"] = "SEA", ["TB"] = "TB",
         ["TEN"] = "TEN", ["WAS"] = "WAS", ["WSH"] = "WAS",
+        // flancast / SBRO nicknames
+        ["Bears"] = "CHI", ["Bengals"] = "CIN", ["Bills"] = "BUF", ["Broncos"] = "DEN",
+        ["Browns"] = "CLE", ["Buccaneers"] = "TB", ["Cardinals"] = "ARI", ["Chargers"] = "LAC",
+        ["Chiefs"] = "KC", ["Colts"] = "IND", ["Commanders"] = "WAS", ["Cowboys"] = "DAL",
+        ["Dolphins"] = "MIA", ["Eagles"] = "PHI", ["Falcons"] = "ATL", ["Fortyniners"] = "SF",
+        ["Giants"] = "NYG", ["Jaguars"] = "JAX", ["Jets"] = "NYJ", ["Lions"] = "DET",
+        ["Packers"] = "GB", ["Panthers"] = "CAR", ["Patriots"] = "NE", ["Raiders"] = "LV",
+        ["Rams"] = "LAR", ["Ravens"] = "BAL", ["Saints"] = "NO", ["Seahawks"] = "SEA",
+        ["Steelers"] = "PIT", ["Texans"] = "HOU", ["Titans"] = "TEN", ["Vikings"] = "MIN",
+        ["BuffaloBills"] = "BUF", ["KCChiefs"] = "KC", ["LVRaiders"] = "LV", ["Oakland"] = "LV",
+        ["SanDiego"] = "LAC", ["St.Louis"] = "LAR", ["Tampa"] = "TB", ["Washingtom"] = "WAS",
     };
 
     private static readonly Dictionary<string, string> Mlb = new(StringComparer.OrdinalIgnoreCase)
@@ -42,6 +53,22 @@ public static class SportTeams
         ["San Diego Padres"] = "SD", ["San Francisco Giants"] = "SF", ["Seattle Mariners"] = "SEA",
         ["St. Louis Cardinals"] = "STL", ["Tampa Bay Rays"] = "TB", ["Texas Rangers"] = "TEX",
         ["Toronto Blue Jays"] = "TOR", ["Washington Nationals"] = "WSH",
+        // flancast / SBRO nicknames + short junk codes
+        ["Angels"] = "LAA", ["Astros"] = "HOU", ["Blue Jays"] = "TOR", ["Braves"] = "ATL",
+        ["Brewers"] = "MIL", ["Cardinals"] = "STL", ["Cubs"] = "CHC", ["Diamondbacks"] = "ARI",
+        ["Dodgers"] = "LAD", ["Indians"] = "CLE", ["Guardians"] = "CLE", ["Mariners"] = "SEA",
+        ["Marlins"] = "MIA", ["Mets"] = "NYM", ["Nationals"] = "WSH", ["Orioles"] = "BAL",
+        ["Phillies"] = "PHI", ["Pirates"] = "PIT", ["Rangers"] = "TEX", ["Red Sox"] = "BOS",
+        ["Reds"] = "CIN", ["Rockies"] = "COL", ["Tigers"] = "DET", ["Twins"] = "MIN",
+        ["White Sox"] = "CWS", ["Yankees"] = "NYY", ["Rays"] = "TB",
+        ["TAM"] = "TB", ["CUB"] = "CHC", ["BRS"] = "BOS", ["KAN"] = "KC",
+        ["SDG"] = "SD", ["SFG"] = "SF", ["SFO"] = "SF", ["LOS"] = "LAD",
+        ["ARI"] = "ARI", ["ATL"] = "ATL", ["BAL"] = "BAL", ["BOS"] = "BOS", ["CHC"] = "CHC",
+        ["CWS"] = "CWS", ["CIN"] = "CIN", ["CLE"] = "CLE", ["COL"] = "COL", ["DET"] = "DET",
+        ["HOU"] = "HOU", ["KC"] = "KC", ["LAA"] = "LAA", ["LAD"] = "LAD", ["MIA"] = "MIA",
+        ["MIL"] = "MIL", ["MIN"] = "MIN", ["NYM"] = "NYM", ["NYY"] = "NYY", ["OAK"] = "OAK",
+        ["PHI"] = "PHI", ["PIT"] = "PIT", ["SD"] = "SD", ["SF"] = "SF", ["SEA"] = "SEA",
+        ["STL"] = "STL", ["TB"] = "TB", ["TEX"] = "TEX", ["TOR"] = "TOR", ["WSH"] = "WSH",
     };
 
     public static string? TryNfl(string? raw)
