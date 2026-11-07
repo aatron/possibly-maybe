@@ -163,6 +163,19 @@ switch (command)
         await NhlSbroImporter.ImportAsync(dir, dbPath);
         return 0;
     }
+    case "import-nfl-aus":
+    {
+        // T2b: Aussportsbetting NFL Total Score O→C + real over/under juice (2014–2025); match existing games
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        await AusNflOddsImporter.ImportAsync(ResolveRawRoot(), dbPath);
+        return 0;
+    }
     case "import-soccer":
     {
         // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
@@ -1111,6 +1124,7 @@ static void PrintUsage()
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
           import-nhl-sbro [db] [dir] T2a SBRO NHL OpenOU/CloseOU O→C (real juice; skip 2022-23)
+          import-nfl-aus [db]        T2b Aussportsbetting NFL totals O→C + real prices (2014–2025)
           sweep-mlb / sweep-nfl / sweep-mls / sweep-ncaab  Soft-spot sweeps
           slate-ncaab [yyyymmdd] [bank]  NCAAB totals shadow slate (PaceEff/Scoring)
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
