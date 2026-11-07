@@ -19,6 +19,18 @@ public class OregonExclusionTests
     [Arguments("NCAAF", "Portland State Vikings")]
     [Arguments("NWSL", "Portland Thorns FC")]
     [Arguments("NBA", "  PORTLAND  ")]
+    // SBRO CamelCase / concatenated spellings
+    [Arguments("NCAAB", "OregonState")]
+    [Arguments("NCAAB", "PortlandState")]
+    [Arguments("NCAAF", "PortlandSt")]
+    [Arguments("NCAAB", "PortlandU")]
+    [Arguments("NCAAB", "Portland U")]
+    [Arguments("NCAAB", "University of Portland")]
+    [Arguments("NCAAF", "Portland Pilots")]
+    [Arguments("NCAAB", "Pilots")]
+    [Arguments("NCAAB", "PORT")]
+    [Arguments("NCAAB", "UP")]
+    [Arguments("NCAAB", "PORTLANDU")]
     public async Task Excluded(string sport, string team)
         => await Assert.That(OregonExclusion.IsExcluded(sport, team)).IsTrue();
 
@@ -30,6 +42,9 @@ public class OregonExclusionTests
     [Arguments("NBA", "BOS")]
     [Arguments("MLS", "Seattle Sounders")]
     [Arguments("NBA", "ORE")]
+    // psu = Penn State in ESPN/GetSTAM; must not exclude after code fix
+    [Arguments("NCAAF", "PSU")]
+    [Arguments("NCAAF", "Penn State")]
     public async Task NotExcluded(string sport, string team)
         => await Assert.That(OregonExclusion.IsExcluded(sport, team)).IsFalse();
 

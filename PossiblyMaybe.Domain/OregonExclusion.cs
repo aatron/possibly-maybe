@@ -10,23 +10,27 @@ namespace PossiblyMaybe.Domain;
 /// </summary>
 public static class OregonExclusion
 {
-    // Normalized (lowercase, no diacritics/punctuation). Short codes are sport-scoped; names apply to every sport.
+    // Normalized (lowercase, no diacritics/punctuation; CamelCase split). Short codes are sport-scoped; names apply to every sport.
     private static readonly HashSet<string> Names = new()
     {
         "portland", "portland trail blazers", "trail blazers", "blazers",
         "portland timbers", "timbers", "portland thorns", "portland thorns fc", "thorns",
         "oregon", "oregon ducks", "ducks", "oregon state", "oregon st", "oregon state beavers", "beavers",
         "portland state", "portland state vikings", "portland st",
+        // University of Portland Pilots (SBRO: PortlandU / Portland U)
+        "university of portland", "portland pilots", "portland u", "pilots",
     };
 
+    // NCAA: ore=Oregon, orst=Oregon State, port=Portland State, up/portlandu=Univ. of Portland.
+    // Do not use "psu" — that is Penn State in ESPN/GetSTAM (over-exclusion).
     private static readonly Dictionary<string, string[]> CodesBySport = new(StringComparer.OrdinalIgnoreCase)
     {
         ["NBA"] = ["por"],
         ["MLS"] = ["por"],
         ["NWSL"] = ["por"],
-        ["NCAAB"] = ["ore", "orst", "psu"],
-        ["NCAAF"] = ["ore", "orst", "psu"],
-        ["NCAA"] = ["ore", "orst", "psu"],
+        ["NCAAB"] = ["ore", "orst", "port", "up", "portlandu"],
+        ["NCAAF"] = ["ore", "orst", "port", "up", "portlandu"],
+        ["NCAA"] = ["ore", "orst", "port", "up", "portlandu"],
     };
 
     public static bool IsExcluded(string? sport, string? team)
@@ -57,10 +61,23 @@ public static class OregonExclusion
     {
         if (string.IsNullOrWhiteSpace(s)) return "";
         var sb = new StringBuilder();
+        char prev = '\0';
         foreach (var c in s.Normalize(NormalizationForm.FormD))
         {
             if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
-            sb.Append(char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : ' ');
+            if (char.IsLetterOrDigit(c))
+            {
+                // SBRO-style CamelCase ("OregonState") → "oregon state"
+                if (char.IsUpper(c) && prev != '\0' && (char.IsLower(prev) || char.IsDigit(prev)))
+                    sb.Append(' ');
+                sb.Append(char.ToLowerInvariant(c));
+                prev = c;
+            }
+            else
+            {
+                sb.Append(' ');
+                prev = '\0';
+            }
         }
         return string.Join(' ', sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
