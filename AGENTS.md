@@ -4,7 +4,7 @@ Project conventions for coding agents working in **PossiblyMaybe**.
 
 ## In-flight work
 
-**Round 3** (blindside guards, side-by-side variants + shadow ledger, CLV fix, tracker plumbing, NCAAB) — start at `research_notes/round3/PLAN.md` + `PROGRESS.md`. Background: **Book round 2** — `research_notes/book_round2/HANDOFF.md`.
+**Round 4** (every variant + every league, wave radar, candidate store, sport-pack template) — start at `research_notes/round4/PLAN.md` + `PROGRESS.md` + `CHECKLIST.md`. Round 3 (finished): `research_notes/round3/`. Background: **Book round 2** — `research_notes/book_round2/HANDOFF.md`.
 
 ## Slash commands
 
