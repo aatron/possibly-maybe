@@ -15,8 +15,15 @@
 
 ## Tier A
 
-CLI ready. Full fold table deferred to D5 if wall-clock heavy; until then **shadow-only** (same as B9 when keep fails). Do not promote without the fold table.
+CLI ready (`tier-a-b8` / Round 5 `tier-a-t4c`). **Fold table scored once** on 2026-11-07 — see [`../round5/t4c_proof.md`](../round5/t4c_proof.md):
+
+| Variant | Verdict |
+|---|---|
+| `+conformal` | FAIL → Shadow marked FAIL (n=0) |
+| `kalman` | PASS → Shadow (mean CLV = V0, n=233) |
+
+No paper promotion from the table. Do not re-tune.
 
 ## N_trials
 
-Family = 2 (+conformal, kalman).
+Family = 2 (+conformal, kalman). Charged in durable TrialLedger during T4c.

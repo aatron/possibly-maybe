@@ -47,6 +47,8 @@ Per variant vs V0 on same tickets:
 3. Keep only if CLV ≥ V0 (or Brier improves **and** Kelly PnL not worse on same tickets — protocol §6).
 4. Print `N_trials` = number of B7 cells scored under BH with the rest of wave B.
 
+**`soccer-strict` fold table (Round 5 T4c):** scored once 2026-11-07 — [`../round5/t4c_proof.md`](../round5/t4c_proof.md). Verdict **FAIL** → Shadow marked FAIL (n=31&lt;40; mean CLV 0.076 &lt; V0 0.175). Remaining B7 cells (`+fitted-curve-*`, `nba-strict`, EV-bands) → Round 5 T4b.
+
 Reliability table template (fill after Tier A run):
 
 | Variant | Decile | Mean P | Hit rate | n |
