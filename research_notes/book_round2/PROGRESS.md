@@ -119,3 +119,4 @@ Totals odds with an **unused 2025–26 season** exist for LIGUE1 / LIGAMX / SERI
 | 2026-10-28 | Tier C poisson: KEEP SERIEA+LIGUE1; LIGAMX FAIL CLV. nba-normal-sigma KILL. |
 | 2026-10-29 | Settle hint: `pm-calculate.sh` no longer passes final_total as closeLine. |
 | 2026-10-29 | `import-round2-odds`: NFL +2892 O→C overlays; MLB +25571 games. Hunts: NFL FAIL, MLB FAIL (docs). |
+| 2026-11-07 | Replay 10-30→11-06 (38 picks, 18–20, −3.64u flat) → `reports/replay_2026-10-30_to_11-06.md`. Found: soccer DB has no 2026-27 games; Le Mans→Metz mapping bug; Serie A DC not credible. Settled 4 open DK paper tickets (2W 2L). |
