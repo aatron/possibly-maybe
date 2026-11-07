@@ -10,7 +10,10 @@ public static class StrikeMatch
     public const double MaxSoccerDelta = 0.25;
 
     public static double MaxDelta(string sport)
-        => sport.Equals("NBA", StringComparison.OrdinalIgnoreCase) ? MaxNbaDelta : MaxSoccerDelta;
+        => sport.Equals("NBA", StringComparison.OrdinalIgnoreCase)
+           || sport.Equals("NHL", StringComparison.OrdinalIgnoreCase)
+            ? MaxNbaDelta  // NHL totals usually .5 goals
+            : MaxSoccerDelta;
 
     public static bool WithinMaxDelta(string sport, double strike, double modelLine)
         => Math.Abs(strike - modelLine) <= MaxDelta(sport);

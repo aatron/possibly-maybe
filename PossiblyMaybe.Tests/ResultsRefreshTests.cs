@@ -53,10 +53,22 @@ public class ResultsRefreshTests
     {
         var late = DateTimeOffset.Parse("2026-10-26T01:00:00Z"); // 9pm ET on the 25th
         await Assert.That(ResultsRefresh.KeyDate("NBA", late)).IsEqualTo(new DateOnly(2026, 10, 25));
+        await Assert.That(ResultsRefresh.KeyDate("NHL", late)).IsEqualTo(new DateOnly(2026, 10, 25));
         await Assert.That(ResultsRefresh.KeyDate("MLS", late)).IsEqualTo(new DateOnly(2026, 10, 26));
         await Assert.That(ResultsRefresh.SeasonFor("NBA", new DateOnly(2026, 10, 25))).IsEqualTo("2027");
+        await Assert.That(ResultsRefresh.SeasonFor("NHL", new DateOnly(2026, 10, 25))).IsEqualTo("2026-2027");
         await Assert.That(ResultsRefresh.SeasonFor("LIGUE1", new DateOnly(2026, 10, 31))).IsEqualTo("2026-2027");
         await Assert.That(ResultsRefresh.SeasonFor("SERIEA", new DateOnly(2027, 3, 1))).IsEqualTo("2026-2027");
+    }
+
+    [Test]
+    public async Task ParseFinals_Nhl_MapsEspnTeams()
+    {
+        using var done = JsonDocument.Parse(Event("post", true, "Boston Bruins", "Tampa Bay Lightning", "BOS", "TB"));
+        var g = ResultsRefresh.ParseFinals(done, "NHL").Single();
+        await Assert.That(g.Home).IsEqualTo("BOS");
+        await Assert.That(g.Away).IsEqualTo("TB");
+        await Assert.That(ResultsRefresh.Leagues).Contains("NHL");
     }
 
     [Test]

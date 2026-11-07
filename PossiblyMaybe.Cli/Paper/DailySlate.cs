@@ -9,8 +9,9 @@ using PossiblyMaybe.Domain.SportPacks;
 namespace PossiblyMaybe.Cli.Paper;
 
 /// <summary>
-/// Live soft-spot slate: NBA PaceEff + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA).
-/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0; all variants go to shadow ledger.
+/// Live soft-spot slate: NBA PaceEff + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA)
+/// + NHL shadow-only (C6; Tier A gated on O→C).
+/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0 for paper; all variants go to shadow ledger.
 /// </summary>
 public static class DailySlate
 {
@@ -119,6 +120,38 @@ public static class DailySlate
         await RecordShadowAsync(dbPath, candidates, ct);
     }
 
+    /// <summary>NHL totals shadow-only (no paper-go). Candidates still hit the variant ledger.</summary>
+    public static async Task RunNhlAsync(
+        string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
+    {
+        List<SlateCandidate> candidates;
+        try
+        {
+            candidates = await BuildNhlCandidatesAsync(dbPath, yyyymmdd, ct);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"######## NHL SLATE {yyyymmdd} ########");
+            Console.WriteLine($"Scoreboard fetch failed: {ex.Message}");
+            return;
+        }
+
+        var pack = SportPackRegistry.Nhl;
+        Console.WriteLine($"######## NHL SLATE {yyyymmdd} bankroll=${bankroll:F0} shadow {pack.Model} ########");
+        if (candidates.Count == 0)
+        {
+            Console.WriteLine("No NHL games on this date.");
+            return;
+        }
+        if (candidates[0].Stale)
+            await WarnIfStaleAsync("NHL", dbPath, yyyymmdd, ct);
+        else
+            Console.WriteLine($"Gate: w={pack.MarketWeight} |exp−line|≥{pack.MinAbsTotalEdge} EV≥{pack.MinEv:P0} (shadow-only; Tier A={!NhlSportPack.TierAReady})");
+
+        Console.WriteLine($"SHADOW-ONLY NHL (no O→C Tier A yet) — {candidates.Count} candidates → ledger (no paper-go).");
+        await RecordShadowAsync(dbPath, candidates, ct);
+    }
+
     public static async Task<List<SlateCandidate>> BuildNbaCandidatesAsync(
         string dbPath, string yyyymmdd, CancellationToken ct = default)
     {
@@ -175,6 +208,39 @@ public static class DailySlate
                 odds?.Total, odds?.Total,
                 odds?.OverAmerican, odds?.UnderAmerican,
                 0, w, minEdge, minEv, stale));
+        }
+        return list;
+    }
+
+    public static async Task<List<SlateCandidate>> BuildNhlCandidatesAsync(
+        string dbPath, string yyyymmdd, CancellationToken ct = default)
+    {
+        var pack = SportPackRegistry.Nhl;
+        var lambdas = await BuildNhlModelAsync(dbPath, ct);
+        var games = await FetchNhlScoreboardAsync(yyyymmdd, ct);
+        var stale = games.Count > 0 && await IsLeagueStaleAsync("NHL", dbPath, yyyymmdd, ct);
+        var list = new List<SlateCandidate>();
+        foreach (var g in games)
+        {
+            if (g.Home.StartsWith('?') || g.Away.StartsWith('?'))
+            {
+                list.Add(new SlateCandidate(
+                    "NHL", yyyymmdd, g.Home, g.Away,
+                    0, null, null, null, null, null, null, 0,
+                    pack.MarketWeight, pack.MinAbsTotalEdge, pack.MinEv, stale));
+                continue;
+            }
+            var (lh, la) = lambdas(g.Home, g.Away);
+            var modelExp = lh + la;
+            var odds = g.Total is { } t
+                ? new EspnOdds(t, null, null)
+                : await FetchEspnOddsAsync("hockey", "nhl", g.EspnId, ct);
+            list.Add(new SlateCandidate(
+                "NHL", yyyymmdd, g.Home, g.Away,
+                modelExp, lh, la,
+                odds?.Total, odds?.Total,
+                odds?.OverAmerican, odds?.UnderAmerican,
+                0, pack.MarketWeight, pack.MinAbsTotalEdge, pack.MinEv, stale));
         }
         return list;
     }
@@ -357,6 +423,23 @@ public static class DailySlate
         throw new ArgumentException($"No champ model for {sport}");
     }
 
+    private static async Task<Func<string, string, (double Lh, double La)>> BuildNhlModelAsync(
+        string dbPath, CancellationToken ct)
+    {
+        var pack = SportPackRegistry.Nhl;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "NHL" && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: NhlShadowConfig.LeagueInit);
+        foreach (var g in games)
+            book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+        return book.ExpectedLambdas;
+    }
+
     private static async Task<List<SlateGame>> FetchNbaScoreboardAsync(string yyyymmdd, CancellationToken ct)
     {
         var url = $"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={yyyymmdd}";
@@ -372,6 +455,14 @@ public static class DailySlate
         using var doc = await Http.GetFromJsonAsync<JsonDocument>(url, ct)
             ?? throw new InvalidOperationException($"{sport} scoreboard empty");
         return ParseScoreboard(doc, sport);
+    }
+
+    private static async Task<List<SlateGame>> FetchNhlScoreboardAsync(string yyyymmdd, CancellationToken ct)
+    {
+        var url = $"https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates={yyyymmdd}";
+        using var doc = await Http.GetFromJsonAsync<JsonDocument>(url, ct)
+            ?? throw new InvalidOperationException("NHL scoreboard empty");
+        return ParseScoreboard(doc, "NHL");
     }
 
     private static List<SlateGame> ParseScoreboard(JsonDocument doc, string sport)
@@ -437,6 +528,9 @@ public static class DailySlate
             var n = TeamCodes.TryNormalize(abbr) ?? abbr;
             return n;
         }
+
+        if (sport == "NHL")
+            return SportTeams.ResolveNhl(abbr, display, shortName);
 
         return SportTeams.ResolveSoccer(sport, abbr, display, shortName);
     }

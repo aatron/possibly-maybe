@@ -49,6 +49,7 @@ SPORTS_BASE: dict[str, dict] = {
     "SERIEA": {"espn": "soccer/ita.1", "kalshi": "KXSERIEATOTAL", "cdc": None},
     "LALIGA": {"espn": "soccer/esp.1", "kalshi": None, "cdc": None},  # no public Kalshi totals series known
     "EFL": {"espn": "soccer/eng.2", "kalshi": None, "cdc": None},  # Championship; no public series known
+    "NHL": {"espn": "hockey/nhl", "kalshi": "KXNHLTOTAL", "cdc": "NHL"},  # C6-nhl; Tier A gated on O→C age
 }
 # ESPN abbr -> repo GameKey code (SportTeams.cs / TeamCodes conventions)
 CANON = {

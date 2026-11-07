@@ -42,4 +42,35 @@ public class SportPackTests
         await Assert.That(OregonExclusion.IsExcluded("WNBA", "POR")).IsTrue();
         await Assert.That(OregonExclusion.IsExcluded("MLS", "Chicago Fire")).IsFalse();
     }
+
+    [Test]
+    public async Task Nhl_Pack_ShadowOnly_And_WinterhawksOregon()
+    {
+        var pack = SportPackRegistry.Get("NHL");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("NHL");
+        await Assert.That(pack.Market).IsEqualTo(NhlShadowConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(NhlShadowConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(NhlShadowConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(NhlShadowConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(NhlShadowConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(NhlShadowConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(NhlShadowConfig.BankrollSeed);
+        await Assert.That(pack.RatingBookKind).IsEqualTo("ScoringBook-goals-EMA");
+        await Assert.That(pack.ResultsSource).Contains("hockey/nhl");
+        await Assert.That(pack.OddsSources.Any(s => s.Contains("KXNHLTOTAL"))).IsTrue();
+        await Assert.That(pack.TierAFolds.Count).IsEqualTo(0);
+        await Assert.That(NhlSportPack.TierAReady).IsFalse();
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("none");
+        await Assert.That(pack.SeasonPhases.Count).IsGreaterThan(0);
+        await Assert.That(pack.ResolveAlias("Boston Bruins")).IsEqualTo("BOS");
+        await Assert.That(pack.ResolveAlias("VGK")).IsEqualTo("VGK");
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+
+        // Cardinal: Winterhawks (WHL) stay excluded under NHL sport id too
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Portland Winterhawks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "winterhawks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "BOS")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Seattle Kraken")).IsFalse();
+    }
 }

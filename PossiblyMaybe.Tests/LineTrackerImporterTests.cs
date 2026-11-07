@@ -14,6 +14,9 @@ public class LineTrackerImporterTests
         await Assert.That(LineTrackerImporter.ResolveTeam("LIGUE1", "AUX")).IsEqualTo("AJ Auxerre");
         // unmapped keeps own token — never aliases onto another club
         await Assert.That(LineTrackerImporter.ResolveTeam("LALIGA", "XYZFC")).IsEqualTo("XYZFC");
+        await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "TB")).IsEqualTo("TB");
+        await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "TBL")).IsEqualTo("TB");
+        await Assert.That(LineTrackerImporter.ResolveTeam("NHL", "ZZZ")).IsEqualTo("ZZZ");
     }
 
     [Test]

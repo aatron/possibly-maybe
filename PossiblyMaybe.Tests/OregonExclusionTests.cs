@@ -38,6 +38,8 @@ public class OregonExclusionTests
     [Arguments("WNBA", "Portland Fire")]
     [Arguments("WNBA", "POR")]
     [Arguments(null, "Portland Winterhawks")]
+    [Arguments("NHL", "Portland Winterhawks")]
+    [Arguments("NHL", "winterhawks")]
     [Arguments(null, "Hillsboro Hops")]
     [Arguments(null, "Eugene Emeralds")]
     public async Task Excluded(string sport, string team)
