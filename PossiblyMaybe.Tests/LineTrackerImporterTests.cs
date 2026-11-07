@@ -1,9 +1,39 @@
 using PossiblyMaybe.Cli.Import;
+using PossiblyMaybe.Data;
 
 namespace PossiblyMaybe.Tests;
 
 public class LineTrackerImporterTests
 {
+    [Test]
+    public async Task ResolveTeam_MapsKnownCodes_KeepsUnknown()
+    {
+        await Assert.That(LineTrackerImporter.ResolveTeam("NFL", "WSH")).IsEqualTo("WAS");
+        await Assert.That(LineTrackerImporter.ResolveTeam("NBA", "GS")).IsEqualTo("GSW");
+        await Assert.That(LineTrackerImporter.ResolveTeam("MLS", "LAFC")).IsEqualTo("LAFC");
+        await Assert.That(LineTrackerImporter.ResolveTeam("LIGUE1", "AUX")).IsEqualTo("AJ Auxerre");
+        // unmapped keeps own token — never aliases onto another club
+        await Assert.That(LineTrackerImporter.ResolveTeam("LALIGA", "XYZFC")).IsEqualTo("XYZFC");
+    }
+
+    [Test]
+    public async Task FindGame_MatchesExisting_DoesNotInvent()
+    {
+        var tip = DateTimeOffset.Parse("2026-11-08T18:00:00Z");
+        var games = new List<Game>
+        {
+            new()
+            {
+                Id = 42, Sport = "NFL", HomeTeam = "IND", AwayTeam = "DAL",
+                TipoffUtc = tip, SourceKey = "nfl:2026-11-08:IND:DAL", Season = "2026",
+            },
+        };
+        var hit = LineTrackerImporter.FindGame(games, "NFL", "IND", "DAL", tip);
+        await Assert.That(hit?.Id).IsEqualTo(42);
+        var miss = LineTrackerImporter.FindGame(games, "NFL", "KC", "BUF", tip);
+        await Assert.That(miss).IsNull();
+    }
+
     [Test]
     public async Task ResolveOpenClose_EspnPrefersReportedOpenLine()
     {

@@ -216,11 +216,54 @@ switch (command)
         await MlbTotalsBacktest.SweepAsync(dbPath, pf);
         return 0;
     }
+    case "tier-a-mlb":
+    {
+        // tier-a-mlb [db] — C4 Tier A 2011–2019 + look-once 2021
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        var pf = Path.Combine(ResolveRawRoot(), "mlb", "park_factors.csv");
+        if (!File.Exists(pf))
+        {
+            var altPf = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "data", "raw", "mlb", "park_factors.csv"));
+            if (File.Exists(altPf)) pf = altPf;
+        }
+        await MlbTotalsTierA.RunAsync(dbPath, File.Exists(pf) ? pf : null);
+        return 0;
+    }
     case "sweep-nfl":
     {
         var repoRoot = FindRepoRoot();
         var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
         await NflTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
+    case "sweep-ncaaf":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}. Run import-disk-odds (SBRO sbro_ncaaf) first.");
+            return 2;
+        }
+        await NcaafTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
     case "sweep-mls":
@@ -750,7 +793,26 @@ switch (command)
     case "variants-dashboard":
     {
         var root = FindRepoRoot();
-        await VariantDashboard.WriteAsync(VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"));
+        await VariantDashboard.WriteAsync(
+            VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"), RadarStore.DefaultDbPath(root));
+        return 0;
+    }
+    case "variants-radar":
+    {
+        var root = FindRepoRoot();
+        var vdb = args.Length > 1 ? args[1] : VariantLedger.DefaultDbPath(root);
+        var rdb = args.Length > 2 ? args[2] : RadarStore.DefaultDbPath(root);
+        await VariantRadar.RunAsync(vdb, rdb, Path.Combine(root, "ui"));
+        return 0;
+    }
+    case "variants-reeval":
+    {
+        // Re-filter all registered variants over stored candidates (no model re-run).
+        var root = FindRepoRoot();
+        var vdb = args.Length > 1 ? args[1] : VariantLedger.DefaultDbPath(root);
+        var n = await VariantEvaluate.ReEvalStoredAsync(vdb);
+        Console.WriteLine($"variants-reeval: {n} variant×candidate rows");
+        await VariantDashboard.WriteAsync(vdb, Path.Combine(root, "ui"));
         return 0;
     }
     case "ensure-db":
@@ -823,6 +885,8 @@ static void PrintUsage()
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          tier-a-mlb [db]                    C4 MLB Tier A 2011–2019 + look-once 2021
+          sweep-mlb / sweep-nfl / sweep-ncaaf / sweep-mls  Soft-spot sweeps (MLB / NFL / NCAAF / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
@@ -846,8 +910,10 @@ static void PrintUsage()
           dashboard                Write ui/index.html equity + leaderboard
           variants-shadow [yyyymmdd] Settle + eval slate → data/variants.db + ui/variants.html
           variants-backfill [db]     Walk-forward + replay week into shadow ledger
+          variants-reeval [variants.db]  Re-filter variants over stored candidates (no model re-run)
           variants-settle [db]       Auto-settle open shadow picks (no confirm)
           variants-dashboard         Write ui/variants.html
+          variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);
