@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** D1, D2, D5. D3/D4 done (`reports/training_process_review.md`, `reports/round4_waves.md`).
+**Next action:** D1, D5. D2 **cut** (`d2_serie_a_verdict.md`); D3/D4 done.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -42,7 +42,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | done | (batch land) |
 | R6 | Real DK price on paper tickets | Composer | main | `r6_proof.md` 0%→real when DK present | done | (this commit) |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
-| D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
+| D2 | Serie A verdict | Composer | main | `d2_serie_a_verdict.md` **cut** | done | (this commit) |
 | D3 | Training-process review | Auto / Composer | reports | `reports/training_process_review.md` | done | (this commit) |
 | D4 | Round-4 waves report | Auto / Composer | reports | `reports/round4_waves.md` | done | (this commit) |
 | D5 | Green tests, clean run, push | parent | main | — | pending | |
@@ -74,4 +74,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | R8 IStrategy + V0TotalsStrategy (Evaluate-equivalent fixtures). 272 tests. Proof `r8_proof.md`. |
 | 2026-11-07 | R9 DayEngine + `engine-day` CLI (synthetic slate == Evaluate(V0)). 274 tests. Proof `r9_proof.md`. |
 | 2026-11-07 | R10 vault + trial ledger + nested walk-forward + PromotionPolicy. 279 tests. Proof `r10_proof.md`. |
+| 2026-11-07 | D2 Serie A verdict **cut**: Tier A poisson re-run PASS; V-SA0 for paper default; shadow+radar stay; B4 negbin/ρ folds deferred. `d2_serie_a_verdict.md`. |
 | 2026-11-07 | D3 + D4 close-out reports: `reports/training_process_review.md`, `reports/round4_waves.md` (from existing proofs; no invented Tier A). |

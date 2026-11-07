@@ -3,7 +3,7 @@
 Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final ledger), `round3/revisit_candidates.md`, code and DB. Each `[ ]` maps to a round-4 plan item (→ id).
 
 ## A. Carried over from round 3
-- [ ] Serie A keep/fix/drop verdict (r3 W9) → D2
+- [x] Serie A keep/cut/drop verdict (r3 W9) → D2 (**cut** — `d2_serie_a_verdict.md`)
 - [ ] NCAAB totals pack (r3 W10) → C1
 - [x] Training-process review across all books (r2 phase 6 / r3 W11) → D3 (`reports/training_process_review.md`)
 - [x] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4 (`reports/round4_waves.md`)
