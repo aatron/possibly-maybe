@@ -40,18 +40,15 @@ Expect: registry includes B7 ids; fitted NBA P(over) uses σ=22.8 (calmer than c
 
 ## Tier A (walk-forward; run after merge / with warehouse)
 
-Per variant vs V0 on same tickets:
+NBA family fold table completed once in Round 5 **T4b**: `research_notes/round5/t4b_proof.md` (`N_trials=6` with B5). Soccer-strict is T4c.
 
-1. Folds: NBA seasons through 2023–24 train / 2024–25 hold; soccer champ train/hold splits per `*ChampConfig`.
-2. Metrics: Brier + log-loss reliability table (deciles of P(over)); Kelly-lane PnL + mean CLV; N bets.
-3. Keep only if CLV ≥ V0 (or Brier improves **and** Kelly PnL not worse on same tickets — protocol §6).
-4. Print `N_trials` = number of B7 cells scored under BH with the rest of wave B.
+| Variant | Verdict (vs V0, same tickets) |
+|---|---|
+| `V-FC-NBA` (+fitted-curve-nba) | **PASS → Shadow** (CLV tie; Brier/LL slightly better) |
+| `V-NBA-STRICT` | **FAIL** (n=0) |
+| `V-EV-04-10` / `V-EV-10-20` / `V-EV-04-20` | **FAIL** (n=0; V0 EVs above band caps) |
 
-Reliability table template (fill after Tier A run):
-
-| Variant | Decile | Mean P | Hit rate | n |
-|---|---|---|---|---|
-| V-FC-NBA | … | | | |
+No paper promotion / re-tune from this table.
 
 ## Not in B7
 

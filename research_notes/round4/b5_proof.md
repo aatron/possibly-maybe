@@ -29,7 +29,9 @@ Expect registry includes `refs-nba` with `UseRefTotals`; Donaghy-flagged `Observ
 
 ## Tier A folds
 
-Not re-run here (needs warehouse join of `RefereeAssignments` + `GameBoxes` + TOTAL open/close). Unit residual learning is the gate for merge; full fold CLV vs V0 is a follow-up once residual is filled in `VariantBackfill` / `DailySlate`.
+Deferred fold table completed in Round 5 **T4b** (once): `research_notes/round5/t4b_proof.md`.
+
+Verdict: **`refs-nba` PASS → Shadow only** (mean fold CLV 0.898 ≥ V0 0.823, n=671). Flat PnL worse than V0; no paper promotion / re-tune.
 
 ## Not in B5
 
