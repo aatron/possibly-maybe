@@ -4,7 +4,7 @@ Project conventions for coding agents working in **PossiblyMaybe**.
 
 ## In-flight work
 
-**Book round 2** (ML-book topic review, overcorrection audit, venue placement, NBA/NFL/MLB soft-spot hunt) — if continuing it, start at `research_notes/book_round2/HANDOFF.md`.
+**Round 3** (blindside guards, side-by-side variants + shadow ledger, CLV fix, tracker plumbing, NCAAB) — start at `research_notes/round3/PLAN.md` + `PROGRESS.md`. Background: **Book round 2** — `research_notes/book_round2/HANDOFF.md`.
 
 ## Slash commands
 
@@ -23,6 +23,10 @@ Daily paper ritual: what is at risk, ESPN score probe / settle hints, NBA + HOLD
 **Agent must:** run the script from repo root, summarize GOs / settles / at-risk / **Kalshi vs DraftKings** / OUT lanes, and **not** place or settle unless the user confirms.
 
 Kalshi odds come from the public Trade API (`scripts/kalshi_compare.py`, series `KXNBATOTAL` / `KXMLSTOTAL`). **Robinhood** sports event contracts use the same Kalshi asks (separate bankroll). **Crypto.com** Predict totals come from `data-api.crypto.com` (`CryptoComQuotes`). Compare buy prices across venues; prefer the better EV venue for the pick.
+
+## Cardinal rule
+
+**Never bet on an Oregon-based team** — Oregon Ducks, Oregon State Beavers, Portland Timbers, Portland Trail Blazers (any Oregon team, either side, every sport/venue). Enforced in code; never lift or "test" it.
 
 ## Trial rules (stake lanes)
 

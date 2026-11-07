@@ -20,6 +20,8 @@ public sealed class Gate1aResult
     public double LogLoss { get; init; }
     public double Brier { get; init; }
     public double PaperPnlUnits { get; init; }
+    /// <summary>Sum of (¼-Kelly bankroll fraction × unit OU PnL); 0 if not tracked.</summary>
+    public double KellyQuarterPnl { get; init; }
 }
 
 public enum Gate1Model

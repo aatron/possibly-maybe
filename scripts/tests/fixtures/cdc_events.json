@@ -1,0 +1,16 @@
+{
+ "data": [
+  {
+   "id": "399ac37b-521f-4ea1-a3a0-ae223fb8b833",
+   "title": "DAL Cowboys @ IND Colts",
+   "type": "match",
+   "event_date": "2026-11-08T18:00:00Z"
+  },
+  {
+   "id": "d6262678-0e4a-4c98-995e-26529af4470b",
+   "title": "LA Rams @ WAS Commanders",
+   "type": "match",
+   "event_date": "2026-11-08T18:00:00Z"
+  }
+ ]
+}

@@ -47,14 +47,19 @@ public static class DailySlate
 
     public static async Task RunNbaAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
-        var pace = await BuildNbaPaceAsync(dbPath, ct);
+        var (pace, sigma) = await BuildNbaPaceAndSigmaAsync(dbPath, ct);
         var games = await FetchNbaScoreboardAsync(yyyymmdd, ct);
-        Console.WriteLine($"######## NBA SLATE {yyyymmdd} bankroll=${bankroll:F0} champ PaceEff ########");
+        Console.WriteLine($"######## NBA SLATE {yyyymmdd} bankroll=${bankroll:F0} PaceEff+Normalσ={sigma:F2} ########");
         if (games.Count > 0 && await WarnIfStaleAsync("NBA", dbPath, yyyymmdd, ct)) return;
         Console.WriteLine($"Gate: w={ChampConfig.MarketWeight} |exp−line|≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0} ¼Kelly≤2%");
         var gos = 0;
         foreach (var g in games)
         {
+            if (OregonExclusion.IsExcluded("NBA", g.Home, g.Away))
+            {
+                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
+                continue;
+            }
             var modelExp = pace.ExpectedTotal(g.Home, g.Away);
             var line = g.Total ?? await FetchEspnTotalAsync("basketball", "nba", g.EspnId, ct);
             if (line is null)
@@ -73,7 +78,8 @@ public static class DailySlate
             }
 
             var betOver = edge > 0;
-            var p = betOver ? TotalsMath.OverProb(exp, line.Value) : 1 - TotalsMath.OverProb(exp, line.Value);
+            var pOver = TotalsMath.NormalOverProb(exp, line.Value, sigma);
+            var p = betOver ? pOver : 1 - pOver;
             var advice = BetDecider.Advise(p, juice, bankroll, ChampConfig.MinEv);
             var side = betOver ? "OVER" : "UNDER";
             if (!advice.Go)
@@ -135,6 +141,11 @@ public static class DailySlate
                 Console.WriteLine($"SKIP {g.Away}@{g.Home} — unmapped ESPN team");
                 continue;
             }
+            if (OregonExclusion.IsExcluded(sport, g.Home, g.Away))
+            {
+                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
+                continue;
+            }
 
             var (lh, la) = lambdas(g.Home, g.Away);
             var modelExp = lh + la;
@@ -150,7 +161,7 @@ public static class DailySlate
             var juice = -110;
             if (Math.Abs(edge) < minEdge)
             {
-                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  model={modelExp:F2} line={line:F1} edge={edge:+0.2;-0.2}");
+                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  model={modelExp:F2} line={line:F1} edge={edge:+0.00;-0.00}");
                 continue;
             }
 
@@ -168,7 +179,7 @@ public static class DailySlate
             gos++;
             var key = $"{yyyymmdd} {g.Away}@{g.Home}";
             Console.WriteLine(
-                $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F2} edge={edge:+0.2;-0.2} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
+                $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F2} edge={edge:+0.00;-0.00} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
             Console.WriteLine($"    paper-go \"{key}\" {side} {line.Value} {juice} {p:F3} {Math.Abs(edge):F2} {sport}");
         }
 
@@ -177,7 +188,8 @@ public static class DailySlate
             : $"{sport} GO tickets: {gos}");
     }
 
-    private static async Task<PaceEfficiencyBook> BuildNbaPaceAsync(string dbPath, CancellationToken ct)
+    private static async Task<(PaceEfficiencyBook Pace, double Sigma)> BuildNbaPaceAndSigmaAsync(
+        string dbPath, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -189,16 +201,29 @@ public static class DailySlate
         Dictionary<int, GameBox> boxes = [];
         try { boxes = await db.GameBoxes.AsNoTracking().ToDictionaryAsync(b => b.GameId, ct); }
         catch { /* */ }
+        var odds = await db.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL" && o.PriceKind == PriceKind.Open)
+            .ToListAsync(ct);
+        var openByGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.First());
 
         var pace = new PaceEfficiencyBook();
+        var resid = new ExpandingResidualSigma();
         foreach (var g in games)
         {
+            var modelExp = pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            if (openByGame.TryGetValue(g.Id, out var open) && open.Line is { } line
+                && g.HomeScore is { } hs && g.AwayScore is { } as_)
+            {
+                var exp = ChampConfig.MarketWeight * line + (1 - ChampConfig.MarketWeight) * modelExp;
+                resid.Observe(hs + as_ - exp);
+            }
+
             if (!boxes.TryGetValue(g.Id, out var b)) continue;
             pace.Update(g.HomeTeam, g.AwayTeam,
                 b.FgaHome, b.OrebHome, b.TovHome, b.FtaHome, b.PtsHome, b.Fg3aHome,
                 b.FgaAway, b.OrebAway, b.TovAway, b.FtaAway, b.PtsAway, b.Fg3aAway);
         }
-        return pace;
+        return (pace, resid.Sigma);
     }
 
     private static async Task<(string ModelName, double W, double MinEdge, double MinEv, Func<string, string, (double Lh, double La)> Lambdas)>

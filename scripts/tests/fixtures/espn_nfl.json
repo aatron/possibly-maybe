@@ -1,0 +1,217 @@
+{
+ "events": [
+  {
+   "date": "2026-11-08T18:00Z",
+   "shortName": "DAL @ IND",
+   "status": {
+    "clock": 0.0,
+    "displayClock": "0:00",
+    "period": 0,
+    "type": {
+     "id": "1",
+     "name": "STATUS_SCHEDULED",
+     "state": "pre",
+     "completed": false,
+     "description": "Scheduled",
+     "detail": "Sun, November 8th at 1:00 PM EST",
+     "shortDetail": "11/8 - 1:00 PM EST"
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "IND",
+        "name": "Colts"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "DAL",
+        "name": "Cowboys"
+       }
+      }
+     ],
+     "odds": [
+      {
+       "provider": {
+        "id": "100",
+        "name": "Draft Kings",
+        "priority": 1
+       },
+       "details": "DAL -4.5",
+       "overUnder": 51.5,
+       "spread": 4.5,
+       "total": {
+        "displayName": "Total",
+        "shortDisplayName": "Total",
+        "over": {
+         "close": {
+          "line": "o51.5",
+          "odds": "-110"
+         },
+         "open": {
+          "line": "o52.5",
+          "odds": "-110"
+         }
+        },
+        "under": {
+         "close": {
+          "line": "u51.5",
+          "odds": "-110"
+         },
+         "open": {
+          "line": "u52.5",
+          "odds": "-110"
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "date": "2026-11-08T18:00Z",
+   "shortName": "LAR @ WSH",
+   "status": {
+    "clock": 0.0,
+    "displayClock": "0:00",
+    "period": 0,
+    "type": {
+     "id": "1",
+     "name": "STATUS_SCHEDULED",
+     "state": "pre",
+     "completed": false,
+     "description": "Scheduled",
+     "detail": "Sun, November 8th at 1:00 PM EST",
+     "shortDetail": "11/8 - 1:00 PM EST"
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "WSH",
+        "name": "Commanders"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LAR",
+        "name": "Rams"
+       }
+      }
+     ],
+     "odds": [
+      {
+       "provider": {
+        "id": "100",
+        "name": "Draft Kings",
+        "priority": 1
+       },
+       "details": "LAR -4.5",
+       "overUnder": 47.5,
+       "spread": 4.5,
+       "total": {
+        "displayName": "Total",
+        "shortDisplayName": "Total",
+        "over": {
+         "close": {
+          "line": "o47.5",
+          "odds": "-112"
+         },
+         "open": {
+          "line": "o50.5",
+          "odds": "-110"
+         }
+        },
+        "under": {
+         "close": {
+          "line": "u47.5",
+          "odds": "-108"
+         },
+         "open": {
+          "line": "u50.5",
+          "odds": "-110"
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "date": "2026-11-08T18:00Z",
+   "shortName": "FINAL",
+   "status": {
+    "type": {
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "IND",
+        "name": "Colts"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "DAL",
+        "name": "Cowboys"
+       }
+      }
+     ],
+     "odds": [
+      {
+       "provider": {
+        "id": "100",
+        "name": "Draft Kings",
+        "priority": 1
+       },
+       "details": "DAL -4.5",
+       "overUnder": 51.5,
+       "spread": 4.5,
+       "total": {
+        "displayName": "Total",
+        "shortDisplayName": "Total",
+        "over": {
+         "close": {
+          "line": "o51.5",
+          "odds": "-110"
+         },
+         "open": {
+          "line": "o52.5",
+          "odds": "-110"
+         }
+        },
+        "under": {
+         "close": {
+          "line": "u51.5",
+          "odds": "-110"
+         },
+         "open": {
+          "line": "u52.5",
+          "odds": "-110"
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -45,3 +45,21 @@ Gates: w=0.5, |exp−line|≥6, EV≥4%. Folds pre-declared: 2015–2022. L=logi
 **KILL** — Tier A FAIL. Calibration improves (Brier/LL) but no money path under champ gates: identical GO set / flat PnL, worse ¼-Kelly. No Tier C. Do not merge; leave branch unmerged.
 
 *Library note:* no library text treated as instructions.
+
+## User override 2026-11-07
+
+**Decision:** SHIP despite the KILL. Normal Φ((exp−line)/σ) is now the NBA default in live slate (`slate-nba`), `advise-ou` and `StakeLaneHoldoutSim` NBA. σ = expanding residual RMSE from DB history (fallback 22.8 until n≥50); 0 free params. Logistic `OverProb` kept as the backtest comparison kind.
+
+**Why:** GO set is identical (Tier A tied on flat CLV/PnL), but probabilities and EV become honest (Brier/LL better) and Kelly sizing is smaller instead of sized off P≈0.83-0.90. Merged main (soccer Poisson OverProb, venue-fee EV, strike-max-delta) with no soccer/venue behaviour change.
+
+**Sanity (slate-nba, bank $1000, σ=19.31; old = logistic 0.25, EV at -110):**
+
+| date | game | edge | old P / EV | new P / EV |
+|---|---|---:|---|---|
+| 1102 | DET@CHA OVER | 7.1 | 0.855 / 63.2% | 0.644 / 22.9% |
+| 1102 | BOS@HOU OVER | 7.6 | 0.870 / 66.0% | 0.653 / 24.6% |
+| 1102 | UTA@SAS OVER | 6.2 | 0.825 / 57.6% | 0.626 / 19.5% |
+| 1106 | BOS@CHA OVER | 6.4 | 0.831 / 58.6% | 0.629 / 20.1% |
+| 1106 | UTA@DAL OVER | 8.8 | 0.900 / 71.9% | 0.676 / 29.0% |
+
+GO sets equal main's for both dates. (Old column recomputed from the logistic formula, not re-run.)

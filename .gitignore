@@ -75,3 +75,6 @@ data/raw/**
 
 # Local reference library (books/articles), not committed
 library/
+
+# Python bytecode
+__pycache__/
