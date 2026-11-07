@@ -22,6 +22,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | done — getstam/Covers/OddsShark prohibited; SBRO NCAA O→C downloaded (NCAAB 15 szn, NCAAF 16 szn) | notes |
 | W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` `r3/oregon-ncaa` | SBRO CamelCase + Pilots match; PSU not excluded | done | 3ba836a |
 | W15 | Import on-disk odds (round-2 NFL/MLB/NBA files, SBRO NCAA) | Composer | `../pm-r3-import-odds` `r3/import-odds` | O→C seasons before→after | **running** | |
+| W16 | archive.org odds history (search + CDX, download only) | Opus | main (notes + data/raw) | O→C seasons gained | running | |
 | W11 | Write-ups (book review, training review, round3 value) | Opus | main | — | pending | |
 | W12 | Green tests, clean run, push | parent | main | — | pending | |
 
@@ -41,3 +42,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W15 Composer agent launched (`r3/import-odds`). |
 | 2026-11-07 | W3 merged (ca7c064, 128 tests on main). `import-line-tracker`; doubleheader key with HHMM. |
 | 2026-11-07 | W2 merged (1ae2f73, 135 tests). Defaults: edge-cap 25%, NBA k=2, soccer k=0.5. NBA edge-cap fails removed-bet proof (visible loser / live absurd defense only). |
+| 2026-11-07 | User: archive.org line history → W16 launched (Opus, download only; import = Composer). Wave items are being implemented by another session, not this one. |
