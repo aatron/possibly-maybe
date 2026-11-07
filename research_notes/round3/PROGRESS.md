@@ -7,7 +7,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 ## Ledger
 | Id | Item | Agent / model | Worktree / branch | Value proof | Status | Merge |
 |---|---|---|---|---|---|---|
-| W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league | built (eb33257, 74 tests; copy DB: NBA→11-07, MLS→11-02, L1→11-06, LMX→11-07, SA→11-06); resolving DailySlate conflict with main | |
+| W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league: before NBA 10-25, soccer 2026-05 → after NBA 11-07, MLS 11-02, L1 11-06, LMX 11-07, SA 11-06 (live DB) | done | 4dda009 |
 | D0 | User decision: PaperLedger.cs / ui WIP | user | — | — | **waiting on user** | |
 | W1 | Variant registry + shadow ledger + variants.html + backfill | Composer | `../pm-r3-variants` | V0 backfill = champ | pending | |
 | W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` | removed bets lose | pending | |
@@ -29,3 +29,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | Line-tracker cron installed (`*/20`), first run 930 rows. Plan written. |
 | 2026-11-07 | User: research OddsShark / getstam / Covers + free odds APIs → W13 launched (Opus). |
 | 2026-11-07 | W0 built (eb33257). Conflict with main in DailySlate (Oregon + NBA σ) — same agent merging main into branch. |
+| 2026-11-07 | W0 merged (4dda009, 98 tests). Live DB refreshed (backup possiblymaybe.db.bak-pre-refresh-20261107). Slate 11-07/08: 21 GOs, 2 Oregon exclusions; Serie A still EV 74% (Frosinone@Cagliari) → W2 edge cap / W9. |
