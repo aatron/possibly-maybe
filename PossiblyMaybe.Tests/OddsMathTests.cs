@@ -129,4 +129,19 @@ public class OddsMathTests
         await Assert.That(feeEv).IsLessThan(blindEv);
         await Assert.That(feeEv).IsLessThan(0.04);
     }
+
+    [Test]
+    public async Task ExpectedValue_RobinhoodFeeCanSkipWhenKalshiGoes()
+    {
+        // Same ask: Kalshi all-in 0.5175, RH all-in 0.52. p=0.539 → Kalshi EV≥4%, RH EV<4%.
+        const double pModel = 0.539;
+        const double ask = 0.50;
+        var kalshiEv = OddsMath.ExpectedValue(
+            pModel, OddsMath.AmericanFromBuyPrice(OddsMath.EffectiveBuyPrice(ask, PaperVenues.Kalshi)));
+        var rhEv = OddsMath.ExpectedValue(
+            pModel, OddsMath.AmericanFromBuyPrice(OddsMath.EffectiveBuyPrice(ask, PaperVenues.Robinhood)));
+        await Assert.That(kalshiEv).IsGreaterThanOrEqualTo(0.04);
+        await Assert.That(rhEv).IsLessThan(0.04);
+        await Assert.That(rhEv).IsLessThan(kalshiEv);
+    }
 }
