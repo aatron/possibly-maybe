@@ -46,3 +46,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W1 merged (48b9e5e, 141 tests). Shadow ledger + variants.html; Defaults aligned to Guards (25% / NBA k=2). W5/W6/W7 launched. |
 | 2026-11-07 | W6 merged (4f62fab, 151 tests). KXLIGUE1TOTAL / KXSERIEATOTAL / KXLIGAMXTOTAL; RH fee already on place path. |
 | 2026-11-07 | W15 merged (a830d85, 155 tests) + live `import-disk-odds` (backup possiblymaybe.db.bak-pre-w15-*). NFL 14→18, NBA 16→17, MLB 12→15, NCAAB 0→15, NCAAF 0→16. ~17 NFL rows still unmapped (LosAngeles/NewYork). |
+| 2026-11-07 | Wrote revisit_candidates.md (2-month signal math; past approaches by closeness; injury/trade live-only variants). Spec input for Composer. |
