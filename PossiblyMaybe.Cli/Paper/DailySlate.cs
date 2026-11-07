@@ -36,6 +36,11 @@ public static class DailySlate
         var gos = 0;
         foreach (var g in games)
         {
+            if (OregonExclusion.IsExcluded("NBA", g.Home, g.Away))
+            {
+                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
+                continue;
+            }
             var modelExp = pace.ExpectedTotal(g.Home, g.Away);
             var line = g.Total ?? await FetchEspnTotalAsync("basketball", "nba", g.EspnId, ct);
             if (line is null)
@@ -114,6 +119,11 @@ public static class DailySlate
             if (g.Home.StartsWith("?", StringComparison.Ordinal) || g.Away.StartsWith("?", StringComparison.Ordinal))
             {
                 Console.WriteLine($"SKIP {g.Away}@{g.Home} — unmapped ESPN team");
+                continue;
+            }
+            if (OregonExclusion.IsExcluded(sport, g.Home, g.Away))
+            {
+                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
                 continue;
             }
 

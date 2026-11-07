@@ -446,6 +446,11 @@ switch (command)
             Console.Error.WriteLine("usage: paper-go <gameKey> <OVER|UNDER|HOME|AWAY> <line> <dkOdds> <modelProb> <absEdge> <sport>");
             return 1;
         }
+        if (OregonExclusion.IsExcludedGameKey(args[7], args[1]))
+        {
+            Console.Error.WriteLine($"EXCLUDED (Oregon rule): {args[1]} — never bet an Oregon-based team.");
+            return 4;
+        }
         var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
         var (db, path) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
@@ -481,6 +486,11 @@ switch (command)
             return 1;
         }
         var modelProb = args.Length > 6 && double.TryParse(args[6], out var mp) ? mp : 0;
+        if (OregonExclusion.IsExcludedGameKey(null, args[1]))
+        {
+            Console.Error.WriteLine($"EXCLUDED (Oregon rule): {args[1]} — never bet an Oregon-based team.");
+            return 4;
+        }
         var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
         var (db, path) = await PaperLedger.OpenAsync(paperPath);
         await using (db)

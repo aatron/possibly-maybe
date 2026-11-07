@@ -54,6 +54,12 @@ public static class StakeLaneHoldoutSim
         Console.WriteLine("Real RH/Crypto fills were likely closer to −120…−150 on many strikes; use those rows.");
     }
 
+    // Cardinal rule: backtest must match live (no Oregon-team bets).
+    static void AddBet(List<Bet> l, string home, string away, Bet b)
+    {
+        if (!OregonExclusion.IsExcluded(b.Sport, home, away)) l.Add(b);
+    }
+
     static void PrintVenue(string label, List<Bet> bets, int american)
     {
         Console.WriteLine($"\n{label}");
@@ -126,14 +132,14 @@ public static class StakeLaneHoldoutSim
                     {
                         var ev = OddsMath.ExpectedValue(pOver, juice);
                         if (ev >= minEv)
-                            outBets.Add(new Bet(g.TipoffUtc, "NBA", pOver, Math.Abs(edge), ou > 0));
+                            AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, "NBA", pOver, Math.Abs(edge), ou > 0));
                     }
                     else
                     {
                         var pUnder = 1 - pOver;
                         var ev = OddsMath.ExpectedValue(pUnder, juice);
                         if (ev >= minEv)
-                            outBets.Add(new Bet(g.TipoffUtc, "NBA", pUnder, Math.Abs(edge), ou < 0));
+                            AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, "NBA", pUnder, Math.Abs(edge), ou < 0));
                     }
                 }
 
@@ -205,13 +211,13 @@ public static class StakeLaneHoldoutSim
                 if (edge > 0)
                 {
                     if (OddsMath.ExpectedValue(pOver, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, "MLS", pOver, Math.Abs(edge), ou > 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, "MLS", pOver, Math.Abs(edge), ou > 0));
                 }
                 else
                 {
                     var pUnder = 1 - pOver;
                     if (OddsMath.ExpectedValue(pUnder, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, "MLS", pUnder, Math.Abs(edge), ou < 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, "MLS", pUnder, Math.Abs(edge), ou < 0));
                 }
             }
 
@@ -278,13 +284,13 @@ public static class StakeLaneHoldoutSim
                 if (edge > 0)
                 {
                     if (OddsMath.ExpectedValue(pOver, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, sport, pOver, Math.Abs(edge), ou > 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, sport, pOver, Math.Abs(edge), ou > 0));
                 }
                 else
                 {
                     var pUnder = 1 - pOver;
                     if (OddsMath.ExpectedValue(pUnder, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, sport, pUnder, Math.Abs(edge), ou < 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, sport, pUnder, Math.Abs(edge), ou < 0));
                 }
             }
 
@@ -343,13 +349,13 @@ public static class StakeLaneHoldoutSim
                 if (edge > 0)
                 {
                     if (OddsMath.ExpectedValue(pOver, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, sport, pOver, Math.Abs(edge), ou > 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, sport, pOver, Math.Abs(edge), ou > 0));
                 }
                 else
                 {
                     var pUnder = 1 - pOver;
                     if (OddsMath.ExpectedValue(pUnder, -110) >= minEv)
-                        outBets.Add(new Bet(g.TipoffUtc, sport, pUnder, Math.Abs(edge), ou < 0));
+                        AddBet(outBets, g.HomeTeam, g.AwayTeam, new Bet(g.TipoffUtc, sport, pUnder, Math.Abs(edge), ou < 0));
                 }
             }
 

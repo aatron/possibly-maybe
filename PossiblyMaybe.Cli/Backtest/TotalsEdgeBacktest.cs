@@ -168,7 +168,7 @@ public static class TotalsEdgeBacktest
                 if (ou != 0)
                     acc.AddPred(pOver, ou > 0);
 
-                if (Math.Abs(edge) >= minAbsEdge)
+                if (Math.Abs(edge) >= minAbsEdge && !OregonExclusion.IsExcluded("NBA", g.HomeTeam, g.AwayTeam))
                 {
                     if (edge > 0)
                     {
@@ -291,7 +291,7 @@ public static class TotalsEdgeBacktest
                     if (ou != 0)
                         fold.AddPred(pOver, ou > 0);
 
-                    if (Math.Abs(edge) >= minAbsEdge)
+                    if (Math.Abs(edge) >= minAbsEdge && !OregonExclusion.IsExcluded("NBA", g.HomeTeam, g.AwayTeam))
                     {
                         if (edge > 0)
                         {
