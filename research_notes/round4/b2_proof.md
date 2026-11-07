@@ -30,6 +30,10 @@ Expect:
 - **Tier A (pooling):** re-eval stored candidates once A5 (or pack) tags `opening-weeks` / `promoted*` on season openers + promoted clubs; compare CLV / PnL vs V0 on that subset only (EB was within ~1u full-season — hypothesis is the soft spot is the tagged subset).
 - **Live shadow (roster-reset):** set `RosterFlag` on candidates after major trades / transfers; shadow settles automatically; no Tier A (live-only per checklist).
 
+| Round 5 | Status |
+|---|---|
+| **T4a pooling fold table (once)** | Done 2026-11-07 — `research_notes/round5/t4a_proof.md` (`+pooling` on MLS / Ligue 1 / Liga MX / Serie A). All four **FAIL** (thin opener n or no Kelly majority) → Shadow-FAIL. No paper promotion. |
+
 ```bash
 dotnet run -c Release --project PossiblyMaybe.Cli -- variants-reeval
 ```
