@@ -702,13 +702,15 @@ switch (command)
     case "paper-go":
     {
         // Independent DK + Kalshi + Robinhood + Crypto.com
+        // Optional trailing "assumed" when DK juice fell back to −110 (R6).
         if (args.Length < 8
             || !double.TryParse(args[3], out var line)
             || !int.TryParse(args[4], out var odds)
             || !double.TryParse(args[5], out var modelProb)
             || !double.TryParse(args[6], out var absEdge))
         {
-            Console.Error.WriteLine("usage: paper-go <gameKey> <OVER|UNDER|HOME|AWAY> <line> <dkOdds> <modelProb> <absEdge> <sport>");
+            Console.Error.WriteLine(
+                "usage: paper-go <gameKey> <OVER|UNDER|HOME|AWAY> <line> <dkOdds> <modelProb> <absEdge> <sport> [assumed]");
             return 1;
         }
         if (OregonExclusion.IsExcludedGameKey(args[7], args[1]))
@@ -716,16 +718,21 @@ switch (command)
             Console.Error.WriteLine($"EXCLUDED (Oregon rule): {args[1]} — never bet an Oregon-based team.");
             return 4;
         }
+        var dkAssumed = args.Length > 8
+            && args[8].Equals("assumed", StringComparison.OrdinalIgnoreCase);
         var paperPath = PaperLedger.DefaultDbPath(FindRepoRoot());
         var (db, path) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
             var (dk, others) = await PaperLedger.PlaceDualVenueAsync(
-                db, args[1], args[2], line, odds, modelProb, absEdge, args[7]);
-            Console.WriteLine($"PAPER-GO {args[1]} {args[2]} {line} dk@{odds} p={modelProb:F3} edge={absEdge:F2} → {path}");
+                db, args[1], args[2], line, odds, modelProb, absEdge, args[7], dkAssumed);
+            var juiceTag = dkAssumed ? " assumed" : "";
+            Console.WriteLine(
+                $"PAPER-GO {args[1]} {args[2]} {line} dk@{odds}{juiceTag} p={modelProb:F3} edge={absEdge:F2} → {path}");
             Console.WriteLine($"  DK     placed={dk.Count}" + (dk.Count > 0 ? $" group={dk[0].TicketGroup}" : " (skip/already open/no EV)"));
             foreach (var r in dk)
-                Console.WriteLine($"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}");
+                Console.WriteLine(
+                    $"    #{r.Id} {r.Scheme,-10} ${r.StakeDollars:F2} @{r.AmericanOdds}{(r.AssumedJuice ? " assumed" : "")}");
             foreach (var o in others)
             {
                 Console.WriteLine($"  {o.Venue,-8} placed={o.Placed.Count}" + (o.Placed.Count > 0 ? $" group={o.Placed[0].TicketGroup}" : ""));
@@ -1061,7 +1068,7 @@ static void PrintUsage()
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go
-          paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport>
+          paper-go <key> <side> <line> <dkOdds> <p> <absEdge> <sport> [assumed]
                                  Independent DK + Kalshi place (each venue EV-gates / sizes alone)
           settle-go <key|group> <W|L|P> [finalTotal] [closeLine] [closeOdds]
                                  final=score total; close=market only (auto from warehouse/tracker)

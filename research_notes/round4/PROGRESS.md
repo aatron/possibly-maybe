@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** Wave R (R6, R8–R10); D1–D5. R1+R2+R7 done.
+**Next action:** Wave R (R8–R10); D1–D5. R1–R3, R5–R7 done.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -69,5 +69,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | C6-bundesliga + C6-nhl merged (244 tests). A5/C7 + Wave R remain. |
 | 2026-11-07 | A5 seasonality-scan + C7 SPREAD/ML candidate store landed (254 tests). Wave R next. |
 | 2026-11-07 | R1 as-of cutoff + R2 append-only DecisionLog landed (260 tests). Proofs `r1_proof.md` / `r2_proof.md`. |
+| 2026-11-07 | R7 AsOfView skeleton + leak proofs landed (264 tests). Proof `r7_proof.md`. |
 | 2026-11-07 | R6 real DK price on paper tickets: PaperChamp + AssumedJuice / CLV exclusion (267 tests). Proof `r6_proof.md` (before 0% real on 180 DK tickets). |
-| 2026-11-07 | R7 AsOfView skeleton + leak proofs landed (264 tests). Proof `r7_proof.md`. R6 WIP left unstaged in tree. |

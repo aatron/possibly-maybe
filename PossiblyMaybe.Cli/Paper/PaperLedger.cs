@@ -41,16 +41,31 @@ public static class PaperLedger
     public static async Task<double> BankrollAsync(AppDbContext db, string scheme, string venue, CancellationToken ct = default)
         => Math.Max(0, await EquityAsync(db, scheme, venue, ct) - await ReservedAsync(db, scheme, venue, ct));
 
-    /// <summary>Global live CLV: all settled paper rows with ClvPts (every venue/scheme).</summary>
+    /// <summary>Global live CLV: settled rows with ClvPts; assumed-juice tickets excluded (R6).</summary>
     public static async Task<(int N, double Mean)> LiveClvStatsAsync(AppDbContext db, CancellationToken ct = default)
     {
         var pts = await db.LedgerEntries.AsNoTracking()
-            .Where(r => r.Result != null && r.ClvPts != null)
+            .Where(r => r.Result != null && r.ClvPts != null && !r.AssumedJuice)
             .Select(r => r.ClvPts!.Value)
             .ToListAsync(ct);
         if (pts.Count == 0)
             return (0, 0);
         return (pts.Count, pts.Average());
+    }
+
+    /// <summary>DK tickets with a real (non-assumed) place price — R6 proof metric.</summary>
+    public static async Task<(int Total, int RealPrice, double Pct)> DkRealPriceStatsAsync(
+        AppDbContext db, CancellationToken ct = default)
+    {
+        var dk = PaperVenues.DraftKings;
+        var rows = await db.LedgerEntries.AsNoTracking()
+            .Where(r => r.Venue == dk)
+            .Select(r => r.AssumedJuice)
+            .ToListAsync(ct);
+        if (rows.Count == 0)
+            return (0, 0, 0);
+        var real = rows.Count(a => !a);
+        return (rows.Count, real, 100.0 * real / rows.Count);
     }
 
     public static async Task<bool> Kelly5PromotedAsync(AppDbContext db, CancellationToken ct = default)
@@ -71,10 +86,12 @@ public static class PaperLedger
         double modelProb,
         double absEdge,
         string sport,
+        bool dkAssumedJuice = false,
         CancellationToken ct = default)
     {
         var dk = await PlaceAllSchemesAsync(
-            db, gameKey, side, line, dkAmericanOdds, modelProb, absEdge, sport, PaperVenues.DraftKings, ct);
+            db, gameKey, side, line, dkAmericanOdds, modelProb, absEdge, sport, PaperVenues.DraftKings,
+            assumedJuice: dkAssumedJuice, ct: ct);
 
         var others = new List<VenuePlaceNote>();
 
@@ -130,7 +147,8 @@ public static class PaperLedger
         }
 
         var placed = await PlaceAllSchemesAsync(
-            db, gameKey, side, q.Strike, american, modelProb, absEdge, sport, venue, ct);
+            db, gameKey, side, q.Strike, american, modelProb, absEdge, sport, venue,
+            assumedJuice: false, ct: ct);
         var note = placed.Count == 0
             ? $"{label} SKIP — EV ok but all lanes dust/ruined @ {american:+0;-0}"
             : $"{label} GO — {q.SideLabel} ask=${q.BuyPrice:F3} all-in=${effectiveBuy:F3} (~{american:+0;-0}) strike={q.Strike} id={q.Ticker}";
@@ -148,6 +166,7 @@ public static class PaperLedger
         double absEdge,
         string sport,
         string venue = PaperVenues.DraftKings,
+        bool assumedJuice = false,
         CancellationToken ct = default)
     {
         side = side.ToUpperInvariant();
@@ -189,6 +208,7 @@ public static class PaperLedger
                 AbsEdge = absEdge,
                 Sport = sport.ToUpperInvariant(),
                 Venue = venue,
+                AssumedJuice = assumedJuice,
             };
             db.LedgerEntries.Add(row);
             placed.Add(row);
@@ -332,14 +352,18 @@ public static class PaperLedger
         row.MinutesBeforeStart = meta?.MinutesBeforeStart;
         row.CrossBookClose = meta is { SameBook: false, CloseLine: not null };
         // Explicit CLI close with no meta → treat as same-book for the ticket venue.
+        // Assumed place juice → store close for audit but no CLV (R6).
         var sameBook = meta?.SameBook ?? closeLine is not null;
         if (sameBook && closeLine is { } cl)
         {
             row.CrossBookClose = false;
             row.CloseBook ??= SameBookClose.BookLabel(SameBookClose.BookForVenue(row.Venue));
-            row.ClvPts = row.Side is "OVER" ? cl - row.Line
-                : row.Side is "UNDER" ? row.Line - cl
-                : row.Line - cl;
+            if (!row.AssumedJuice)
+            {
+                row.ClvPts = row.Side is "OVER" ? cl - row.Line
+                    : row.Side is "UNDER" ? row.Line - cl
+                    : row.Line - cl;
+            }
         }
     }
 
@@ -480,7 +504,7 @@ public static class PaperLedger
             row.CloseCapturedAt = resolved.CloseCapturedAt;
             row.MinutesBeforeStart = resolved.MinutesBeforeStart;
             row.CrossBookClose = !resolved.SameBook;
-            if (resolved.SameBook)
+            if (resolved.SameBook && !row.AssumedJuice)
             {
                 row.ClvPts = row.Side is "OVER" ? cl - row.Line
                     : row.Side is "UNDER" ? row.Line - cl
@@ -577,6 +601,8 @@ public static class PaperLedger
         Console.WriteLine($"Stake trial → {StakeTrial.HorizonEnd:yyyy-MM-dd}  seed ${StakeTrial.SeedDollars:F0}/lane/venue");
         var (clvN, clvMean) = await LiveClvStatsAsync(db, ct);
         Console.WriteLine(StakeGate.StatusLine(clvN, clvMean));
+        var (dkN, dkReal, dkPct) = await DkRealPriceStatsAsync(db, ct);
+        Console.WriteLine($"DK real price (R6): {dkReal}/{dkN} ({dkPct:0.#}%) — assumed excluded from CLV/PnL verdicts");
         var (settledN, trueCloseN) = await TrueCloseStatsAsync(db, ct);
         var pct = settledN == 0 ? 0.0 : 100.0 * trueCloseN / settledN;
         Console.WriteLine($"Same-book CLV: {trueCloseN}/{settledN} settled ({pct:0.#}%) have same-book CloseLine");

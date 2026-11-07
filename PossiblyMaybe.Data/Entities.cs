@@ -167,4 +167,6 @@ public sealed class LedgerEntry
     public string Sport { get; set; } = "";
     /// <summary>DK or Kalshi — independent $1000×scheme books.</summary>
     public string Venue { get; set; } = "DK";
+    /// <summary>True when AmericanOdds was assumed (−110) — excluded from CLV / PnL verdicts (R6).</summary>
+    public bool AssumedJuice { get; set; }
 }

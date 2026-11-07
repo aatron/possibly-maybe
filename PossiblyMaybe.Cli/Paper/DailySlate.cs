@@ -334,9 +334,11 @@ public static class DailySlate
     {
         var gos = 0;
         var sport = candidates.Count > 0 ? candidates[0].Sport : "";
+        // R6: paper GO / paper-go lines use real DK juice when present (V0 stays −110 for shadow).
+        var paperV = VariantRegistry.PaperChamp;
         foreach (var c in candidates)
         {
-            var d = VariantRegistry.Evaluate(VariantRegistry.V0, c);
+            var d = VariantRegistry.Evaluate(paperV, c);
             var key = VariantRegistry.GameKey(c);
             if (!d.Pick)
             {
@@ -358,9 +360,11 @@ public static class DailySlate
             }
 
             gos++;
+            var juiceTag = d.AssumedPrice ? " assumed" : "";
             Console.WriteLine(
-                $"GO  {key}  {d.Side} {d.Line:F1} @{d.AmericanOdds}  model={c.ModelExp:F1} edge={d.AbsEdge:F1} EV={d.Ev:P1} stake=${BetDecider.Advise(d.ModelProb, d.AmericanOdds, bankroll, c.MinEv).StakeFraction * bankroll:F2}");
-            Console.WriteLine($"    paper-go \"{key}\" {d.Side} {d.Line} {d.AmericanOdds} {d.ModelProb:F3} {d.AbsEdge:F2} {c.Sport}");
+                $"GO  {key}  {d.Side} {d.Line:F1} @{d.AmericanOdds}{juiceTag}  model={c.ModelExp:F1} edge={d.AbsEdge:F1} EV={d.Ev:P1} stake=${BetDecider.Advise(d.ModelProb, d.AmericanOdds, bankroll, c.MinEv).StakeFraction * bankroll:F2}");
+            Console.WriteLine(
+                $"    paper-go \"{key}\" {d.Side} {d.Line} {d.AmericanOdds} {d.ModelProb:F3} {d.AbsEdge:F2} {c.Sport}{(d.AssumedPrice ? " assumed" : "")}");
         }
 
         Console.WriteLine(gos == 0

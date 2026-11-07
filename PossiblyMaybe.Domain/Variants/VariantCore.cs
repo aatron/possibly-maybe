@@ -98,7 +98,9 @@ public sealed record VariantDecision(
     double ModelProb,
     double Ev,
     double AbsEdge,
-    string? SkipReason);
+    string? SkipReason,
+    /// <summary>True when AmericanOdds fell back to −110 (no real venue price).</summary>
+    bool AssumedPrice = false);
 
 public static class VariantSkip
 {
@@ -197,34 +199,34 @@ public static class VariantRegistry
         var side = betOver ? "OVER" : "UNDER";
         var pOver = OverProb(v, c, exp, line);
         var p = betOver ? pOver : 1.0 - pOver;
-        var juice = Juice(v, c, betOver);
+        var (juice, assumed) = ResolveJuice(v, c, betOver);
         var ev = OddsMath.ExpectedValue(p, juice);
 
         var minEv = v.MinEv ?? c.MinEv;
         if (ev < minEv)
-            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LowEv);
+            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LowEv, assumed);
         if (v.EdgeCap && ev > v.EdgeCapEv)
-            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.EdgeCap);
+            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.EdgeCap, assumed);
         if (v.LineMove && LineMovedAgainst(c, betOver, v))
-            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LineMove);
+            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LineMove, assumed);
         if (v.LineMoveFollow && !LineMovedToward(c, betOver, v))
-            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoFollow);
+            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoFollow, assumed);
         if (v.ConsensusOutlier)
         {
             var odds = VenueDecimalOdds(c, betOver);
             if (odds.Count < 2)
-                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoVenueAsks);
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoVenueAsks, assumed);
             if (!MarketStructureFamily.IsSoftOutlier(odds, v.ConsensusAlpha))
-                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoOutlier);
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoOutlier, assumed);
         }
         if (v.ConformalFilter)
         {
             var hw = c.ConformalHalfWidth ?? HigherRiskFamily.GaussianHalfWidth(c.NbaSigma);
             if (hw is null || !HigherRiskFamily.LineExcludedByInterval(exp, line, hw.Value))
-                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.Conformal);
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.Conformal, assumed);
         }
 
-        return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
+        return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null, assumed);
     }
 
     private static double BlendedExp(this Variant v, SlateCandidate c, double line)
@@ -276,12 +278,16 @@ public static class VariantRegistry
         };
     }
 
-    private static int Juice(Variant v, SlateCandidate c, bool betOver)
+    /// <summary>DK american for the side; Assumed=true when falling back to −110.</summary>
+    public static (int American, bool Assumed) ResolveJuice(Variant v, SlateCandidate c, bool betOver)
     {
-        if (!v.UseRealJuice) return -110;
+        if (!v.UseRealJuice) return (-110, true);
         var raw = betOver ? c.DkOverAmerican : c.DkUnderAmerican;
-        return raw is null or 0 ? -110 : raw.Value;
+        return raw is null or 0 ? (-110, true) : (raw.Value, false);
     }
+
+    /// <summary>Paper champ path: always prefer real DK juice when present (R6).</summary>
+    public static Variant PaperChamp => V0 with { UseRealJuice = true };
 
     private static bool LineMovedAgainst(SlateCandidate c, bool betOver, Variant v)
     {

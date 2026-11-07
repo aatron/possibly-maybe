@@ -116,6 +116,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                      "ALTER TABLE LedgerEntries ADD COLUMN CloseCapturedAt TEXT",
                      "ALTER TABLE LedgerEntries ADD COLUMN MinutesBeforeStart REAL",
                      "ALTER TABLE LedgerEntries ADD COLUMN CrossBookClose INTEGER NOT NULL DEFAULT 0",
+                     "ALTER TABLE LedgerEntries ADD COLUMN AssumedJuice INTEGER NOT NULL DEFAULT 0",
                  })
         {
             try { await db.Database.ExecuteSqlRawAsync(sql, ct); }
