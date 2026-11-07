@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for parallel Composer agents W1 / W2 / W3 / W14 to finish; parent reviews and merges `--no-ff`. Then W5 / W6 / W7 / W15. W4 deferred. W8 + W13 done.
+**Next action:** wait for parallel Composer agents W1 / W2 / W3 to finish; parent reviews and merges `--no-ff`. W15 running. Then W5 / W6 / W7. W4 deferred. W8 / W13 / W14 done.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -20,8 +20,8 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
 | W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | done — getstam/Covers/OddsShark prohibited; SBRO NCAA O→C downloaded (NCAAB 15 szn, NCAAF 16 szn) | notes |
-| W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` `r3/oregon-ncaa` | 0 Oregon games in NCAA data | **running** — **must precede W10/W15 NCAA** | |
-| W15 | Import on-disk odds (round-2 NFL/MLB/NBA files, SBRO NCAA) | Composer | `../pm-r3-import-odds` | O→C seasons before→after | pending | |
+| W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` `r3/oregon-ncaa` | SBRO CamelCase + Pilots match; PSU not excluded | done | 3ba836a |
+| W15 | Import on-disk odds (round-2 NFL/MLB/NBA files, SBRO NCAA) | Composer | `../pm-r3-import-odds` `r3/import-odds` | O→C seasons before→after | **running** | |
 | W11 | Write-ups (book review, training review, round3 value) | Opus | main | — | pending | |
 | W12 | Green tests, clean run, push | parent | main | — | pending | |
 
@@ -37,3 +37,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W13 done → odds_history_sources.md. Added W14 (Oregon NCAA gap) + W15 (import on-disk odds). |
 | 2026-11-07 | W14 Composer agent launched (`r3/oregon-ncaa` @ e4c2dbc). |
 | 2026-11-07 | W8 merged (b3e6ca2, 99 tests). Kelly5 capped 2% until global live CLV n≥100 and mean>0; status via `paper`. |
+| 2026-11-07 | W14 merged (3ba836a, 111 tests). CamelCase normalize + Pilots; dropped misleading NCAA `psu` code. |
+| 2026-11-07 | W15 Composer agent launched (`r3/import-odds`). |
