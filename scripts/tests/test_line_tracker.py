@@ -17,10 +17,19 @@ class ParseTests(unittest.TestCase):
         self.games = lt.parse_espn(load("espn_nfl.json"), "NFL")
 
     def test_espn_skips_finished_and_canonicalises(self):
-        self.assertEqual([g["key"] for g in self.games], ["20261108 DAL@IND", "20261108 LAR@WAS"])
+        # 18:00Z Nov = 13:00 ET — key includes HHMM so doubleheaders do not collide
+        self.assertEqual([g["key"] for g in self.games], ["20261108 DAL@IND 1300", "20261108 LAR@WAS 1300"])
         r = self.games[0]["rows"][0]
         self.assertEqual((r["line"], r["source"], r["over_american"], r["open_line"]), (51.5, "Draft Kings", -110, 52.5))
         self.assertAlmostEqual(r["over_ask"], 110 / 210)
+
+    def test_game_key_splits_doubleheaders(self):
+        a = datetime(2026, 10, 28, 23, 5, tzinfo=timezone.utc)   # 19:05 ET Oct 28
+        b = datetime(2026, 10, 29, 2, 10, tzinfo=timezone.utc)    # 22:10 ET Oct 28
+        k1, k2 = lt.game_key(a, "MIL", "TB"), lt.game_key(b, "MIL", "TB")
+        self.assertEqual(k1, "20261028 MIL@TB 1905")
+        self.assertEqual(k2, "20261028 MIL@TB 2210")
+        self.assertNotEqual(k1, k2)
 
     def test_kalshi_match_with_alias_and_rows(self):
         mk = load("kalshi_nfl.json")["markets"]

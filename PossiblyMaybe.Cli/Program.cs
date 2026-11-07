@@ -130,6 +130,15 @@ switch (command)
         await Round2OddsImporter.ImportFlancastAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-line-tracker":
+    {
+        // line_snapshots.db → OddsSnapshots (open/close); never touches paper.db
+        var repoRoot = FindRepoRoot();
+        var snapDb = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "data", "line_snapshots.db");
+        var dbPath = args.Length > 2 ? args[2] : Path.Combine(repoRoot, "possiblymaybe.db");
+        await LineTrackerImporter.ImportAsync(snapDb, dbPath);
+        return 0;
+    }
     case "import-soccer":
     {
         // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
@@ -639,6 +648,7 @@ static void PrintUsage()
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
+          import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)

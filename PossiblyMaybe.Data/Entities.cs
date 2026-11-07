@@ -20,6 +20,8 @@ public enum Book
     DraftKings = 3,
     FanDuel = 4,
     Mgm = 5,
+    Kalshi = 6,
+    CryptoCom = 7,
     Other = 99,
 }
 
