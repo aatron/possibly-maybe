@@ -9,7 +9,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 (archive.org) 
 |---|---|---|---|---|---|---|
 | A1 | Candidate store + variants-as-filters + backfill | Composer | `../pm-r4-a1` `r4/a1` | V0/V3 reproduce; 1-file variants | pending | |
 | A2 | Line tracker all leagues + importer | Composer | `../pm-r4-a2` `r4/a2` | O+C coverage ≥ 80% | pending | |
-| A3 | Wave radar + BH + trial registry + ladder | Composer | `../pm-r4-a3` `r4/a3` | synthetic detection | pending | |
+| A3 | Wave radar + BH + trial registry + ladder | Composer | `../pm-r4-a3` `r4/a3` | `a3_proof.md` synthetic | done (branch) | |
 | A4 | League / venue census | Opus / Auto | notes | ranked list | pending | |
 | A5 | Seasonality scan | Composer | `../pm-r4-a5` `r4/a5` | phase table (BH) | pending (A1) | |
 | B1 | Availability: +absence, +injury-guard | Composer | `../pm-r4-b1` | Tier A / live | pending (A1) | |
@@ -40,3 +40,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 (archive.org) 
 | When | Event |
 |---|---|
 | 2026-11-07 | Round 3 finished (main @ ecde719). Round 4 plan + checklist written. |
+| 2026-11-07 | A3 done on `r4/a3`: WaveRadar + variants-radar + Waves UI + synthetic proof (`a3_proof.md`). |

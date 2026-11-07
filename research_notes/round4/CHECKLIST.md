@@ -43,7 +43,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 
 ## E. Infrastructure for "waves of soft spots"
 - [ ] Shadow ledger stores **every candidate** (all games × all model outputs), so a variant is a filter, not a re-run → A1
-- [ ] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3
+- [x] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3 (`r4/a3`)
 - [ ] Seasonality scan: historical CLV by season phase → wave calendar → A5
-- [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
+- [x] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3 (`r4/a3`)
 - [ ] Generic sport-pack template so a league is a config, not a project → C0
