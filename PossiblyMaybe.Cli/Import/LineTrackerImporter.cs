@@ -103,6 +103,23 @@ public static class LineTrackerImporter
             $"line-tracker coverage: {nBoth}/{nGames} games ({pct:0.#}%) have open+close");
     }
 
+    /// <summary>Last pre-start total from line_snapshots.db for a paper game key (sport + yyyymmdd away@home).</summary>
+    public static (double Line, int American)? TryCloseFromSnapshots(
+        string snapshotsDbPath, string sport, string gameKey)
+    {
+        if (!File.Exists(snapshotsDbPath)) return null;
+        var raw = ReadSnapshots(snapshotsDbPath)
+            .Where(r => (string.IsNullOrEmpty(sport)
+                         || r.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase))
+                        && (r.GameKey.Equals(gameKey, StringComparison.OrdinalIgnoreCase)
+                            || r.GameKey.StartsWith(gameKey + " ", StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        if (raw.Count == 0) return null;
+        var preferEspn = raw.Any(r => r.Venue.Equals("espn", StringComparison.OrdinalIgnoreCase));
+        var oc = ResolveOpenClose(raw, preferEspnOpenLine: preferEspn);
+        return oc.CloseLine is { } cl ? (cl, oc.CloseAmerican ?? -110) : null;
+    }
+
     /// <summary>Open = earliest capture; close = last with minutes_to_start &gt; 0. ESPN may use open_line.</summary>
     public static OpenClose ResolveOpenClose(IReadOnlyList<SnapRow> rows, bool preferEspnOpenLine)
     {

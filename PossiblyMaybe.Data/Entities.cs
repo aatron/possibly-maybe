@@ -141,10 +141,12 @@ public sealed class LedgerEntry
     public double ModelProb { get; set; }
     public double? CloseLine { get; set; }
     public int? CloseAmerican { get; set; }
+    /// <summary>Final score total (home+away). Never used as CloseLine.</summary>
+    public double? FinalTotal { get; set; }
     /// <summary>W, L, P, or null while open.</summary>
     public string? Result { get; set; }
     public double? PnL { get; set; }
-    /// <summary>Spread CLV in points: betLine − closeLine (same side).</summary>
+    /// <summary>Market-close CLV in points (OVER: close−line; UNDER: line−close). Null without a true close.</summary>
     public double? ClvPts { get; set; }
     public bool IsPaper { get; set; } = true;
     /// <summary>Stake scheme code: Flat, Kelly2, Kelly5, EvProp, ConfBand, EdgeBand.</summary>

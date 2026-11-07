@@ -179,9 +179,9 @@ for d in dates:
             else:
                 result = "?"
             print(f"    => SETTLE {key}  final_total={total:.1f} vs {side} {line} → {result}")
-            # closeLine arg is market close, not final score (audit_overcorrection). Omit until we have close.
-            print(f"       dotnet run --project PossiblyMaybe.Cli -c Release -- settle-go \"{key}\" {result}")
-            print(f"       # optional: append [closeLine] [closeOdds] when market close is known — never use final_total")
+            # arg3 = FinalTotal (score). CloseLine auto-resolved from warehouse/tracker — never pass final as close.
+            print(f"       dotnet run --project PossiblyMaybe.Cli -c Release -- settle-go \"{key}\" {result} {total:.1f}")
+            print(f"       # optional: append [closeLine] [closeOdds] only for a known market close")
         else:
             print(f"    .. open {key} still {hit['status']} ({hit['away_score']}-{hit['home_score']})")
 PY
