@@ -539,7 +539,7 @@ switch (command)
     }
     case "tier-a-b8":
     {
-          tier-a-b8 [db]                 B8 +conformal / kalman vs V0 (TrialLedger)
+        // tier-a-b8 [db] — +conformal / kalman vs V0; TrialLedger; keep only if mean CLV ≥ V0
         var repoRoot = FindRepoRoot();
         var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
             ? args[^1]
