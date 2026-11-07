@@ -1,9 +1,11 @@
+using PossiblyMaybe.Cli.Backtest;
 using PossiblyMaybe.Domain;
 
 namespace PossiblyMaybe.Cli.Variants;
 
 /// <summary>
 /// <c>variants-radar</c>: scan shadow CLV → BH table + wave states → data/radar.db + dashboard waves.
+/// Loads A5 seasonality BH keys as a CUSUM prior only (T5).
 /// </summary>
 public static class VariantRadar
 {
@@ -14,13 +16,20 @@ public static class VariantRadar
         CancellationToken ct = default)
     {
         var obs = await RadarShadowSource.LoadFromPathAsync(variantsDbPath, ct);
+        var seasonKeys = await SeasonalityCalendarStore.LoadSignificantKeysAsync(
+            SeasonalityCalendarStore.PathBesideVariants(variantsDbPath), ct);
         var (rdb, _) = await RadarStore.OpenAsync(radarDbPath, ct);
         await using (rdb)
         {
             var prior = await RadarStore.LoadStagesAsync(rdb, ct);
-            var results = WaveRadar.Scan(obs, prior);
+            var results = WaveRadar.Scan(obs, prior, seasonalityBhKeys: seasonKeys);
             await RadarStore.SaveAsync(rdb, results, ct);
             PrintTable(results);
+            if (seasonKeys.Count > 0)
+                Console.WriteLine(
+                    $"seasonality prior: {seasonKeys.Count} BH-sig phase(s) → CUSUM h={WaveRadar.CusumHSeasonPrior} (else h={WaveRadar.CusumH}); cannot promote alone");
+            else
+                Console.WriteLine("seasonality prior: (none — empty calendar or no BH-sig phases)");
             WriteSummaryLine(results);
 
             if (!string.IsNullOrEmpty(uiDir))

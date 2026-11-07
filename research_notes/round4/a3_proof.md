@@ -43,5 +43,5 @@ bash scripts/pm-calculate.sh   # includes waves summary after shadow
 
 - CUSUM `h=10` tuned on synthetic σ≈3; live CLV scale may need a recalibration pass.
 - p-values use normal approx (n≥20); small-n cells stay non-significant by design.
-- Seasonality prior (A5) not wired — radar is CLV-only for now.
+- Seasonality prior wired in Round 5 T5 (`t5_proof.md`): BH-sig phase lowers CUSUM h to 7; cannot promote alone. Live calendar empty until settled CLV.
 - Empty shadow ledger → graceful empty waves line (N_trials=0).
