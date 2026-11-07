@@ -46,4 +46,4 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3
 - [ ] Seasonality scan: historical CLV by season phase → wave calendar → A5
 - [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
-- [ ] Generic sport-pack template so a league is a config, not a project → C0
+- [x] Generic sport-pack template so a league is a config, not a project → C0
