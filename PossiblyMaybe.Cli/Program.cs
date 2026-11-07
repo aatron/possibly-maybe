@@ -143,6 +143,23 @@ switch (command)
         await LineTrackerImporter.ImportAsync(snapDb, dbPath);
         return 0;
     }
+    case "backfill-espn-lines":
+    {
+        // T3: ESPN pickcenter / core odds → TOTAL open+close for replay window
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        DateOnly? from = args.Length > 2 && DateOnly.TryParseExact(args[2], "yyyyMMdd", null,
+            System.Globalization.DateTimeStyles.None, out var f) ? f : null;
+        DateOnly? to = args.Length > 3 && DateOnly.TryParseExact(args[3], "yyyyMMdd", null,
+            System.Globalization.DateTimeStyles.None, out var t) ? t : null;
+        await EspnLineBackfill.RunAsync(dbPath, from, to);
+        return 0;
+    }
     case "import-disk-odds":
     {
         // W15: SBRO NFL/NBA/NCAA + Arnav MLB already on disk; prints before→after O→C coverage
@@ -1095,6 +1112,7 @@ static void PrintUsage()
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
+          backfill-espn-lines [db] [from=yyyyMMdd] [to=yyyyMMdd]  T3 ESPN O+C totals (default 20261024–20261106)
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
           sweep-mlb / sweep-nfl / sweep-mls / sweep-ncaab  Soft-spot sweeps
           slate-ncaab [yyyymmdd] [bank]  NCAAB totals shadow slate (PaceEff/Scoring)

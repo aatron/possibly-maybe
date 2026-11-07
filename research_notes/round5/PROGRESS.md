@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for the user to say "implement", then launch wave 1 (T1, T2a, T2b, T3) in parallel.
+**Next action:** wave 1 siblings (T1 / T2a / T2b) still planned; T3 done on `r5/t3` (await merge).
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
@@ -10,7 +10,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T1 | Durable vault + trial ledger | Composer | `../pm-r5-t1` `r5/t1` | restart double-burn refused | planned | |
 | T2a | Import NHL SBRO | Composer | `../pm-r5-t2a` `r5/t2a` | seasons × O+C coverage; Anaheim ≠ Oregon | planned | |
 | T2b | Import AUS NFL totals | Composer | `../pm-r5-t2b` `r5/t2b` | 2022 filled; % real prices | planned | |
-| T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | decision can't see close | planned | |
+| T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | `t3_proof.md`; decision can't see close | **done** | |
 | T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | fold table vs V0 | planned | |
 | T4b | Tier A once: refs-nba, fitted / strict / EV-band | Composer | `../pm-r5-t4b` `r5/t4b` | fold table vs V0 | planned | |
 | T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | fold table vs V0 | planned | |
@@ -23,3 +23,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | When | Event |
 |---|---|
 | 2026-11-07 | Round 5 plan written (plan only, per user). |
+| 2026-11-07 | T3 done on `r5/t3`: `backfill-espn-lines` wrote 812 DK TOTAL O+C snaps (406/409 games; 3 Bundesliga HSV misses; NCAAF/NCAAB 0 in warehouse). Replay close-only skips=0. Proof `t3_proof.md`. |
