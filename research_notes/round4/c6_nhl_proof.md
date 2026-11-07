@@ -10,7 +10,7 @@
 |---|---|
 | Sport pack (C0 template) | **shipped** — `NhlSportPack` / `NhlShadowConfig` |
 | Shadow + line_tracker | **shipped** — ESPN / Kalshi `KXNHLTOTAL` / Crypto.com `NHL` |
-| Tier A walk-forward | **shadow-only** — no free multi-season O→C in warehouse; `TierAFolds=[]`, `TierAReady=false` |
+| Tier A walk-forward | **gated at C6** — unlocked in Round 5 T6 after T2a O→C; see `research_notes/round5/t6_proof.md` (TierA=FAIL; Tier C look-once burned) |
 | Oregon | Winterhawks names kept excluded (no NHL franchise) |
 
 Promote Tier A only after tracker age or Odds API fills same-book open→close.

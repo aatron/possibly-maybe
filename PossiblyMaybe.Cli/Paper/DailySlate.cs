@@ -201,9 +201,9 @@ public static class DailySlate
         if (candidates[0].Stale)
             await WarnIfStaleAsync("NHL", dbPath, yyyymmdd, ct);
         else
-            Console.WriteLine($"Gate: w={pack.MarketWeight} |exp−line|≥{pack.MinAbsTotalEdge} EV≥{pack.MinEv:P0} (shadow-only; Tier A={!NhlSportPack.TierAReady})");
+            Console.WriteLine($"Gate: w={pack.MarketWeight} |exp−line|≥{pack.MinAbsTotalEdge} EV≥{pack.MinEv:P0} (shadow-only; TierAReady={NhlSportPack.TierAReady})");
 
-        Console.WriteLine($"SHADOW-ONLY NHL (no O→C Tier A yet) — {candidates.Count} candidates → ledger (no paper-go).");
+        Console.WriteLine($"SHADOW-ONLY NHL (Tier A → radar only; no paper-go) — {candidates.Count} candidates → ledger.");
         await RecordShadowAsync(dbPath, candidates, ct);
     }
 

@@ -433,6 +433,46 @@ switch (command)
         await GuardSweepTierA.RunAsync(dbPath);
         return 0;
     }
+    case "tier-a-nhl":
+    {
+        // tier-a-nhl [db] — T6 C6-nhl Tier A folds + Tier C vault burn
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await NhlTotalsTierA.RunAsync(dbPath);
+        return 0;
+    }
+    case "tier-a-nfl":
+    {
+        // tier-a-nfl [db] — T6 C3 redo: EPA+roof folds with 2022 + real prices (no wind)
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await NflEpaTierA.RunAsync(dbPath);
+        return 0;
+    }
     case "tier-a-nfl-wind":
     {
         // tier-a-nfl-wind [db] — nfl-wind alone vs EPA+roof on filled O→C folds
@@ -1152,6 +1192,8 @@ static void PrintUsage()
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-shadow-soccer [SPORT|all] [db]  Tier A folds for LALIGA/EFL shadow packs
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
+          tier-a-nhl [db]                T6 NHL Tier A folds + Tier C vault burn
+          tier-a-nfl [db]                T6 NFL EPA+roof Tier A (2022 + real prices)
           tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
           tier-a-nba-volume [db]         B3 nba-volume / efg vs V0 (CLV/bet)
           tier-a-b8 [db]                 B8 +conformal / kalman vs V0

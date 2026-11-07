@@ -29,10 +29,10 @@ public static class NflSportPack
             "stretch-run",
             "playoffs",
         ],
-        // Pre-declared folds with filled O→C in warehouse (2007–21 SBRO/flancast; ESPN 2023).
+        // Pre-declared folds with filled O→C (T2b fills 2022 + real AUS prices).
         TierAFolds:
         [
-            "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2023",
+            "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023",
         ],
         TrainMaxSeason: "2023",
         TierCHoldoutSeason: "2024",

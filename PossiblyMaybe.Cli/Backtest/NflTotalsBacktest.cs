@@ -99,7 +99,19 @@ public static class NflTotalsBacktest
                     ? hold
                     : (g.Season == holdout ? hold : train!);
 
-                var juice = -110;
+                // Prefer real open juice (T2b AUS); fall back −110 when AssumedJuice / missing.
+                var overSnap = snaps.FirstOrDefault(s =>
+                    s.PriceKind == PriceKind.Open
+                    && s.Side.Equals("over", StringComparison.OrdinalIgnoreCase)
+                    && !s.AssumedJuice
+                    && s.AmericanOdds != 0) ?? open;
+                var underSnap = snaps.FirstOrDefault(s =>
+                    s.PriceKind == PriceKind.Open
+                    && s.Side.Equals("under", StringComparison.OrdinalIgnoreCase)
+                    && !s.AssumedJuice
+                    && s.AmericanOdds != 0);
+                var overJuice = overSnap is { AmericanOdds: not 0 } o ? o.AmericanOdds : -110;
+                var underJuice = underSnap is { AmericanOdds: not 0 } u ? u.AmericanOdds : -110;
                 var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, betLine);
                 var clv = hasClv ? TotalsMath.OverClvPoints(betLine, closeLine) : 0;
 
@@ -108,16 +120,16 @@ public static class NflTotalsBacktest
                     if (edge > 0)
                     {
                         var p = TotalsMath.OverProb(exp, market, sharpness: 0.2);
-                        var ev = OddsMath.ExpectedValue(p, juice);
+                        var ev = OddsMath.ExpectedValue(p, overJuice);
                         if (ev >= minEv)
-                            acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou), hasClv);
+                            acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(overJuice, ou), hasClv);
                     }
                     else
                     {
                         var p = 1 - TotalsMath.OverProb(exp, market, sharpness: 0.2);
-                        var ev = OddsMath.ExpectedValue(p, juice);
+                        var ev = OddsMath.ExpectedValue(p, underJuice);
                         if (ev >= minEv)
-                            acc.AddBet(hasClv ? -clv : 0, ou < 0, TotalsMath.OuPnL(juice, -ou), hasClv);
+                            acc.AddBet(hasClv ? -clv : 0, ou < 0, TotalsMath.OuPnL(underJuice, -ou), hasClv);
                     }
                 }
 
@@ -132,7 +144,7 @@ public static class NflTotalsBacktest
     public static async Task SweepAsync(string dbPath, CancellationToken ct = default)
     {
         Console.WriteLine("######## NFL TOTALS (EPA + roof/wind) ########");
-        Console.WriteLine("NOTE: requireOpenClose=true (D1 flancast O→C overlays). AssumedJuice −110.");
+        Console.WriteLine("NOTE: requireOpenClose=true. Real AmericanOdds when present (else −110).");
         var rows = new List<(double W, double Edge, Gate1aResult Train, Gate1aResult Hold)>();
         foreach (var w in new[] { 0.5, 0.6, 0.7, 0.85 })
         foreach (var edge in new[] { 2.0, 3.0, 4.0, 5.0, 6.0 })

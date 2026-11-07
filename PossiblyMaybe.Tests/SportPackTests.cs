@@ -115,7 +115,7 @@ public class SportPackTests
 
     [Test]
 
-    public async Task Nhl_Pack_ShadowOnly_And_WinterhawksOregon()
+    public async Task Nhl_Pack_TierAReady_And_WinterhawksOregon()
     {
         var pack = SportPackRegistry.Get("NHL");
 
@@ -129,10 +129,16 @@ public class SportPackTests
         await Assert.That(pack.BankrollSeed).IsEqualTo(NhlShadowConfig.BankrollSeed);
         await Assert.That(pack.RatingBookKind).IsEqualTo("ScoringBook-goals-EMA");
         await Assert.That(pack.ResultsSource).Contains("hockey/nhl");
-        await Assert.That(pack.OddsSources.Any(s => s.Contains("KXNHLTOTAL"))).IsTrue();
-        await Assert.That(pack.TierAFolds.Count).IsEqualTo(0);
-        await Assert.That(NhlSportPack.TierAReady).IsFalse();
-        await Assert.That(pack.TrainMaxSeason).IsEqualTo("none");
+        await Assert.That(pack.OddsSources.Any(s => s.Contains("KXNHLTOTAL") || s.Contains("SBRO"))).IsTrue();
+        // T6: Tier A unlocked after T2a O→C; newest full season = look-once Tier C
+        await Assert.That(NhlSportPack.TierAReady).IsTrue();
+        await Assert.That(pack.TierAFolds).IsEquivalentTo(
+            ["2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020-2021"]);
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2020-2021");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2021-2022");
+        await Assert.That(pack.SkipSeason).IsEqualTo("2022-2023");
+        await Assert.That(Vault.IsSealed(pack, "2021-2022")).IsTrue();
+        await Assert.That(pack.TierAFolds.Contains(pack.TierCHoldoutSeason)).IsFalse();
         await Assert.That(pack.SeasonPhases.Count).IsGreaterThan(0);
         await Assert.That(pack.ResolveAlias("Boston Bruins")).IsEqualTo("BOS");
         await Assert.That(pack.ResolveAlias("VGK")).IsEqualTo("VGK");
@@ -143,6 +149,9 @@ public class SportPackTests
         await Assert.That(OregonExclusion.IsExcluded("NHL", "winterhawks")).IsTrue();
         await Assert.That(OregonExclusion.IsExcluded("NHL", "BOS")).IsFalse();
         await Assert.That(OregonExclusion.IsExcluded("NHL", "Seattle Kraken")).IsFalse();
+        // Anaheim Ducks are not Oregon (T2a trap)
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Anaheim")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Anaheim Ducks")).IsFalse();
     }
 
     [Test]
@@ -234,7 +243,7 @@ public class SportPackTests
         await Assert.That(pack.ResolveAlias("Green Bay Packers")).IsEqualTo("GB");
         await Assert.That(pack.OddsSources.Count).IsGreaterThanOrEqualTo(3);
         await Assert.That(pack.TierAFolds).IsEquivalentTo(
-            ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2023"]);
+            ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]);
         await Assert.That(NflShadowMarkets.ShadowTrackerSeries).IsEquivalentTo(
             ["KXNFLTOTAL", "KXNFL1HTOTAL", "KXNFLTEAMTOTAL"]);
         await Assert.That(NflWind.ArmId).IsEqualTo("nfl-wind");

@@ -22,8 +22,8 @@ public static class NflWindTierA
         var holdout = pack.TierCHoldoutSeason;
 
         Console.WriteLine($"######## Tier A: {NflWind.ArmId} alone (EPA+roof ± wind≥{NflWind.WindMphThreshold}) ########");
-        Console.WriteLine($"Gates (HOLD FAIL research): w={w} |exp−line|≥{edge} EV≥{minEv:P0}  AssumedJuice −110");
-        Console.WriteLine($"requireOpenClose=true. Holdout {holdout} burned (not for selection). N_trials={NTrials}");
+        Console.WriteLine($"Gates (HOLD FAIL research): w={w} |exp−line|≥{edge} EV≥{minEv:P0}");
+        Console.WriteLine($"requireOpenClose=true; real prices when present. Holdout {holdout} burned (not for selection). N_trials={NTrials}");
 
         var windCtx = await CountWindContextAsync(dbPath, ct);
         Console.WriteLine($"Weather DB: NflGameContexts={windCtx.Total} withWind={windCtx.WithWind} extreme(≥{NflWind.WindMphThreshold})={windCtx.Extreme}");
