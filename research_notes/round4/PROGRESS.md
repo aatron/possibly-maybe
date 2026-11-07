@@ -46,7 +46,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | D3 | Training-process review | Auto / Composer | reports | — | pending (end) | |
 | D4 | Round-4 waves report | Auto / Composer | reports | — | pending (end) | |
 | D5 | Green tests, clean run, push | parent | main | — | pending | |
-| r3-W16 | archive.org odds (carried) | Auto / Composer (was Opus/Claude Code) | notes + data/raw | O→C seasons | running — reassign off Opus if still mid-flight | |
+| r3-W16 | archive.org odds (carried) | **stopped** (Opus, 2026-11-07) → resume Auto/Composer | notes + data/raw | O→C seasons | **paused — see `W16_archive_org_HANDOFF.md`** (CDX indexes, MLB 2010–21 xlsx minus 2016, NFL aussportsbetting, NCAAF 2017-18 fuller, density table done; SBRO gap files + verify + notes remain) | |
 
 ## Log
 | When | Event |
@@ -61,3 +61,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | B9 merged @ 10ef936 (174 tests). |
 | 2026-11-07 | User: blind day-by-day sim for any new approach → R7–R10 added; recommend R7–R9 before wave B (variants written once as strategies). |
 | 2026-11-07 | Merged B2, B5, C2, C4 (191+ tests). |
+| 2026-11-07 | r3-W16 Opus agent stopped on user request; progress inventoried → `W16_archive_org_HANDOFF.md`. |
