@@ -114,15 +114,14 @@ public static class DailySlate
     public static Task RunMlsAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
         => RunSoccerAsync("MLS", dbPath, yyyymmdd, bankroll, ct);
 
-    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow FAIL (LALIGA/EFL).</summary>
-    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow (EPL).</summary>
+    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow (LALIGA/EFL/EPL).</summary>
     public static async Task RunSoccerAsync(
         string sport, string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         sport = sport.ToUpperInvariant();
         if (!SoccerEspnPaths.ContainsKey(sport))
-            throw new ArgumentException($"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL.");
-            throw new ArgumentException($"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: EPL.");
+            throw new ArgumentException(
+                $"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL, EPL.");
 
         List<SlateCandidate> candidates;
         try
@@ -450,12 +449,9 @@ public static class DailySlate
                 });
         }
 
-        if (sport is "LALIGA" or "EFL")
+        if (sport is "LALIGA" or "EFL" or "EPL")
         {
             var pack = SportPackRegistry.Get(sport);
-        if (sport == "EPL")
-        {
-            var pack = SportPackRegistry.Epl;
             var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: 2.7);
             foreach (var g in games)
                 book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);

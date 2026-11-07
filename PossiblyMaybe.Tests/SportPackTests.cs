@@ -78,6 +78,9 @@ public class SportPackTests
         await Assert.That(OregonExclusion.IsExcluded("EFL", "Oregon Ducks")).IsTrue();
         await Assert.That(OregonExclusion.IsExcluded("LALIGA", "Real Madrid")).IsFalse();
         await Assert.That(OregonExclusion.IsExcluded("EFL", "Leeds United")).IsFalse();
+    }
+
+    [Test]
     public async Task Ncaab_Pack_Matches_ChampConfig_Oregon_And_HoldoutLock()
     {
         var pack = SportPackRegistry.Get("NCAAB");

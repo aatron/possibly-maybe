@@ -20,8 +20,7 @@ public static class ShutoffProof
         {
             await NbaAsync(wdb, ct),
         };
-        foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL" })
-        foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "EPL" })
+        foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL" })
             rows.Add(await SoccerAsync(wdb, sport, ct));
         return rows;
     }

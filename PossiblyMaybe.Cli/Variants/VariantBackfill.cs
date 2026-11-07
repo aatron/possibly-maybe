@@ -20,7 +20,8 @@ public static class VariantBackfill
     public static readonly string ReplayEnd = "20261106";
 
     /// <summary>r3 path + C6 shadow leagues — backfill every season present in the warehouse for these.</summary>
-    public static readonly string[] R3Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "EPL"];
+    public static readonly string[] R3Leagues =
+        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL"];
 
     public static async Task RunAsync(
         string warehouseDbPath,
@@ -38,7 +39,6 @@ public static class VariantBackfill
                     .Select(g => g.Sport).Distinct().ToListAsync(ct))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL" })
             foreach (var sport in R3Leagues)
             {
                 if (!present.Contains(sport))

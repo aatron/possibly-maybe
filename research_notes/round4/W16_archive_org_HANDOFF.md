@@ -1,6 +1,6 @@
 # Handoff: r3-W16, archive.org odds history (stopped mid-run)
 
-**Status:** stopped by the user's request on 2026-11-07 (Claude Code / Opus run halted; the plan is now no-Opus). **Resume with Auto / Composer.** Research + download only: **no code changes, no DB imports, no git ops** by the research step. Importing is a separate Composer step (extends r3 W15 / round-4 C0 league packs).
+**Status:** stopped by the user's request on 2026-11-07 (Claude Code / Opus run halted). **Composer only** — no Opus, no Auto, no Task/subagents. Do the remaining work in this Composer session (or a fresh Composer chat). Research + download only: **no code changes, no DB imports**; commit notes when the notes file is ready (data stays gitignored). Importing is a separate Composer step (extends r3 W15 / round-4 C0 league packs).
 **Original spec:** `research_notes/round3/PLAN.md` § W16. **Ledger row:** `research_notes/round4/PROGRESS.md` → `r3-W16`.
 
 ## Rules (unchanged)

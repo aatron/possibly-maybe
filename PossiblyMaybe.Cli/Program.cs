@@ -554,14 +554,11 @@ switch (command)
     }
     case "slate-soccer":
     {
-        // slate-soccer <SPORT> [yyyymmdd] [bank]  — paper MLS|LIGUE1|LIGAMX|SERIEA; shadow LALIGA|EFL
+        // slate-soccer <SPORT> [yyyymmdd] [bank] — paper MLS|LIGUE1|LIGAMX|SERIEA; shadow LALIGA|EFL|EPL
         if (args.Length < 2)
         {
-            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|LALIGA|EFL> [yyyymmdd] [bank]");
-        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA|EPL
-        if (args.Length < 2)
-        {
-            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|EPL> [yyyymmdd] [bank]");
+            Console.Error.WriteLine(
+                "usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|LALIGA|EFL|EPL> [yyyymmdd] [bank]");
             return 1;
         }
         var repoRoot = FindRepoRoot();
