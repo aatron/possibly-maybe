@@ -7,6 +7,11 @@ public static class SportPackRegistry
         new(StringComparer.OrdinalIgnoreCase)
         {
             [MlsSportPack.Instance.LeagueId] = MlsSportPack.Instance,
+            [NflSportPack.Instance.LeagueId] = NflSportPack.Instance,
+        };
+
+    public static SportPack Mls => MlsSportPack.Instance;
+    public static SportPack Nfl => NflSportPack.Instance;
             [MlbSportPack.Instance.LeagueId] = MlbSportPack.Instance,
             [NcaafSportPack.Instance.LeagueId] = NcaafSportPack.Instance,
         };
