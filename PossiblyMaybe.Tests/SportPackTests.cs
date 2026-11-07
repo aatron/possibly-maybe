@@ -79,6 +79,7 @@ public class SportPackTests
 
     // Avoid Cli project ref from tests for holdout string — pack is source of truth.
     static string NcaabTotalsBacktestHoldout() => SportPackRegistry.Ncaab.TierCHoldoutSeason;
+    [Test]
     public async Task Epl_Pack_Holdout_Locked_Before_Tuning()
     {
         var pack = SportPackRegistry.Get("EPL");
