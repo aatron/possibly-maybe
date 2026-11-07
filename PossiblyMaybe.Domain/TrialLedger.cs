@@ -14,10 +14,26 @@ public sealed record TrialEntry(
 /// <summary>
 /// Append-only trial log: every sim run records strategy hash + params + date range.
 /// Reports print <see cref="NTrials"/> and deflated Sharpe / BH context automatically.
+/// T1: file-backed via <see cref="Open"/> so rows survive process restarts.
 /// </summary>
 public sealed class TrialLedger
 {
     readonly List<TrialEntry> _entries = [];
+    readonly string? _dbPath;
+
+    public TrialLedger() : this(null) { }
+
+    TrialLedger(string? dbPath) => _dbPath = dbPath;
+
+    /// <summary>Load prior trial rows from an append-only vault DB.</summary>
+    public static TrialLedger Open(string dbPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dbPath);
+        VaultDb.EnsureSchema(dbPath);
+        var ledger = new TrialLedger(dbPath);
+        ledger.Load();
+        return ledger;
+    }
 
     public IReadOnlyList<TrialEntry> Entries => _entries;
 
@@ -43,7 +59,53 @@ public sealed class TrialLedger
             gridSize,
             DateTimeOffset.UtcNow);
         _entries.Add(entry);
+
+        if (_dbPath is not null)
+        {
+            using var con = VaultDb.OpenConnection(_dbPath);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText =
+                """
+                INSERT INTO TrialEntries
+                    (StrategyHash, ParamsJson, DateFrom, DateTo, GridSize, RecordedAt)
+                VALUES
+                    ($hash, $params, $from, $to, $grid, $at);
+                """;
+            cmd.Parameters.AddWithValue("$hash", entry.StrategyHash);
+            cmd.Parameters.AddWithValue("$params", entry.ParamsJson);
+            cmd.Parameters.AddWithValue("$from", entry.DateFrom);
+            cmd.Parameters.AddWithValue("$to", entry.DateTo);
+            cmd.Parameters.AddWithValue("$grid", entry.GridSize);
+            cmd.Parameters.AddWithValue("$at", entry.RecordedAt.ToString("O"));
+            cmd.ExecuteNonQuery();
+        }
+
         return entry;
+    }
+
+    void Load()
+    {
+        if (_dbPath is null) return;
+        using var con = VaultDb.OpenConnection(_dbPath);
+        using var cmd = con.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT StrategyHash, ParamsJson, DateFrom, DateTo, GridSize, RecordedAt
+            FROM TrialEntries
+            ORDER BY Id;
+            """;
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            var at = DateTimeOffset.Parse(reader.GetString(5));
+            _entries.Add(new TrialEntry(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4),
+                at));
+        }
     }
 
     /// <summary>Footer line for every report: N_trials, DSR, BH multiplicity context.</summary>

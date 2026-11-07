@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T16:49:02.8246718\u002B00:00",
+  "generatedAt": "2026-11-07T18:08:31.0347805\u002B00:00",
   "horizonEnd": "2026-12-31",
   "seed": 1000,
   "venues": {
@@ -87,6 +87,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -105,6 +106,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -123,6 +125,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -141,6 +144,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -159,6 +163,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -177,6 +182,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -195,6 +201,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -213,6 +220,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -231,6 +239,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -249,6 +258,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -267,6 +277,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -285,6 +296,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -303,6 +315,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -321,6 +334,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -339,6 +353,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -357,6 +372,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -375,6 +391,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -393,6 +410,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -411,6 +429,7 @@
               "result": "W",
               "pnl": 9.09,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -429,6 +448,7 @@
               "result": "W",
               "pnl": 9.09,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -447,6 +467,7 @@
               "result": "L",
               "pnl": -10,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -465,6 +486,7 @@
               "result": "L",
               "pnl": -10,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -483,6 +505,7 @@
               "result": "L",
               "pnl": -10,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -501,6 +524,7 @@
               "result": "L",
               "pnl": -10,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -518,8 +542,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -10,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -536,8 +561,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 9.09,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -554,8 +580,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -10,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -572,8 +599,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 9.09,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -590,8 +618,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 9.09,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -608,8 +637,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 9.09,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -697,6 +727,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -715,6 +746,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -733,6 +765,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -751,6 +784,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -769,6 +803,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -787,6 +822,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -805,6 +841,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -823,6 +860,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -841,6 +879,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -859,6 +898,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -877,6 +917,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -895,6 +936,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -913,6 +955,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -931,6 +974,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -949,6 +993,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -967,6 +1012,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -985,6 +1031,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -1003,6 +1050,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -1021,6 +1069,7 @@
               "result": "W",
               "pnl": 16.97,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -1039,6 +1088,7 @@
               "result": "W",
               "pnl": 17.32,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -1057,6 +1107,7 @@
               "result": "L",
               "pnl": -19.44,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -1075,6 +1126,7 @@
               "result": "L",
               "pnl": -19.84,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -1093,6 +1145,7 @@
               "result": "L",
               "pnl": -20.24,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -1111,6 +1164,7 @@
               "result": "L",
               "pnl": -20.65,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -1128,8 +1182,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -20,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -1146,8 +1201,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 18.18,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -1164,8 +1220,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -20,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -1182,8 +1239,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 18.18,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -1200,8 +1258,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 18.18,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -1218,8 +1277,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 18.18,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -1307,6 +1367,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -1325,6 +1386,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -1343,6 +1405,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -1361,6 +1424,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -1379,6 +1443,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -1397,6 +1462,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -1415,6 +1481,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -1433,6 +1500,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -1451,6 +1519,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -1469,6 +1538,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -1487,6 +1557,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -1505,6 +1576,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -1523,6 +1595,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -1541,6 +1614,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -1559,6 +1633,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -1577,6 +1652,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -1595,6 +1671,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -1613,6 +1690,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -1631,6 +1709,7 @@
               "result": "W",
               "pnl": 38.57,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -1649,6 +1728,7 @@
               "result": "W",
               "pnl": 23.78,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -1667,6 +1747,7 @@
               "result": "L",
               "pnl": -36.07,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -1685,6 +1766,7 @@
               "result": "L",
               "pnl": -49.41,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -1703,6 +1785,7 @@
               "result": "L",
               "pnl": -45.7,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -1721,6 +1804,7 @@
               "result": "L",
               "pnl": -54.42,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -1738,8 +1822,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -30.17,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -1756,8 +1841,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 39.17,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -1774,8 +1860,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -24.28,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -1792,8 +1879,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 34.48,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -1810,8 +1898,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 23.66,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -1828,8 +1917,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 45.45,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -1917,6 +2007,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -1935,6 +2026,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -1953,6 +2045,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -1971,6 +2064,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -1989,6 +2083,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -2007,6 +2102,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -2025,6 +2121,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -2043,6 +2140,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -2061,6 +2159,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -2079,6 +2178,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -2097,6 +2197,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -2115,6 +2216,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -2133,6 +2235,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -2151,6 +2254,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -2169,6 +2273,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -2187,6 +2292,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -2205,6 +2311,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -2223,6 +2330,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -2241,6 +2349,7 @@
               "result": "W",
               "pnl": 16.98,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -2259,6 +2368,7 @@
               "result": "W",
               "pnl": 17.33,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -2277,6 +2387,7 @@
               "result": "L",
               "pnl": -19.45,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -2295,6 +2406,7 @@
               "result": "L",
               "pnl": -19.85,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -2313,6 +2425,7 @@
               "result": "L",
               "pnl": -20.25,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -2331,6 +2444,7 @@
               "result": "L",
               "pnl": -20.67,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -2348,8 +2462,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -18.08,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -2366,8 +2481,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 16.77,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -2384,8 +2500,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -18.82,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -2402,8 +2519,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 17.46,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -2420,8 +2538,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 17.82,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -2438,8 +2557,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 18.18,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -2527,6 +2647,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -2545,6 +2666,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -2563,6 +2685,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -2581,6 +2704,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -2599,6 +2723,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -2617,6 +2742,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -2635,6 +2761,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -2653,6 +2780,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -2671,6 +2799,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -2689,6 +2818,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -2707,6 +2837,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -2725,6 +2856,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -2743,6 +2875,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -2761,6 +2894,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -2779,6 +2913,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -2797,6 +2932,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -2815,6 +2951,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -2833,6 +2970,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -2851,6 +2989,7 @@
               "result": "W",
               "pnl": 7.77,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -2869,6 +3008,7 @@
               "result": "W",
               "pnl": 6.53,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -2887,6 +3027,7 @@
               "result": "L",
               "pnl": -7.94,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -2905,6 +3046,7 @@
               "result": "L",
               "pnl": -9.79,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -2923,6 +3065,7 @@
               "result": "L",
               "pnl": -8.53,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -2941,6 +3084,7 @@
               "result": "L",
               "pnl": -12.78,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -2958,8 +3102,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -7.57,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -2976,8 +3121,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 9.17,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -2994,8 +3140,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -7.02,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -3012,8 +3159,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 7.35,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -3030,8 +3178,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 6.48,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -3048,8 +3197,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 10.75,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -3137,6 +3287,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "68f73ec34296",
               "venue": "DK"
@@ -3155,6 +3306,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6e184bce943e",
               "venue": "DK"
@@ -3173,6 +3325,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "bb7f687754f3",
               "venue": "DK"
@@ -3191,6 +3344,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b869c3478696",
               "venue": "DK"
@@ -3209,6 +3363,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3391b0cb2813",
               "venue": "DK"
@@ -3227,6 +3382,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "34ce829298cf",
               "venue": "DK"
@@ -3245,6 +3401,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c3aadf8d4187",
               "venue": "DK"
@@ -3263,6 +3420,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6ee0e0bf15cb",
               "venue": "DK"
@@ -3281,6 +3439,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "00e726119e09",
               "venue": "DK"
@@ -3299,6 +3458,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "8be8f3003b8b",
               "venue": "DK"
@@ -3317,6 +3477,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "cbca435ec602",
               "venue": "DK"
@@ -3335,6 +3496,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "0ef70bd9c073",
               "venue": "DK"
@@ -3353,6 +3515,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "caa1191a0b37",
               "venue": "DK"
@@ -3371,6 +3534,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "23dc1ac263bf",
               "venue": "DK"
@@ -3389,6 +3553,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "b6af1518954b",
               "venue": "DK"
@@ -3407,6 +3572,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "80f184b5ae9c",
               "venue": "DK"
@@ -3425,6 +3591,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c340e22a35d4",
               "venue": "DK"
@@ -3443,6 +3610,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "61d7b1616842",
               "venue": "DK"
@@ -3461,6 +3629,7 @@
               "result": "W",
               "pnl": 6.87,
               "closeLine": null,
+              "finalTotal": 3,
               "clvPts": null,
               "group": "691e78c41770",
               "venue": "DK"
@@ -3479,6 +3648,7 @@
               "result": "W",
               "pnl": 4.78,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "7ecd176a1999",
               "venue": "DK"
@@ -3497,6 +3667,7 @@
               "result": "L",
               "pnl": -6.47,
               "closeLine": null,
+              "finalTotal": 7,
               "clvPts": null,
               "group": "3ee6a087014a",
               "venue": "DK"
@@ -3515,6 +3686,7 @@
               "result": "L",
               "pnl": -9.71,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "c4780261b376",
               "venue": "DK"
@@ -3533,6 +3705,7 @@
               "result": "L",
               "pnl": -5.33,
               "closeLine": null,
+              "finalTotal": 4,
               "clvPts": null,
               "group": "57f769997e32",
               "venue": "DK"
@@ -3551,6 +3724,7 @@
               "result": "L",
               "pnl": -12.16,
               "closeLine": null,
+              "finalTotal": 6,
               "clvPts": null,
               "group": "9e0c0e4e4db7",
               "venue": "DK"
@@ -3568,8 +3742,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -4.88,
-              "closeLine": 1,
-              "clvPts": -1.5,
+              "closeLine": null,
+              "finalTotal": 1,
+              "clvPts": null,
               "group": "25ed543c030c",
               "venue": "DK"
             },
@@ -3586,8 +3761,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 4.45,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "ba5f90c683f0",
               "venue": "DK"
             },
@@ -3604,8 +3780,9 @@
               "absEdge": 0,
               "result": "L",
               "pnl": -4.93,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "031a3fba940d",
               "venue": "DK"
             },
@@ -3622,8 +3799,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 4.5,
-              "closeLine": 2,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 2,
+              "clvPts": null,
               "group": "9c59805b4e7d",
               "venue": "DK"
             },
@@ -3640,8 +3818,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 4.53,
-              "closeLine": 3,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 3,
+              "clvPts": null,
               "group": "4509abdf8e00",
               "venue": "DK"
             },
@@ -3658,8 +3837,9 @@
               "absEdge": 0,
               "result": "W",
               "pnl": 4.55,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "8a67d9858e51",
               "venue": "DK"
             }
@@ -3715,6 +3895,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -3733,6 +3914,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -3751,6 +3933,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -3769,6 +3952,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -3787,6 +3971,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -3804,8 +3989,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 6.13,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -3822,8 +4008,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 6.67,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -3840,8 +4027,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -10,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -3893,6 +4081,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -3911,6 +4100,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -3929,6 +4119,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -3947,6 +4138,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -3965,6 +4157,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -3982,8 +4175,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 11.79,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -4000,8 +4194,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 13.07,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -4018,8 +4213,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -20,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -4071,6 +4267,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -4089,6 +4286,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -4107,6 +4305,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -4125,6 +4324,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -4143,6 +4343,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -4160,8 +4361,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 14.15,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -4178,8 +4380,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 32.21,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -4196,8 +4399,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -33.76,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -4249,6 +4453,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -4267,6 +4472,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -4285,6 +4491,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -4303,6 +4510,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -4321,6 +4529,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -4338,8 +4547,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 11.79,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -4356,8 +4566,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 13.07,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -4374,8 +4585,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -20,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -4427,6 +4639,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -4445,6 +4658,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -4463,6 +4677,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -4481,6 +4696,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -4499,6 +4715,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -4516,8 +4733,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 6.29,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -4534,8 +4752,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 7.83,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -4552,8 +4771,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -7.21,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -4605,6 +4825,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3787f21db741",
               "venue": "Kalshi"
@@ -4623,6 +4844,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "6a616a419c83",
               "venue": "Kalshi"
@@ -4641,6 +4863,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "c8267199babb",
               "venue": "Kalshi"
@@ -4659,6 +4882,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "ca73ad6776e6",
               "venue": "Kalshi"
@@ -4677,6 +4901,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "d2ae3df9532c",
               "venue": "Kalshi"
@@ -4694,8 +4919,9 @@
               "absEdge": 0.55,
               "result": "W",
               "pnl": 6.61,
-              "closeLine": 4,
-              "clvPts": 1.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "b5b4b0377626",
               "venue": "Kalshi"
             },
@@ -4712,8 +4938,9 @@
               "absEdge": 0.76,
               "result": "W",
               "pnl": 10.07,
-              "closeLine": 4,
-              "clvPts": 0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "6cf1fd5a695a",
               "venue": "Kalshi"
             },
@@ -4730,8 +4957,9 @@
               "absEdge": 0.28,
               "result": "L",
               "pnl": -5.6,
-              "closeLine": 4,
-              "clvPts": -0.5,
+              "closeLine": null,
+              "finalTotal": 4,
+              "clvPts": null,
               "group": "5fe8f91e529c",
               "venue": "Kalshi"
             }
@@ -4760,7 +4988,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246244\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347323\u002B00:00",
               "bank": 1000
             }
           ],
@@ -4779,6 +5007,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -4797,6 +5026,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -4815,6 +5045,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -4833,6 +5064,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -4851,6 +5083,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -4876,7 +5109,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246367\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347439\u002B00:00",
               "bank": 1000
             }
           ],
@@ -4895,6 +5128,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -4913,6 +5147,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -4931,6 +5166,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -4949,6 +5185,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -4967,6 +5204,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -4992,7 +5230,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246398\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347480\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5011,6 +5249,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -5029,6 +5268,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -5047,6 +5287,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -5065,6 +5306,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -5083,6 +5325,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -5108,7 +5351,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246428\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347507\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5127,6 +5370,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -5145,6 +5389,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -5163,6 +5408,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -5181,6 +5427,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -5199,6 +5446,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -5224,7 +5472,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246453\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347538\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5243,6 +5491,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -5261,6 +5510,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -5279,6 +5529,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -5297,6 +5548,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -5315,6 +5567,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -5340,7 +5593,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246479\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347564\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5359,6 +5612,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "711247aac63e",
               "venue": "Robinhood"
@@ -5377,6 +5631,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6caa2e9fb16",
               "venue": "Robinhood"
@@ -5395,6 +5650,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "06a21159a826",
               "venue": "Robinhood"
@@ -5413,6 +5669,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "5bb6cce7208b",
               "venue": "Robinhood"
@@ -5431,6 +5688,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "3e1a40e6acab",
               "venue": "Robinhood"
@@ -5460,7 +5718,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246602\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347693\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5479,6 +5737,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5497,6 +5756,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"
@@ -5522,7 +5782,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246623\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347713\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5541,6 +5801,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5559,6 +5820,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"
@@ -5584,7 +5846,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246640\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347730\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5603,6 +5865,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5621,6 +5884,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"
@@ -5646,7 +5910,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246660\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347751\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5665,6 +5929,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5683,6 +5948,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"
@@ -5708,7 +5974,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246677\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347768\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5727,6 +5993,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5745,6 +6012,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"
@@ -5770,7 +6038,7 @@
               "bank": 1000
             },
             {
-              "t": "2026-11-07T16:49:02.8246695\u002B00:00",
+              "t": "2026-11-07T18:08:31.0347786\u002B00:00",
               "bank": 1000
             }
           ],
@@ -5789,6 +6057,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "fe97e8b68425",
               "venue": "CryptoCom"
@@ -5807,6 +6076,7 @@
               "result": null,
               "pnl": null,
               "closeLine": null,
+              "finalTotal": null,
               "clvPts": null,
               "group": "e6862c8910a6",
               "venue": "CryptoCom"

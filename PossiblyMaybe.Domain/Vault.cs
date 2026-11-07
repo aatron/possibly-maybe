@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Data.Sqlite;
 using PossiblyMaybe.Domain.SportPacks;
 
 namespace PossiblyMaybe.Domain;
@@ -8,21 +9,80 @@ namespace PossiblyMaybe.Domain;
 /// R10 look-once vault: each league's <see cref="SportPack.TierCHoldoutSeason"/> is sealed.
 /// Simulation may touch it only with <c>--final</c> + a strategy hash; that pair is one-use.
 /// SkipSeason stays out of train folds (see <see cref="NestedWalkForward"/>) but is not a vault burn.
+/// T1: file-backed via <see cref="Open"/> so burns survive process restarts.
 /// </summary>
 public sealed class VaultStore
 {
     readonly HashSet<string> _used = new(StringComparer.Ordinal);
+    readonly string? _dbPath;
+
+    public VaultStore() : this(null) { }
+
+    VaultStore(string? dbPath) => _dbPath = dbPath;
+
+    /// <summary>Load burns from an append-only vault DB (schema ensured by caller or here).</summary>
+    public static VaultStore Open(string dbPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dbPath);
+        VaultDb.EnsureSchema(dbPath);
+        var store = new VaultStore(dbPath);
+        store.Load();
+        return store;
+    }
 
     static string Key(string league, string strategyHash)
         => $"{league.Trim().ToUpperInvariant()}|{strategyHash.Trim().ToLowerInvariant()}";
+
+    static (string League, string Hash) Normalize(string league, string strategyHash)
+        => (league.Trim().ToUpperInvariant(), strategyHash.Trim().ToLowerInvariant());
 
     public bool HasUsed(string league, string strategyHash)
         => _used.Contains(Key(league, strategyHash));
 
     public void RecordUse(string league, string strategyHash)
     {
-        if (!_used.Add(Key(league, strategyHash)))
+        var (lg, hash) = Normalize(league, strategyHash);
+        var key = Key(lg, hash);
+
+        if (_dbPath is null)
+        {
+            if (!_used.Add(key))
+                throw new VaultAlreadyUsedException(league, strategyHash);
+            return;
+        }
+
+        // File is authority: UNIQUE(League, StrategyHash) refuses a second burn across restarts.
+        try
+        {
+            using var con = VaultDb.OpenConnection(_dbPath);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText =
+                """
+                INSERT INTO VaultBurns (League, StrategyHash, BurnedAt)
+                VALUES ($league, $hash, $at);
+                """;
+            cmd.Parameters.AddWithValue("$league", lg);
+            cmd.Parameters.AddWithValue("$hash", hash);
+            cmd.Parameters.AddWithValue("$at", DateTimeOffset.UtcNow.ToString("O"));
+            cmd.ExecuteNonQuery();
+            _used.Add(key);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 19) // SQLITE_CONSTRAINT
+        {
+            _used.Add(key);
             throw new VaultAlreadyUsedException(league, strategyHash);
+        }
+    }
+
+    void Load()
+    {
+        if (_dbPath is null) return;
+        using var con = VaultDb.OpenConnection(_dbPath);
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT League, StrategyHash FROM VaultBurns;";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            _used.Add(Key(reader.GetString(0), reader.GetString(1)));
     }
 }
 

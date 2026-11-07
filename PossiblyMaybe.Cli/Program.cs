@@ -1006,8 +1006,10 @@ switch (command)
         EngineRunOptions? opts = null;
         if (sim)
         {
+            // T1: durable vault + trial ledger (survives restarts; second --final refused).
+            var (vault, trials) = VaultDb.Open(VaultDb.DefaultPath(root));
             var hash = Vault.StrategyHash(strategyId);
-            opts = EngineRunOptions.Sim(hash, new VaultStore(), new TrialLedger(), final);
+            opts = EngineRunOptions.Sim(hash, vault, trials, final);
         }
         try
         {
