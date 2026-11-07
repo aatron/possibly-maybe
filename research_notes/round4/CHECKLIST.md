@@ -12,7 +12,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
 
 ## B. Variants never built (backtestable)
-- [ ] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
+- [x] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
 - [ ] `nba-volume` (w=0.6, edge 3.5) + PaceEffEfg arm (+11.5u/147, +14.7u/201 vs +16.3u/62) → B3
 - [ ] `mls-dc` (+13.2u/116 vs +15.7u/100) → B4
 - [ ] `+poisson-all` for MLS / Liga MX (near-tie CLV) → B4
@@ -20,22 +20,22 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Dixon–Coles ρ low-score correction (r2 deferred) → B4
 - [ ] Fitted P(over) curve per league (learned σ / sharpness, not hand-set; r2 deferred) → B7
 - [ ] `soccer-strict` (edge ≥ 0.5 goals, EV 4–20%), `nba-strict`, EV-band variants → B7
-- [ ] Referees for **totals** (NBA `RefereeAssignments` 72k rows; `RefEffects.cs` only fits home-win) → B5
+- [x] Referees for **totals** (NBA `RefereeAssignments` 72k rows; `RefEffects.cs` only fits home-win) → B5
 - [ ] NBA absence / DNP adjustment (`AbsenceBook.cs` wired to backtest, **no result recorded**) → B1
 - [ ] Conformal-interval bet filter (r2 deferred) → B8
 - [ ] Kalman / adaptive-rate team ratings (r2 deferred) → B8
-- [ ] Inverse-variance blend weight (coin flip 7/14 folds) → B9
+- [x] Inverse-variance blend weight (coin flip 7/14 folds) → B9
 
 ## C. Variants never built (live-only)
 - [ ] `+injury-guard`: ESPN injury / status changes in the last 24h (NBA, NFL, NCAA) → B1
-- [ ] `+roster-reset`: after major trades / transfers, for promoted / relegated clubs → B2
+- [x] `+roster-reset`: after major trades / transfers, for promoted / relegated clubs → B2
 - [ ] `consensus-outlier` (Kaunitz): bet the venue that's off from the cross-venue consensus → B6
 - [ ] `line-move-follow`: bet only when the line moved toward us → B6
 
 ## D. Leagues / markets never or not properly tested
-- [ ] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2
+- [x] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2 (pack + backtest on `r4/c2`; Tier C=`2022-23` locked)
 - [ ] NFL: Tier A on filled O→C; `nfl-wind` alone; 1H / quarter / team totals (Kalshi lists them) → C3
-- [ ] MLB: Tier A 2011–2019 + look-once 2021 (never run); F5 + team totals for spring → C4
+- [x] MLB: Tier A 2011–2019 + look-once 2021; F5 + team totals spring ready flag → C4 (`c4_proof.md`)
 - [ ] La Liga, EFL back in **shadow** (FAILED as champs; waves may still appear) → C5
 - [ ] New leagues the venues list (EPL, Bundesliga, UCL, NHL, WNBA, NWSL, NCAAW, …), data-gated → A4 done → C6 in flight (epl/bundesliga/nhl)
 - [ ] Spreads / moneylines (DB has ML + SPREAD; only NBA ATS was ever tracked) → C7
@@ -51,8 +51,12 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 ## F. Point-in-time record + no-cheating replay (user 2026-11-07)
 - [ ] As-of cutoff in every model builder; slate currently uses all scored games and Serie A uses `UtcNow` → R1
 - [ ] Append-only decision log: run id, git SHA, variant version, data watermark, venue prices + capture times, injury snapshot → R2
-- [ ] Same-book closing line + price (close book, capture time, minutes before start) → R3
+- [x] Same-book closing line + price (close book, capture time, minutes before start) → R3
 - [ ] `replay --asof` that reproduces logged decisions and reports n / CLV / PnL per variant → R4
 - [x] Checkpoint reporter: 50 / 100–200 / 500 / 1,500 bet stages per variant × league → R5
 - [ ] Real DK price at bet (not −110) on paper tickets → R6
+- [ ] Blind point-in-time data view; strategies can't touch the DB → R7
+- [ ] Plug-in strategy interface; port champions as strategies → R8
+- [ ] Day-stepping engine shared by live and simulation (guards, venues, staking, bankroll, same-book settle) → R9
+- [ ] Vault (look-once seasons sealed), trial ledger (N_trials / DSR / BH auto), nested tuning, no promotion from sim alone → R10
 

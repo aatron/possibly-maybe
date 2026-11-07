@@ -239,3 +239,44 @@ public static class EfgPriorMath
     public static double AdjPts(double efgHome, double efgAway, double leagueEfg, double scale = DefaultScale)
         => scale * ((efgHome + efgAway) / 2.0 - leagueEfg);
 }
+
+/// <summary>
+/// Linear-Gaussian sensor fusion for model + open line (replace fixed MarketWeight).
+/// exp = (prec_m·model + prec_ℓ·line)/(prec_m+prec_ℓ); equivalent w_line = σ_m²/(σ_m²+σ_ℓ²).
+/// </summary>
+public static class MarketBlend
+{
+    public static double InverseVariance(double model, double line, double sigmaModel, double sigmaLine)
+    {
+        var sm = Math.Max(sigmaModel, 1e-9);
+        var sl = Math.Max(sigmaLine, 1e-9);
+        var pm = 1.0 / (sm * sm);
+        var pl = 1.0 / (sl * sl);
+        return (pm * model + pl * line) / (pm + pl);
+    }
+
+    /// <summary>Weight on line in exp = w·line + (1−w)·model.</summary>
+    public static double MarketWeightFromSigmas(double sigmaModel, double sigmaLine)
+    {
+        var vm = Math.Max(sigmaModel, 1e-9);
+        vm *= vm;
+        var vl = Math.Max(sigmaLine, 1e-9);
+        vl *= vl;
+        return vm / (vm + vl);
+    }
+
+    /// <summary>ρ = σ_model/σ_line → w_line = ρ²/(ρ²+1).</summary>
+    public static double MarketWeightFromRatio(double rho)
+    {
+        var r2 = rho * rho;
+        return r2 / (r2 + 1.0);
+    }
+
+    public static (double SigmaModel, double SigmaLine) FromResidualMoments(
+        double sumSqModelErr, double sumSqLineErr, int n)
+    {
+        if (n < 2)
+            return (1.0, 1.0); // equal precision → w=0.5
+        return (Math.Sqrt(sumSqModelErr / n), Math.Sqrt(sumSqLineErr / n));
+    }
+}

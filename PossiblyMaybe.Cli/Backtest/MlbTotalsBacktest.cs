@@ -1,15 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
+using PossiblyMaybe.Domain.SportPacks;
 
 namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
 /// MLB totals: prior-season SP FIP × home park factor → expected runs, blended with open total.
-/// Holdout = tipoff on/after 2025-09-01 (locked before metric peek in pack notes).
+/// C4: Tier A folds + look-once <see cref="HoldoutSeason"/> (2021). Burned date cut
+/// <see cref="HoldoutStart"/> (2025-09-01) stays report-only for legacy sweep-mlb.
 /// </summary>
 public static class MlbTotalsBacktest
 {
+    public static string HoldoutSeason => MlbSportPack.Instance.TierCHoldoutSeason;
+
     public static readonly DateTimeOffset HoldoutStart =
         new(2025, 9, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -36,7 +40,7 @@ public static class MlbTotalsBacktest
 
         const double lgRpg = 4.5;
         const double lgFip = 4.0;
-        var scoring = new ScoringBook(alpha: 0.12, leagueInit: 9.0); // team runs EMA fallback
+        var scoring = new ScoringBook(alpha: MlbChampConfig.EmaAlpha, leagueInit: 9.0);
         var train = new Acc("mlb_train");
         var hold = new Acc("mlb_holdout_sep");
 
@@ -66,7 +70,8 @@ public static class MlbTotalsBacktest
             var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
             var clv = TotalsMath.OverClvPoints(line, closeLine);
 
-            if (Math.Abs(edge) >= minAbsEdge)
+            if (Math.Abs(edge) >= minAbsEdge
+                && !OregonExclusion.IsExcluded("MLB", g.HomeTeam, g.AwayTeam))
             {
                 if (edge > 0)
                 {
@@ -91,10 +96,97 @@ public static class MlbTotalsBacktest
         return (train.ToResult(), hold.ToResult());
     }
 
+    /// <summary>
+    /// Tier A / C rolling-origin fold: warm books on all tips before and during walk,
+    /// score only <paramref name="testSeason"/>. Caller must not pass holdout for selection.
+    /// </summary>
+    public static async Task<Gate1aResult> RunSeasonFoldAsync(
+        string dbPath,
+        string testSeason,
+        double marketWeight,
+        double minEv,
+        double minAbsEdge,
+        string? parkFactorsPath = null,
+        CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "MLB" && g.HomeScore != null && g.AwayScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var odds = await db.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL")
+            .ToListAsync(ct);
+        var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+        Dictionary<int, GamePitching> pitch = [];
+        try { pitch = await db.GamePitchings.AsNoTracking().ToDictionaryAsync(p => p.GameId, ct); }
+        catch { /* */ }
+        var park = MlbParkFactors.Load(parkFactorsPath);
+
+        const double lgRpg = 4.5;
+        const double lgFip = 4.0;
+        var scoring = new ScoringBook(alpha: MlbChampConfig.EmaAlpha, leagueInit: 9.0);
+        var fold = new Acc($"fold_{testSeason}");
+
+        foreach (var g in games)
+        {
+            byOdds.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
+
+            double modelExp;
+            if (pitch.TryGetValue(g.Id, out var sp))
+                modelExp = lgRpg * (sp.AwayFipPrior / lgFip) + lgRpg * (sp.HomeFipPrior / lgFip);
+            else
+                modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            modelExp = MlbParkFactors.Scale(modelExp, g.HomeTeam, park);
+
+            if (open?.Line is { } line && close?.Line is { } closeLine
+                && Math.Abs(line - closeLine) >= 0.25
+                && g.Season == testSeason)
+            {
+                var exp = marketWeight * line + (1 - marketWeight) * modelExp;
+                var edge = exp - line;
+                var juice = -110;
+                var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
+                var clv = TotalsMath.OverClvPoints(line, closeLine);
+
+                if (Math.Abs(edge) >= minAbsEdge
+                    && !OregonExclusion.IsExcluded("MLB", g.HomeTeam, g.AwayTeam))
+                {
+                    if (edge > 0)
+                    {
+                        var p = TotalsMath.OverProb(exp, line, sharpness: 0.45);
+                        var ev = OddsMath.ExpectedValue(p, juice);
+                        if (ev >= minEv)
+                            fold.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou));
+                    }
+                    else
+                    {
+                        var p = 1 - TotalsMath.OverProb(exp, line, sharpness: 0.45);
+                        var ev = OddsMath.ExpectedValue(p, juice);
+                        if (ev >= minEv)
+                            fold.AddBet(-clv, ou < 0, TotalsMath.OuPnL(juice, -ou));
+                    }
+                }
+
+                fold.AddGame();
+            }
+
+            scoring.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+        }
+
+        return fold.ToResult();
+    }
+
     public static async Task SweepAsync(string dbPath, string? parkFactorsPath = null, CancellationToken ct = default)
     {
         Console.WriteLine("######## MLB TOTALS (SP FIP × home park) ########");
-        Console.WriteLine($"Holdout start: {HoldoutStart:yyyy-MM-dd}");
+        Console.WriteLine($"Legacy date holdout: {HoldoutStart:yyyy-MM-dd} (burned; C4 uses season {HoldoutSeason})");
         var parkPath = parkFactorsPath ?? "";
         var nPf = MlbParkFactors.Load(string.IsNullOrEmpty(parkPath) ? null : parkPath).Count;
         Console.WriteLine($"Park factors: {(nPf > 0 ? $"{nPf} teams from {parkPath}" : "none (PF=100)")}");

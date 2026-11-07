@@ -118,9 +118,12 @@ public static class LineTrackerImporter
         }
     }
 
-    /// <summary>Last pre-start total from line_snapshots.db for a paper game key (sport + yyyymmdd away@home).</summary>
-    public static (double Line, int American)? TryCloseFromSnapshots(
-        string snapshotsDbPath, string sport, string gameKey)
+    /// <summary>
+    /// Last pre-start total from line_snapshots.db for a paper game key (sport + yyyymmdd away@home).
+    /// When <paramref name="trackerVenue"/> is set (espn/kalshi/cryptocom), only that venue is used (R3).
+    /// </summary>
+    public static (double Line, int American, double? MinutesToStart)? TryCloseFromSnapshots(
+        string snapshotsDbPath, string sport, string gameKey, string? trackerVenue = null)
     {
         if (!File.Exists(snapshotsDbPath)) return null;
         var raw = ReadSnapshots(snapshotsDbPath)
@@ -129,10 +132,21 @@ public static class LineTrackerImporter
                         && (r.GameKey.Equals(gameKey, StringComparison.OrdinalIgnoreCase)
                             || r.GameKey.StartsWith(gameKey + " ", StringComparison.OrdinalIgnoreCase)))
             .ToList();
+        if (!string.IsNullOrEmpty(trackerVenue))
+            raw = raw.Where(r => r.Venue.Equals(trackerVenue, StringComparison.OrdinalIgnoreCase)).ToList();
         if (raw.Count == 0) return null;
         var preferEspn = raw.Any(r => r.Venue.Equals("espn", StringComparison.OrdinalIgnoreCase));
         var oc = ResolveOpenClose(raw, preferEspnOpenLine: preferEspn);
-        return oc.CloseLine is { } cl ? (cl, oc.CloseAmerican ?? -110) : null;
+        if (oc.CloseLine is not { } cl) return null;
+        double? mins = null;
+        if (oc.CloseAt is { } closeAt)
+        {
+            var start = raw.Select(r => r.StartUtc).DefaultIfEmpty().Max();
+            if (start != default)
+                mins = (start - closeAt).TotalMinutes;
+        }
+
+        return (cl, oc.CloseAmerican ?? -110, mins);
     }
 
     /// <summary>Open = earliest capture; close = last with minutes_to_start &gt; 0. ESPN may use open_line.</summary>
@@ -261,6 +275,7 @@ public static class LineTrackerImporter
         "LIGUE1" => SportTeams.TryLigue1(code) ?? code,
         "SERIEA" => SportTeams.TrySerieA(code) ?? code,
         "LIGAMX" => SportTeams.TryLigaMx(code) ?? code,
+        "EPL" => SportTeams.TryEpl(code) ?? code,
         "NCAAB" or "NCAAF" => SportTeams.NcaaCode(code),
         _ => code,
     };
