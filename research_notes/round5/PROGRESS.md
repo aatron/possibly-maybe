@@ -1,14 +1,14 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for wave-1 Composer agents T2a/T2b/T3; `--no-ff` merge each, then launch wave 2.
+**Next action:** wait for wave-1 Composer agents T2b/T3; `--no-ff` merge each, then launch wave 2.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
 | Id | Item | Agent | Worktree / branch | Proof | Status | Merge |
 |---|---|---|---|---|---|---|
 | T1 | Durable vault + trial ledger | Composer | `../pm-r5-t1` `r5/t1` | `t1_proof.md` restart double-burn refused | done | 3ba67bc |
-| T2a | Import NHL SBRO | Composer | `../pm-r5-t2a` `r5/t2a` | seasons × O+C coverage; Anaheim ≠ Oregon | running | |
+| T2a | Import NHL SBRO | Composer | `../pm-r5-t2a` `r5/t2a` | `t2a_proof.md` — 15 szn, 18943 O+C, Anaheim≠Oregon | done | 809b525 |
 | T2b | Import AUS NFL totals | Composer | `../pm-r5-t2b` `r5/t2b` | 2022 filled; % real prices | running | |
 | T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | decision can't see close | running | |
 | T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | fold table vs V0 | planned | |
@@ -25,3 +25,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | 2026-11-07 | Round 5 plan written (plan only, per user). |
 | 2026-11-07 | User: implement. Wave 1 launched (Composer): worktrees `pm-r5-t1/t2a/t2b/t3` on `r5/*`. |
 | 2026-11-07 | T1 merged `--no-ff`: durable vault + trial ledger (`data/vault.db`); 282 tests. |
+| 2026-11-07 | T2a merged `--no-ff`: `import-nhl-sbro`, 15 seasons × 18943 O+C (100%); Anaheim≠Oregon. |

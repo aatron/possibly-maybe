@@ -83,8 +83,29 @@ public class OregonExclusionTests
     [Arguments("MLS", "Fire")]
     [Arguments("NFL", "Minnesota Vikings")]
     [Arguments("NFL", "Vikings")]
+    // T2a: SBRO NHL says "Anaheim" (not "Ducks"); Anaheim Ducks are not Oregon
+    [Arguments("NHL", "Anaheim")]
+    [Arguments("NHL", "Anaheim Ducks")]
+    [Arguments("NHL", "ANA")]
     public async Task NotExcluded(string sport, string team)
         => await Assert.That(OregonExclusion.IsExcluded(sport, team)).IsFalse();
+
+    [Test]
+    public async Task Nhl_AnaheimNotOregon_WhileOregonNamesStillExcluded()
+    {
+        await Assert.That(SportTeams.TryNhl("Anaheim")).IsEqualTo("ANA");
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Anaheim")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Anaheim Ducks")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "ANA")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", SportTeams.TryNhl("Anaheim"), "BOS")).IsFalse();
+
+        // Cardinal Oregon names still excluded under NHL sport id
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Oregon Ducks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Oregon")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Portland Winterhawks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Portland")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NHL", "Beavers")).IsTrue();
+    }
 
     [Test]
     public async Task GameKey_EitherSide()

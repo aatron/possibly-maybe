@@ -151,6 +151,18 @@ switch (command)
         await DiskOddsImporter.ImportAsync(ResolveRawRoot(), dbPath);
         return 0;
     }
+    case "import-nhl-sbro":
+    {
+        // T2a: SBRO NHL OpenOU/CloseOU + real juice → Games/OddsSnapshots (skips 2022-23)
+        // import-nhl-sbro [db] [dir]
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        var dir = args.Length > 2
+            ? args[2]
+            : Path.Combine(ResolveRawRoot(), "round3_odds", "archive_org", "sbro_nhl");
+        await NhlSbroImporter.ImportAsync(dir, dbPath);
+        return 0;
+    }
     case "import-soccer":
     {
         // import-soccer <SPORT> <folder> [db]  e.g. import-soccer EFL championship
@@ -1098,6 +1110,7 @@ static void PrintUsage()
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
+          import-nhl-sbro [db] [dir] T2a SBRO NHL OpenOU/CloseOU O→C (real juice; skip 2022-23)
           sweep-mlb / sweep-nfl / sweep-mls / sweep-ncaab  Soft-spot sweeps
           slate-ncaab [yyyymmdd] [bank]  NCAAB totals shadow slate (PaceEff/Scoring)
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
