@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 DAY="${1:-$(date +%Y%m%d)}"
+YESTERDAY="$(date -d "${DAY:0:4}-${DAY:4:2}-${DAY:6:2} -1 day" +%Y%m%d)"
 TOMORROW="$(date -d "${DAY:0:4}-${DAY:4:2}-${DAY:6:2} +1 day" +%Y%m%d 2>/dev/null || python3 -c "
 from datetime import datetime, timedelta
 d=datetime.strptime('$DAY','%Y%m%d')+timedelta(days=1)
@@ -190,8 +191,8 @@ echo ">>> Kalshi vs DraftKings (open paper tickets)"
 python3 "$ROOT/scripts/kalshi_compare.py" --paper-db "$ROOT/paper.db" || echo "(Kalshi compare skipped/failed — continuing)"
 
 echo
-echo ">>> import-box (NBA pace warehouse; ok if nothing new)"
-"${CLI[@]}" import-box || echo "(import-box skipped/failed — continuing)"
+echo ">>> refresh results: NBA (games+box), MLS (games+ASA xG), LIGUE1, LIGAMX, SERIEA -> through $YESTERDAY"
+"${CLI[@]}" refresh-results "$YESTERDAY" || echo "(refresh-results failed — STALE DATA guard will block GOs for old leagues)"
 
 SLATE_LOG="$(mktemp)"
 trap 'rm -f "$SLATE_LOG"' EXIT
