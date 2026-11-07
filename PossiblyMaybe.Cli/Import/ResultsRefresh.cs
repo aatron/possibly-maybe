@@ -8,12 +8,13 @@ using PossiblyMaybe.Domain;
 namespace PossiblyMaybe.Cli.Import;
 
 /// <summary>
-/// Daily incremental refresh of completed results for every paper league (NBA + MLS/LIGUE1/LIGAMX/SERIEA)
-/// from the ESPN scoreboard, plus NBA box lines (ESPN summary) and MLS xG (ASA). Idempotent via SourceKey.
+/// Daily incremental refresh of completed results for paper + shadow soccer leagues
+/// (NBA + MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL) from the ESPN scoreboard, plus NBA box lines
+/// (ESPN summary) and MLS xG (ASA). Idempotent via SourceKey.
 /// </summary>
 public static class ResultsRefresh
 {
-    public static readonly string[] Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA"];
+    public static readonly string[] Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL"];
 
     private static readonly HttpClient Http = new()
     {
@@ -28,6 +29,8 @@ public static class ResultsRefresh
         ["LIGUE1"] = "soccer/fra.1",
         ["LIGAMX"] = "soccer/mex.1",
         ["SERIEA"] = "soccer/ita.1",
+        ["LALIGA"] = "soccer/esp.1",
+        ["EFL"] = "soccer/eng.2",
     };
 
     public sealed record FinalGame(string EspnId, DateTimeOffset Kickoff, string Home, string Away, int HomeScore, int AwayScore);

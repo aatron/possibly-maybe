@@ -9,8 +9,8 @@ using PossiblyMaybe.Domain.SportPacks;
 namespace PossiblyMaybe.Cli.Paper;
 
 /// <summary>
-/// Live soft-spot slate: NBA PaceEff + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA).
-/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0; all variants go to shadow ledger.
+/// Live soft-spot slate: NBA PaceEff + soccer (paper HOLD-PASS + shadow FAIL leagues).
+/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0 for paper only; all variants go to shadow ledger.
 /// </summary>
 public static class DailySlate
 {
@@ -20,7 +20,13 @@ public static class DailySlate
         Timeout = TimeSpan.FromSeconds(30),
     };
 
-    /// <summary>ESPN soccer league path for HOLD-PASS paper sports.</summary>
+    /// <summary>Paper HOLD-PASS soccer — emit paper-go lines.</summary>
+    public static readonly HashSet<string> PaperSoccerSports = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "MLS", "LIGUE1", "LIGAMX", "SERIEA",
+    };
+
+    /// <summary>ESPN soccer league path for paper + shadow sports (VariantShadow iterates Keys).</summary>
     public static readonly IReadOnlyDictionary<string, string> SoccerEspnPaths =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -28,6 +34,8 @@ public static class DailySlate
             ["LIGUE1"] = "fra.1",
             ["LIGAMX"] = "mex.1",
             ["SERIEA"] = "ita.1",
+            ["LALIGA"] = "esp.1",
+            ["EFL"] = "eng.2",
         };
 
     public const int StaleDays = 10;
@@ -71,13 +79,13 @@ public static class DailySlate
     public static Task RunMlsAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
         => RunSoccerAsync("MLS", dbPath, yyyymmdd, bankroll, ct);
 
-    /// <summary>HOLD-PASS soccer totals: MLS, LIGUE1, LIGAMX, SERIEA.</summary>
+    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow FAIL (LALIGA/EFL).</summary>
     public static async Task RunSoccerAsync(
         string sport, string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         sport = sport.ToUpperInvariant();
         if (!SoccerEspnPaths.ContainsKey(sport))
-            throw new ArgumentException($"No live slate for {sport}. PASS paper: MLS, LIGUE1, LIGAMX, SERIEA.");
+            throw new ArgumentException($"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL.");
 
         List<SlateCandidate> candidates;
         try
@@ -91,15 +99,19 @@ public static class DailySlate
             return;
         }
 
+        var paper = PaperSoccerSports.Contains(sport);
         var modelName = sport switch
         {
             "MLS" => SportPackRegistry.Mls.Model,
             "LIGUE1" => Ligue1ChampConfig.Model,
             "LIGAMX" => LigaMxChampConfig.Model,
             "SERIEA" => SerieAChampConfig.Model,
+            "LALIGA" => SportPackRegistry.LaLiga.Model,
+            "EFL" => SportPackRegistry.Efl.Model,
             _ => sport,
         };
-        Console.WriteLine($"######## {sport} SLATE {yyyymmdd} bankroll=${bankroll:F0} paper {modelName} ########");
+        var lane = paper ? "paper" : "shadow";
+        Console.WriteLine($"######## {sport} SLATE {yyyymmdd} bankroll=${bankroll:F0} {lane} {modelName} ########");
         if (candidates.Count == 0)
         {
             Console.WriteLine($"No {sport} games on this date.");
@@ -115,7 +127,10 @@ public static class DailySlate
             Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdfFor(sport) ? "poisson" : "logistic")}");
         }
 
-        PrintChampGos(candidates, bankroll);
+        if (paper)
+            PrintChampGos(candidates, bankroll);
+        else
+            Console.WriteLine($"SHADOW-ONLY {sport} (FAIL champ) — {candidates.Count} candidates → ledger (no paper-go).");
         await RecordShadowAsync(dbPath, candidates, ct);
     }
 
@@ -352,6 +367,15 @@ public static class DailySlate
                     var t = lh + la;
                     return t is >= 1.5 and <= 5.0 ? (lh, la) : goals.ExpectedLambdas(home, away);
                 });
+        }
+
+        if (sport is "LALIGA" or "EFL")
+        {
+            var pack = SportPackRegistry.Get(sport);
+            var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: 2.7);
+            foreach (var g in games)
+                book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            return (pack.Model, pack.MarketWeight, pack.MinAbsTotalEdge, pack.MinEv, book.ExpectedLambdas);
         }
 
         throw new ArgumentException($"No champ model for {sport}");

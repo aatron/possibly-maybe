@@ -34,7 +34,7 @@ public static class VariantBackfill
             var nba = await BackfillNbaAsync(wdb, vdb, ct);
             Console.WriteLine($"  NBA candidate-rows×variants written≈{nba}");
 
-            foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA" })
+            foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL" })
             {
                 Console.WriteLine($"variants-backfill: {sport}…");
                 var n = await BackfillSoccerAsync(wdb, vdb, sport, ct);
@@ -115,6 +115,10 @@ public static class VariantBackfill
                 LigaMxChampConfig.EmaAlpha, false),
             "SERIEA" => (SerieAChampConfig.MarketWeight, SerieAChampConfig.MinAbsTotalEdge, SerieAChampConfig.MinEv,
                 SerieAChampConfig.DcAlpha, true),
+            "LALIGA" => (LaLigaShadowConfig.MarketWeight, LaLigaShadowConfig.MinAbsTotalEdge, LaLigaShadowConfig.MinEv,
+                LaLigaShadowConfig.EmaAlpha, false),
+            "EFL" => (EflShadowConfig.MarketWeight, EflShadowConfig.MinAbsTotalEdge, EflShadowConfig.MinEv,
+                EflShadowConfig.EmaAlpha, false),
             _ => throw new ArgumentException(sport),
         };
 
