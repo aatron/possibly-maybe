@@ -278,6 +278,7 @@ public static class LineTrackerImporter
         "BUNDESLIGA" => SportTeams.TryBundesliga(code) ?? code,
         "EPL" => SportTeams.TryEpl(code) ?? code,
         "NCAAB" or "NCAAF" => SportTeams.NcaaCode(code),
+        "NHL" => SportTeams.TryNhl(code) ?? code,
         _ => code,
     };
 

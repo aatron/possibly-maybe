@@ -104,6 +104,62 @@ public static class SportTeams
         return Mlb.TryGetValue(t, out var c) ? c : null;
     }
 
+    /// <summary>NHL: ESPN abbr / full name → short code. Unmapped clubs keep their own name via ResolveNhl.</summary>
+    public static string? TryNhl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Nhl.TryGetValue(t, out var c) ? c : null;
+    }
+
+    /// <summary>
+    /// Canonical NHL team code from ESPN fields. Names win over abbreviations; unknown clubs keep
+    /// their own display name (never aliased to another club). Winterhawks stay excluded via OregonExclusion.
+    /// </summary>
+    public static string? ResolveNhl(string? abbr, string? display, string? shortName)
+    {
+        var hit = TryNhl(display) ?? TryNhl(shortName);
+        if (hit is not null) return hit;
+        if (string.IsNullOrWhiteSpace(display)) return TryNhl(abbr) ?? abbr;
+        return TryNhl(abbr) ?? display.Trim();
+    }
+
+    private static readonly Dictionary<string, string> Nhl = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Anaheim Ducks"] = "ANA", ["Ducks"] = "ANA", ["ANA"] = "ANA",
+        ["Boston Bruins"] = "BOS", ["Bruins"] = "BOS", ["BOS"] = "BOS",
+        ["Buffalo Sabres"] = "BUF", ["Sabres"] = "BUF", ["BUF"] = "BUF",
+        ["Calgary Flames"] = "CGY", ["Flames"] = "CGY", ["CGY"] = "CGY",
+        ["Carolina Hurricanes"] = "CAR", ["Hurricanes"] = "CAR", ["CAR"] = "CAR",
+        ["Chicago Blackhawks"] = "CHI", ["Blackhawks"] = "CHI", ["CHI"] = "CHI",
+        ["Colorado Avalanche"] = "COL", ["Avalanche"] = "COL", ["COL"] = "COL",
+        ["Columbus Blue Jackets"] = "CBJ", ["Blue Jackets"] = "CBJ", ["CBJ"] = "CBJ",
+        ["Dallas Stars"] = "DAL", ["Stars"] = "DAL", ["DAL"] = "DAL",
+        ["Detroit Red Wings"] = "DET", ["Red Wings"] = "DET", ["DET"] = "DET",
+        ["Edmonton Oilers"] = "EDM", ["Oilers"] = "EDM", ["EDM"] = "EDM",
+        ["Florida Panthers"] = "FLA", ["Panthers"] = "FLA", ["FLA"] = "FLA",
+        ["Los Angeles Kings"] = "LA", ["LA Kings"] = "LA", ["Kings"] = "LA", ["LA"] = "LA", ["LAK"] = "LA",
+        ["Minnesota Wild"] = "MIN", ["Wild"] = "MIN", ["MIN"] = "MIN",
+        ["Montreal Canadiens"] = "MTL", ["Montréal Canadiens"] = "MTL", ["Canadiens"] = "MTL", ["MTL"] = "MTL",
+        ["Nashville Predators"] = "NSH", ["Predators"] = "NSH", ["NSH"] = "NSH",
+        ["New Jersey Devils"] = "NJ", ["Devils"] = "NJ", ["NJ"] = "NJ", ["NJD"] = "NJ",
+        ["New York Islanders"] = "NYI", ["Islanders"] = "NYI", ["NYI"] = "NYI",
+        ["New York Rangers"] = "NYR", ["Rangers"] = "NYR", ["NYR"] = "NYR",
+        ["Ottawa Senators"] = "OTT", ["Senators"] = "OTT", ["OTT"] = "OTT",
+        ["Philadelphia Flyers"] = "PHI", ["Flyers"] = "PHI", ["PHI"] = "PHI",
+        ["Pittsburgh Penguins"] = "PIT", ["Penguins"] = "PIT", ["PIT"] = "PIT",
+        ["San Jose Sharks"] = "SJ", ["Sharks"] = "SJ", ["SJ"] = "SJ", ["SJS"] = "SJ",
+        ["Seattle Kraken"] = "SEA", ["Kraken"] = "SEA", ["SEA"] = "SEA",
+        ["St. Louis Blues"] = "STL", ["St Louis Blues"] = "STL", ["Blues"] = "STL", ["STL"] = "STL",
+        ["Tampa Bay Lightning"] = "TB", ["Lightning"] = "TB", ["TB"] = "TB", ["TBL"] = "TB",
+        ["Toronto Maple Leafs"] = "TOR", ["Maple Leafs"] = "TOR", ["TOR"] = "TOR",
+        ["Utah Hockey Club"] = "UTA", ["Utah"] = "UTA", ["UTA"] = "UTA",
+        ["Vancouver Canucks"] = "VAN", ["Canucks"] = "VAN", ["VAN"] = "VAN",
+        ["Vegas Golden Knights"] = "VGK", ["Golden Knights"] = "VGK", ["VGK"] = "VGK",
+        ["Winnipeg Jets"] = "WPG", ["Jets"] = "WPG", ["WPG"] = "WPG",
+        ["Washington Capitals"] = "WSH", ["Capitals"] = "WSH", ["WSH"] = "WSH", ["WAS"] = "WSH",
+    };
+
     /// <summary>MLS: stable short codes from full Kaggle names (or pass-through if already short).</summary>
     public static string? TryMls(string? raw)
     {

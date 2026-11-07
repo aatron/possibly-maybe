@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** merge C6-bundesliga/nhl; finish A5 + C7 worktrees; Wave R (R1/R2/R6–R10). D* at end.
+**Next action:** finish A5 + C7 worktrees; Wave R (R1/R2/R6–R10). D* at end.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -28,8 +28,8 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | C4 | MLB redo + F5 ready | Composer | `../pm-r4-c4` `r4/c4` | Tier A / C | done | d01ba86 |
 | C5 | La Liga + EFL shadow | Composer | `../pm-r4-c5` `r4/c5` | Tier A | done | 0c2e556 |
 | C6-epl | EPL pack (A4 #1 ready) | Composer | `../pm-r4-c6-epl` `r4/c6-epl` | Tier A | done | (batch land) |
-| C6-bundesliga | Bundesliga pack (A4 #2 ready) | Composer | `../pm-r4-c6-bundesliga` `r4/c6-bundesliga` | Tier A | running | |
-| C6-nhl | NHL pack (A4 #3; Tier A O→C-gated) | Composer | `../pm-r4-c6-nhl` `r4/c6-nhl` | shadow + tracker | running | |
+| C6-bundesliga | Bundesliga pack (A4 #2 ready) | Composer | `../pm-r4-c6-bundesliga` `r4/c6-bundesliga` | Tier A | done | d6799f7 |
+| C6-nhl | NHL pack (A4 #3; Tier A O→C-gated) | Composer | `../pm-r4-c6-nhl` `r4/c6-nhl` | shadow + tracker | done | (this merge) |
 | C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | running | |
 | R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
@@ -66,3 +66,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | r3-W16 done: NHL SBRO downloaded/verified, MLB 2016 filled, AUS NFL totals through 2025, notes committed path `round3/archive_org_odds.md`. |
 | 2026-11-07 | Batch land: C1, C3, C5, C6-epl, R3, R5 on main. C6-bundesliga/nhl + B1/B3/B4/B6/B7/B8 still in worktrees (VariantCore/SportTeams merge debt). |
 | 2026-11-07 | Unified VariantCore + landed B1/B3/B4/B6/B7/B8 families on main (236 tests). C6-bundesliga/nhl + A5/C7 remain. |
+| 2026-11-07 | C6-bundesliga + C6-nhl merged (244 tests). A5/C7 + Wave R remain. |

@@ -30,6 +30,14 @@ public static class VariantShadow
         }
         foreach (var sport in DailySlate.SoccerEspnPaths.Keys)
             candidates.AddRange(await DailySlate.BuildSoccerCandidatesAsync(sport, warehouseDbPath, yyyymmdd, ct));
+        try
+        {
+            candidates.AddRange(await DailySlate.BuildNhlCandidatesAsync(warehouseDbPath, yyyymmdd, ct));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"variants-shadow: NHL scoreboard skipped ({ex.Message})");
+        }
 
         var n = await VariantEvaluate.RecordAsync(variantsDbPath, candidates, ct);
         Console.WriteLine($"variants-shadow: recorded {n} variant×game rows from {candidates.Count} candidates ({yyyymmdd})");

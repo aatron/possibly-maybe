@@ -17,6 +17,7 @@ public static class KalshiQuotes
         ["LIGUE1"] = "KXLIGUE1TOTAL",
         ["SERIEA"] = "KXSERIEATOTAL",
         ["LIGAMX"] = "KXLIGAMXTOTAL",
+        ["NHL"] = "KXNHLTOTAL",
         ["EPL"] = "KXEPLTOTAL",
     };
 

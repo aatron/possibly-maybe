@@ -191,7 +191,7 @@ echo ">>> Kalshi vs DraftKings (open paper tickets)"
 python3 "$ROOT/scripts/kalshi_compare.py" --paper-db "$ROOT/paper.db" || echo "(Kalshi compare skipped/failed — continuing)"
 
 echo
-echo ">>> refresh results: NBA (games+box), MLS (games+ASA xG), LIGUE1, LIGAMX, SERIEA, LALIGA, EFL -> through $YESTERDAY"
+echo ">>> refresh results: NBA (games+box), MLS (games+ASA xG), LIGUE1, LIGAMX, SERIEA, LALIGA, EFL, EPL, BUNDESLIGA, NHL -> through $YESTERDAY"
 "${CLI[@]}" refresh-results "$YESTERDAY" || echo "(refresh-results failed — STALE DATA guard will block GOs for old leagues)"
 
 SLATE_LOG="$(mktemp)"
@@ -210,6 +210,10 @@ for sp in "${SOCCER_PASS[@]}"; do
 done
 
 echo
+echo ">>> slate NHL $DAY (shadow-only)"
+("${CLI[@]}" slate-nhl "$DAY" 1000 || true) | tee -a "$SLATE_LOG"
+
+echo
 echo ">>> slate NBA $TOMORROW (lookahead)"
 ("${CLI[@]}" slate-nba "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
 
@@ -218,6 +222,10 @@ for sp in "${SOCCER_PASS[@]}"; do
   echo ">>> slate $sp $TOMORROW (lookahead)"
   ("${CLI[@]}" slate-soccer "$sp" "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
 done
+
+echo
+echo ">>> slate NHL $TOMORROW (lookahead, shadow-only)"
+("${CLI[@]}" slate-nhl "$TOMORROW" 1000 || true) | tee -a "$SLATE_LOG"
 
 echo
 echo ">>> Kalshi vs DraftKings (today/tomorrow GOs from slate)"

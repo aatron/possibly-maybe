@@ -94,7 +94,7 @@ switch (command)
     }
     case "refresh-results":
     {
-        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL finals from ESPN (+NBA box, MLS xG)
+        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL/BUNDESLIGA/NHL finals from ESPN (+NBA box, MLS xG)
         // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL finals from ESPN (+NBA box, MLS xG)
         var repoRoot = FindRepoRoot();
         var through = args.Length > 1 && args[1].Length == 8
@@ -619,6 +619,27 @@ switch (command)
         await DailySlate.RunSoccerAsync(args[1], dbPath, date, bank);
         return 0;
     }
+    case "slate-nhl":
+    {
+        // slate-nhl [yyyymmdd] [bank] — shadow-only (C6; no paper-go until Tier A O→C)
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        var date = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 2 && double.TryParse(args[2], out var b) ? b : NhlShadowConfig.BankrollSeed;
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunNhlAsync(dbPath, date, bank);
+        return 0;
+    }
     case "advise-mls":
     {
         // Paper MLS champ: advise-mls <modelExpectedGoals> <openTotal> [juice=-110] [bankroll]
@@ -979,7 +1000,7 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
-          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL (ESPN; NBA box, MLS xG)
+          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL/BUNDESLIGA/NHL (ESPN; NBA box, MLS xG)
           refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL (ESPN; NBA box, MLS xG)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
@@ -1003,6 +1024,7 @@ static void PrintUsage()
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
           slate-soccer <SPORT> [day] [bank]  paper MLS|LIGUE1|LIGAMX|SERIEA; shadow LALIGA|EFL|EPL|BUNDESLIGA
+          slate-nhl [yyyymmdd] [bank]  NHL totals shadow-only (C6; no paper-go)
           slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; EPL shadow
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go

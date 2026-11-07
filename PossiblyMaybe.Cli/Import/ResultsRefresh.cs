@@ -9,13 +9,13 @@ namespace PossiblyMaybe.Cli.Import;
 
 /// <summary>
 /// Daily incremental refresh of completed results for paper + shadow leagues
-/// (NBA + MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL/BUNDESLIGA) from the ESPN scoreboard, plus NBA box lines
+/// (NBA + MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL/BUNDESLIGA/NHL) from the ESPN scoreboard, plus NBA box lines
 /// (ESPN summary) and MLS xG (ASA). Idempotent via SourceKey.
 /// </summary>
 public static class ResultsRefresh
 {
     public static readonly string[] Leagues =
-        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL", "BUNDESLIGA"];
+        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL", "BUNDESLIGA", "NHL"];
 
     private static readonly HttpClient Http = new()
     {
@@ -33,6 +33,7 @@ public static class ResultsRefresh
         ["LALIGA"] = "soccer/esp.1",
         ["EFL"] = "soccer/eng.2",
         ["BUNDESLIGA"] = "soccer/ger.1",
+        ["NHL"] = "hockey/nhl",
         ["EPL"] = "soccer/eng.1",
     };
 
@@ -58,9 +59,12 @@ public static class ResultsRefresh
                 {
                     var t = c.GetProperty("team");
                     string? S(string p) => t.TryGetProperty(p, out var v) ? v.GetString() : null;
-                    var name = sport == "NBA"
-                        ? TeamCodes.TryNormalize(S("abbreviation"))
-                        : SportTeams.ResolveSoccer(sport, S("abbreviation"), S("displayName"), S("shortDisplayName"));
+                    var name = sport switch
+                    {
+                        "NBA" => TeamCodes.TryNormalize(S("abbreviation")),
+                        "NHL" => SportTeams.ResolveNhl(S("abbreviation"), S("displayName"), S("shortDisplayName")),
+                        _ => SportTeams.ResolveSoccer(sport, S("abbreviation"), S("displayName"), S("shortDisplayName")),
+                    };
                     if (name is null || !int.TryParse(c.GetProperty("score").GetString(), out var score)) { home = away = null; break; }
                     if (c.GetProperty("homeAway").GetString() == "home") { home = name; hs = score; }
                     else { away = name; as_ = score; }
@@ -74,9 +78,9 @@ public static class ResultsRefresh
         return list;
     }
 
-    /// <summary>Date part of the SourceKey: US-Eastern day for NBA (CSV convention), UTC day for soccer.</summary>
+    /// <summary>Date part of the SourceKey: US-Eastern day for NBA/NHL, UTC day for soccer.</summary>
     public static DateOnly KeyDate(string sport, DateTimeOffset kickoff)
-        => sport == "NBA"
+        => sport is "NBA" or "NHL"
             ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(kickoff, TimeZoneInfo.FindSystemTimeZoneById("America/New_York")).DateTime)
             : DateOnly.FromDateTime(kickoff.UtcDateTime);
 
@@ -84,6 +88,7 @@ public static class ResultsRefresh
     {
         "NBA" => d.Month >= 10 ? $"{d.Year + 1}" : $"{d.Year}",
         "MLS" => $"{d.Year}",
+        // NHL Oct–Jun → 2025-2026 style (same as European soccer default)
         _ => d.Month >= 7 ? $"{d.Year}-{d.Year + 1}" : $"{d.Year - 1}-{d.Year}",
     };
 

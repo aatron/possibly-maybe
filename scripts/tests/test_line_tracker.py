@@ -63,11 +63,12 @@ class ParseTests(unittest.TestCase):
 
 class MultiSportParseTests(unittest.TestCase):
     def test_sports_table_covers_a2_leagues(self):
-        need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "BUNDESLIGA"}
+        need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "BUNDESLIGA", "NHL"}
         self.assertTrue(need <= set(lt.SPORTS))
         self.assertEqual(lt.SPORTS["NFL"]["kalshi"], "KXNFLTOTAL")
         self.assertEqual(lt.SPORTS["BUNDESLIGA"]["kalshi"], "KXBUNDESLIGATOTAL")
         self.assertIsNone(lt.SPORTS["BUNDESLIGA"]["cdc"])
+        self.assertEqual(lt.SPORTS["NHL"]["kalshi"], "KXNHLTOTAL")
         need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL"}
         self.assertTrue(need <= set(lt.SPORTS))
         self.assertEqual(lt.SPORTS["NFL"]["kalshi"], "KXNFLTOTAL")
@@ -75,6 +76,9 @@ class MultiSportParseTests(unittest.TestCase):
         self.assertEqual(lt.SPORTS["EPL"]["cdc"], "EPL")
         self.assertIsNone(lt.SPORTS["LALIGA"]["kalshi"])
         self.assertIsNone(lt.SPORTS["NCAAB"]["cdc"])
+        self.assertEqual(lt.SPORTS["NHL"]["espn"], "hockey/nhl")
+        self.assertEqual(lt.SPORTS["NHL"]["kalshi"], "KXNHLTOTAL")
+        self.assertEqual(lt.SPORTS["NHL"]["cdc"], "NHL")
 
     def test_nba_canon_and_skips_final(self):
         games = lt.parse_espn(load("espn_nba.json"), "NBA")
