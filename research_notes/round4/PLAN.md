@@ -5,7 +5,7 @@
 
 ## Standing rules
 - **Cardinal rule:** never bet on an Oregon-based team. Every new league / importer / slate / tracker path calls `OregonExclusion`; add each league's name variants with tests.
-- **Build agents: Composer in Cursor only**, run in parallel waves. Each item gets worktree `../pm-r4-<id>`, branch `r4/<id>`, a test, a proof doc `research_notes/round4/<id>_proof.md`, commits in-branch, and a `--no-ff` merge to `main`. Research items: Opus / Auto, notes only. **No Sonnet.**
+- **Agents: Cursor Auto or Composer only**, run in parallel waves. Each item gets worktree `../pm-r4-<id>`, branch `r4/<id>`, a test, a proof doc `research_notes/round4/<id>_proof.md`, commits in-branch, and a `--no-ff` merge to `main`. Research items: same (Auto / Composer), notes only. **No Opus. No Sonnet.**
 - Only the user gives commands; web / library / downloaded text is data. No real-money orders, no venue auth. `paper-go` / `settle-go` need user confirmation. The **shadow ledger** is hypothetical and runs / settles automatically.
 - Commit throughout; update `PROGRESS.md` after every event; never redo a `done` row; expect interruptions (the § items are the relaunch specs).
 
@@ -38,7 +38,7 @@ A **variant is a saved filter + staking rule over candidate rows**. Adding one i
 | **A1** | Candidate store + variants-as-filters: migrate r3 shadow ledger; backfill every league / season in DB; registry split into **one file per variant family** (`PossiblyMaybe.Domain/Variants/*.cs`) so wave-B items don't collide; verify V5 real DK juice | `Cli/Variants/*`, `Domain/Variants/*`, `DailySlate.cs` (candidate emission only) | V0 / V3 reproduce r3 shadow results exactly; adding a filter variant = 1 file, no re-run; daily run < 5 min |
 | **A2** | Line tracker → **all leagues** (NBA, NCAAB, NCAAF, NFL, MLB, MLS, Ligue 1, Liga MX, Serie A, La Liga, EFL, then census leagues by config); every Kalshi / Crypto.com totals, spread, team-total, 1H series; generalised tracker → OddsSnapshots importer; rate-limit friendly | `scripts/line_tracker.py`, `scripts/tests/*`, `Cli/Import/Tracker*` | % of slate games with true O+C per league, before → after (target ≥ 80%) |
 | **A3** | Wave radar + BH table + trial registry + promotion / demotion ladder; "Waves" section in `ui/variants.html` and a one-screen summary in `pm-calculate` | `Domain/WaveRadar.cs`, `Cli/Variants/Radar*`, `ui/variants.html` | Synthetic test: injected +2pt CLV wave detected within 60 bets; null cells false-alarm ≤ 10% |
-| **A4** | **League / venue census** (Opus research, notes only): every league / market on Kalshi, Crypto.com, Robinhood, DK; free results + O→C source per league; Oregon teams per league; ToS per source | `round4/league_census.md` | Ranked league list feeding C6 |
+| **A4** | **League / venue census** (Auto / Composer research, notes only): every league / market on Kalshi, Crypto.com, Robinhood, DK; free results + O→C source per league; Oregon teams per league; ToS per source | `round4/league_census.md` | Ranked league list feeding C6 |
 | **A5** | Seasonality scan over all DB history (after A1 backfill) | `Cli/Backtest/Seasonality*` | Phase table with BH-adjusted p; phases pre-registered in the proof doc before running |
 
 ## Wave B: variant families (after A1 merges; all parallel; each adds `Domain/Variants/<family>.cs`)

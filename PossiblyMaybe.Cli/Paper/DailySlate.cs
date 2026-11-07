@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Cli.Variants;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
+using PossiblyMaybe.Domain.SportPacks;
 
 namespace PossiblyMaybe.Cli.Paper;
 
@@ -92,7 +93,7 @@ public static class DailySlate
 
         var modelName = sport switch
         {
-            "MLS" => MlsChampConfig.Model,
+            "MLS" => SportPackRegistry.Mls.Model,
             "LIGUE1" => Ligue1ChampConfig.Model,
             "LIGAMX" => LigaMxChampConfig.Model,
             "SERIEA" => SerieAChampConfig.Model,
@@ -293,8 +294,9 @@ public static class DailySlate
             Dictionary<int, MlsGameXg> xg = [];
             try { xg = await db.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
             catch { /* */ }
-            var xgBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
-            var goalsBook = new ScoringBook(alpha: MlsChampConfig.EmaAlpha, leagueInit: 2.7);
+            var pack = SportPackRegistry.Mls;
+            var xgBook = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: 2.7);
+            var goalsBook = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: 2.7);
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var g in games)
             {
@@ -305,8 +307,8 @@ public static class DailySlate
                 seen.Add(g.AwayTeam);
             }
 
-            return (MlsChampConfig.Model, MlsChampConfig.MarketWeight, MlsChampConfig.MinAbsTotalEdge,
-                MlsChampConfig.MinEv,
+            return (pack.Model, pack.MarketWeight, pack.MinAbsTotalEdge,
+                pack.MinEv,
                 (home, away) => seen.Contains(home) && seen.Contains(away)
                     ? xgBook.ExpectedLambdas(home, away)
                     : goalsBook.ExpectedLambdas(home, away));
