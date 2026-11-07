@@ -51,6 +51,19 @@ public class VariantsTests
     }
 
     [Test]
+    public async Task Filter_LeaguePaused_OnV4()
+    {
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 15);
+        var paused = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "NBA" };
+        var v3 = VariantRegistry.Evaluate(VariantRegistry.Require("V3"), c, paused);
+        var v4 = VariantRegistry.Evaluate(VariantRegistry.Require("V4"), c, paused);
+        await Assert.That(v3.Pick).IsTrue();
+        await Assert.That(v4.Pick).IsFalse();
+        await Assert.That(v4.SkipReason).IsEqualTo(VariantSkip.LeaguePaused);
+        await Assert.That(VariantRegistry.Require("V4").LeagueShutoff).IsTrue();
+    }
+
+    [Test]
     public async Task Filter_SerieA_Off_OnVSa0()
     {
         var c = new SlateCandidate(

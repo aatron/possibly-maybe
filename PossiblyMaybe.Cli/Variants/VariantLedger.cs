@@ -58,6 +58,42 @@ public static class VariantLedger
         return (db, dbPath);
     }
 
+    /// <summary>
+    /// Sports whose last <see cref="Guards.ShutoffWindow"/> settled CLV pts (signal variant) average &lt; 0.
+    /// </summary>
+    public static async Task<HashSet<string>> PausedLeaguesAsync(
+        VariantDbContext db,
+        string signalVariantId = Guards.ShutoffSignalVariantId,
+        CancellationToken ct = default)
+    {
+        var paused = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sports = await db.ShadowEntries.AsNoTracking()
+            .Where(e => e.VariantId == signalVariantId
+                        && e.Result != null
+                        && e.ClvPts != null
+                        && e.SkipReason == null)
+            .Select(e => e.Sport)
+            .Distinct()
+            .ToListAsync(ct);
+        foreach (var sport in sports)
+        {
+            var clvs = await db.ShadowEntries.AsNoTracking()
+                .Where(e => e.VariantId == signalVariantId
+                            && e.Sport == sport
+                            && e.Result != null
+                            && e.ClvPts != null
+                            && e.SkipReason == null)
+                .OrderByDescending(e => e.SettledAt ?? e.EvaluatedAt)
+                .ThenByDescending(e => e.Id)
+                .Take(Guards.ShutoffWindow)
+                .Select(e => e.ClvPts!.Value)
+                .ToListAsync(ct);
+            if (Guards.LeaguePausedByRollingClv(clvs))
+                paused.Add(sport);
+        }
+        return paused;
+    }
+
     public static async Task UpsertAsync(
         VariantDbContext db,
         string variantId,
