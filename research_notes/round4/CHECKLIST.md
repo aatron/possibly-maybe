@@ -12,7 +12,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
 
 ## B. Variants never built (backtestable)
-- [ ] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
+- [x] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
 - [ ] `nba-volume` (w=0.6, edge 3.5) + PaceEffEfg arm (+11.5u/147, +14.7u/201 vs +16.3u/62) → B3
 - [ ] `mls-dc` (+13.2u/116 vs +15.7u/100) → B4
 - [ ] `+poisson-all` for MLS / Liga MX (near-tie CLV) → B4
@@ -28,7 +28,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 
 ## C. Variants never built (live-only)
 - [ ] `+injury-guard`: ESPN injury / status changes in the last 24h (NBA, NFL, NCAA) → B1
-- [ ] `+roster-reset`: after major trades / transfers, for promoted / relegated clubs → B2
+- [x] `+roster-reset`: after major trades / transfers, for promoted / relegated clubs → B2
 - [ ] `consensus-outlier` (Kaunitz): bet the venue that's off from the cross-venue consensus → B6
 - [ ] `line-move-follow`: bet only when the line moved toward us → B6
 
