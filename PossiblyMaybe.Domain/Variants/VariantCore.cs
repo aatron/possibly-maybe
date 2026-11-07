@@ -2,6 +2,7 @@ namespace PossiblyMaybe.Domain;
 
 /// <summary>
 /// Immutable versioned betting config. Changing behavior = register a new Id; never edit old ids.
+/// Optional flags default false/null so wave-B families can add one file without touching others.
 /// </summary>
 public sealed record Variant(
     string Id,
@@ -16,19 +17,44 @@ public sealed record Variant(
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
     IReadOnlySet<string>? Leagues,
-    /// <summary>B2: shrink model toward league mean on early-season / promoted phases.</summary>
     bool Pooling = false,
-    /// <summary>B2: shrink + widen σ when <see cref="SlateCandidate.RosterFlag"/> is set.</summary>
     bool RosterReset = false,
-    /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
     bool InvVarBlend = false,
-    /// <summary>When true, add <see cref="SlateCandidate.RefTotalsResidual"/> to model exp (refs-nba).</summary>
-    bool UseRefTotals = false);
+    bool UseRefTotals = false,
+    bool AbsenceAdjust = false,
+    bool InjuryGuard = false,
+    double? MarketWeight = null,
+    double? MinAbsEdge = null,
+    double? MinEv = null,
+    NbaTotalsModel NbaModel = NbaTotalsModel.PaceEff,
+    SoccerOverProbKind SoccerOverProb = SoccerOverProbKind.LeagueDefault,
+    double SoccerPhi = 0,
+    double SoccerRho = 0,
+    bool FittedCurve = false,
+    bool ConsensusOutlier = false,
+    double ConsensusAlpha = 0.05,
+    bool LineMoveFollow = false,
+    bool ConformalFilter = false,
+    bool UseKalmanRatings = false);
 
 public enum NbaOverProbKind
 {
     NormalSigma = 0,
     Logistic = 1,
+}
+
+public enum NbaTotalsModel
+{
+    PaceEff = 0,
+    PaceEffEfg = 1,
+}
+
+public enum SoccerOverProbKind
+{
+    LeagueDefault = 0,
+    PoissonAll = 1,
+    NegBin = 2,
+    DcRho = 3,
 }
 
 /// <summary>One game's shared model/line inputs; variants filter it.</summary>
@@ -52,8 +78,15 @@ public sealed record SlateCandidate(
     bool? InjuryFlag = null,
     bool? RosterFlag = null,
     string? SeasonPhase = null,
-    /// <summary>Crew foul/pace residual pts from <see cref="RefEffects"/>; used when variant has UseRefTotals.</summary>
-    double RefTotalsResidual = 0);
+    double RefTotalsResidual = 0,
+    double AbsenceAdjPts = 0,
+    double? ModelExpEfg = null,
+    double? KalshiOverAsk = null,
+    double? KalshiUnderAsk = null,
+    double? CryptoOverAsk = null,
+    double? CryptoUnderAsk = null,
+    double? ConformalHalfWidth = null,
+    double? KalmanModelExp = null);
 
 public sealed record VariantDecision(
     bool Pick,
@@ -76,6 +109,11 @@ public static class VariantSkip
     public const string NoLine = "NO_LINE";
     public const string NoEdge = "NO_EDGE";
     public const string LowEv = "LOW_EV";
+    public const string Injury = "INJURY";
+    public const string NoFollow = "NO_FOLLOW";
+    public const string NoVenueAsks = "NO_VENUE_ASKS";
+    public const string NoOutlier = "NO_OUTLIER";
+    public const string Conformal = "CONFORMAL";
 }
 
 /// <summary>
@@ -85,7 +123,6 @@ public static class VariantSkip
 public static class VariantRegistry
 {
     public const string V0Id = "V0";
-    // Align with W2 Tier A picks in Guards.cs (NBA edge-cap alone fails proof; still used for soccer + live absurds).
     public const double DefaultEdgeCapEv = Guards.RecommendedEdgeCap;
     public const double DefaultNbaLineMoveK = Guards.RecommendedNbaLineMoveK;
     public const double DefaultSoccerLineMoveK = Guards.RecommendedSoccerLineMoveK;
@@ -94,7 +131,6 @@ public static class VariantRegistry
     private static readonly List<(int Order, Variant[] Variants)> Bags = [];
     private static IReadOnlyList<Variant>? _all;
 
-    /// <summary>Family files call this from a <c>[ModuleInitializer]</c>. Lower <paramref name="order"/> first.</summary>
     public static void Register(int order, params Variant[] variants)
     {
         lock (Gate)
@@ -123,10 +159,6 @@ public static class VariantRegistry
 
     public static string GameKey(SlateCandidate c) => $"{c.Yyyymmdd} {c.Away}@{c.Home}";
 
-    /// <param name="pausedLeagues">
-    /// Sports currently paused by rolling-CLV shutoff (from <see cref="Guards.ShutoffSignalVariantId"/> shadow).
-    /// Ignored unless <see cref="Variant.LeagueShutoff"/> is true.
-    /// </param>
     public static VariantDecision Evaluate(
         Variant v, SlateCandidate c, IReadOnlySet<string>? pausedLeagues = null)
     {
@@ -140,13 +172,16 @@ public static class VariantRegistry
             && pausedLeagues is not null
             && pausedLeagues.Contains(c.Sport))
             return Skip(VariantSkip.LeaguePaused);
+        if (v.InjuryGuard && c.InjuryFlag == true)
+            return Skip(VariantSkip.Injury);
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
 
         c = PoolingFamily.Apply(v, c);
         var exp = v.BlendedExp(c, line);
         var edge = exp - line;
-        if (Math.Abs(edge) < c.MinAbsEdge)
+        var minEdge = v.MinAbsEdge ?? c.MinAbsEdge;
+        if (Math.Abs(edge) < minEdge)
             return Skip(VariantSkip.NoEdge);
 
         var betOver = edge > 0;
@@ -156,30 +191,58 @@ public static class VariantRegistry
         var juice = Juice(v, c, betOver);
         var ev = OddsMath.ExpectedValue(p, juice);
 
-        if (ev < c.MinEv)
+        var minEv = v.MinEv ?? c.MinEv;
+        if (ev < minEv)
             return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LowEv);
         if (v.EdgeCap && ev > v.EdgeCapEv)
             return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.EdgeCap);
         if (v.LineMove && LineMovedAgainst(c, betOver, v))
             return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.LineMove);
+        if (v.LineMoveFollow && !LineMovedToward(c, betOver, v))
+            return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoFollow);
+        if (v.ConsensusOutlier)
+        {
+            var odds = VenueDecimalOdds(c, betOver);
+            if (odds.Count < 2)
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoVenueAsks);
+            if (!MarketStructureFamily.IsSoftOutlier(odds, v.ConsensusAlpha))
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.NoOutlier);
+        }
+        if (v.ConformalFilter)
+        {
+            var hw = c.ConformalHalfWidth ?? HigherRiskFamily.GaussianHalfWidth(c.NbaSigma);
+            if (hw is null || !HigherRiskFamily.LineExcludedByInterval(exp, line, hw.Value))
+                return new VariantDecision(false, side, line, juice, p, ev, Math.Abs(edge), VariantSkip.Conformal);
+        }
 
         return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
     }
 
     private static double BlendedExp(this Variant v, SlateCandidate c, double line)
     {
-        var model = c.ModelExp + (v.UseRefTotals ? c.RefTotalsResidual : 0);
+        var model = v.UseKalmanRatings && c.KalmanModelExp is { } kExp
+            ? kExp
+            : v.NbaModel == NbaTotalsModel.PaceEffEfg
+                ? c.ModelExpEfg ?? c.ModelExp
+                : c.ModelExp;
+        model += v.UseRefTotals ? c.RefTotalsResidual : 0;
+        model += v.AbsenceAdjust ? c.AbsenceAdjPts : 0;
+
+        var w = v.MarketWeight ?? c.MarketWeight;
         if (v.InvVarBlend)
         {
             var (sm, sl) = BlendFamily.LockedSigmas(c.Sport);
             return MarketBlend.InverseVariance(model, line, sm, sl);
         }
 
-        return c.MarketWeight * line + (1 - c.MarketWeight) * model;
+        return w * line + (1 - w) * model;
     }
 
     private static double OverProb(Variant v, SlateCandidate c, double blendedExp, double line)
     {
+        if (v.FittedCurve)
+            return TotalsMath.NormalOverProb(blendedExp, line, FittedCurves.SigmaFor(c.Sport));
+
         if (c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase))
         {
             return v.NbaOverProb == NbaOverProbKind.NormalSigma
@@ -195,7 +258,13 @@ public static class VariantRegistry
 
         var lh = c.LambdaHome ?? blendedExp / 2;
         var la = c.LambdaAway ?? blendedExp / 2;
-        return SoccerOverProbConfig.OverProb(lh, la, blendedExp, line, c.Sport);
+        return v.SoccerOverProb switch
+        {
+            SoccerOverProbKind.PoissonAll => TotalsMath.PoissonTotalOverProb(lh, la, line),
+            SoccerOverProbKind.NegBin => TotalsMath.NegBinTotalOverProb(lh + la, v.SoccerPhi, line),
+            SoccerOverProbKind.DcRho => DixonColesBook.OverProbWithRho(lh, la, line, v.SoccerRho),
+            _ => SoccerOverProbConfig.OverProb(lh, la, blendedExp, line, c.Sport),
+        };
     }
 
     private static int Juice(Variant v, SlateCandidate c, bool betOver)
@@ -208,13 +277,38 @@ public static class VariantRegistry
     private static bool LineMovedAgainst(SlateCandidate c, bool betOver, Variant v)
     {
         if (c.OpenLine is not { } open || c.Line is not { } cur) return false;
-        var move = cur - open; // + = line rose
+        var move = cur - open;
         var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase)
                 || c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
             ? v.NbaLineMoveK
             : v.SoccerLineMoveK;
-        // OVER hurt when line drops; UNDER hurt when line rises
         return betOver ? move <= -k : move >= k;
+    }
+
+    private static bool LineMovedToward(SlateCandidate c, bool betOver, Variant v)
+    {
+        if (c.OpenLine is not { } open || c.Line is not { } cur) return false;
+        var move = cur - open;
+        var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase)
+                || c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
+            ? v.NbaLineMoveK
+            : v.SoccerLineMoveK;
+        return betOver ? move >= k : move <= -k;
+    }
+
+    private static List<double> VenueDecimalOdds(SlateCandidate c, bool betOver)
+    {
+        var list = new List<double>(4);
+        var am = betOver ? c.DkOverAmerican : c.DkUnderAmerican;
+        if (am is int a and not 0)
+            list.Add(OddsMath.AmericanToDecimal(a));
+        var kAsk = betOver ? c.KalshiOverAsk : c.KalshiUnderAsk;
+        if (kAsk is > 0 and < 1)
+            list.Add(1.0 / kAsk.Value);
+        var cAsk = betOver ? c.CryptoOverAsk : c.CryptoUnderAsk;
+        if (cAsk is > 0 and < 1)
+            list.Add(1.0 / cAsk.Value);
+        return list;
     }
 
     private static VariantDecision Skip(string reason)

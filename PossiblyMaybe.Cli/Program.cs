@@ -410,6 +410,46 @@ switch (command)
         await NflWindTierA.RunAsync(dbPath);
         return 0;
     }
+    case "tier-a-nba-volume":
+    {
+        // tier-a-nba-volume [db] — B3 nba-volume / nba-volume-efg vs V0
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await NbaVolumeTierA.RunAsync(dbPath);
+        return 0;
+    }
+    case "tier-a-b8":
+    {
+        // tier-a-b8 [db] — +conformal / kalman vs V0; keep only if mean CLV ≥ V0
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await HigherRiskTierA.RunAsync(dbPath);
+        return 0;
+    }
     case "tier-a-shutoff":
     {
         // tier-a-shutoff [db] — V3 vs V4 rolling-CLV pause: flat PnL + max drawdown
@@ -956,6 +996,8 @@ static void PrintUsage()
           tier-a-shadow-soccer [SPORT|all] [db]  Tier A folds for LALIGA/EFL shadow packs
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
           tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
+          tier-a-nba-volume [db]         B3 nba-volume / efg vs V0 (CLV/bet)
+          tier-a-b8 [db]                 B8 +conformal / kalman vs V0
           tier-a-shutoff [db]            V3 vs V4 rolling-CLV shutoff PnL / max DD
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)

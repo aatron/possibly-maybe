@@ -63,6 +63,54 @@ public static class TotalsMath
         return Math.Clamp(1.0 - cdf, 0.0, 1.0);
     }
 
+    /// <summary>
+    /// P(T &gt; line) for NB2 total: mean μ, var = μ + φμ². φ→0 ⇒ Poisson(μ).
+    /// </summary>
+    public static double NegBinTotalOverProb(double mu, double phi, double line)
+    {
+        mu = Math.Max(1e-9, mu);
+        if (phi <= 1e-12)
+            return PoissonTotalOverProb(mu / 2, mu / 2, line);
+
+        var r = 1.0 / phi;
+        var kMax = (int)Math.Floor(line);
+        if (kMax < 0) return 1.0;
+        // p0 = (r/(r+μ))^r; p_{k+1} = p_k · (k+r)/(k+1) · μ/(r+μ)
+        var p = Math.Pow(r / (r + mu), r);
+        var cdf = p;
+        var factor = mu / (r + mu);
+        for (var k = 0; k < kMax; k++)
+        {
+            p *= (k + r) / (k + 1) * factor;
+            cdf += p;
+            if (cdf >= 1.0 - 1e-15) return 0.0;
+        }
+        return Math.Clamp(1.0 - cdf, 0.0, 1.0);
+    }
+
+    /// <summary>
+    /// Train-only MoM φ for NB2: φ = max(0, (s² − μ̄) / μ̄²) from predicted means vs actuals.
+    /// </summary>
+    public static double FitNegBinPhi(IReadOnlyList<double> predictedTotals, IReadOnlyList<double> actualTotals)
+    {
+        if (predictedTotals.Count == 0 || predictedTotals.Count != actualTotals.Count)
+            return 0;
+        double sumMu = 0, sumMu2 = 0, sumSq = 0;
+        var n = predictedTotals.Count;
+        for (var i = 0; i < n; i++)
+        {
+            var mu = Math.Max(1e-6, predictedTotals[i]);
+            var e = actualTotals[i] - mu;
+            sumMu += mu;
+            sumMu2 += mu * mu;
+            sumSq += e * e;
+        }
+        var meanVar = sumSq / n;
+        var meanMu = sumMu / n;
+        var meanMu2 = sumMu2 / n;
+        return Math.Max(0, (meanVar - meanMu) / Math.Max(1e-12, meanMu2));
+    }
+
     public static double OuPnL(int americanJuice, int ouResult)
     {
         if (ouResult == 0) return 0;

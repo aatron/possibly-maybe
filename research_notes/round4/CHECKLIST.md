@@ -13,24 +13,24 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 
 ## B. Variants never built (backtestable)
 - [ ] `+pooling`: shrink to league mean, early season / promoted clubs (EB was within ~1u of champ) → B2
-- [ ] `nba-volume` (w=0.6, edge 3.5) + PaceEffEfg arm (+11.5u/147, +14.7u/201 vs +16.3u/62) → B3
-- [ ] `mls-dc` (+13.2u/116 vs +15.7u/100) → B4
-- [ ] `+poisson-all` for MLS / Liga MX (near-tie CLV) → B4
-- [ ] Negative-binomial φ goal counts (r2 deferred) → B4
-- [ ] Dixon–Coles ρ low-score correction (r2 deferred) → B4
-- [ ] Fitted P(over) curve per league (learned σ / sharpness, not hand-set; r2 deferred) → B7
-- [ ] `soccer-strict` (edge ≥ 0.5 goals, EV 4–20%), `nba-strict`, EV-band variants → B7
+- [x] `nba-volume` (w=0.6, edge 3.5) + PaceEffEfg arm (+11.5u/147, +14.7u/201 vs +16.3u/62) → B3
+- [x] `mls-dc` (+13.2u/116 vs +15.7u/100) → B4
+- [x] `+poisson-all` for MLS / Liga MX (near-tie CLV) → B4
+- [x] Negative-binomial φ goal counts (r2 deferred) → B4
+- [x] Dixon–Coles ρ low-score correction (r2 deferred) → B4
+- [x] Fitted P(over) curve per league (learned σ / sharpness, not hand-set; r2 deferred) → B7
+- [x] `soccer-strict` (edge ≥ 0.5 goals, EV 4–20%), `nba-strict`, EV-band variants → B7
 - [ ] Referees for **totals** (NBA `RefereeAssignments` 72k rows; `RefEffects.cs` only fits home-win) → B5
-- [ ] NBA absence / DNP adjustment (`AbsenceBook.cs` wired to backtest, **no result recorded**) → B1
-- [ ] Conformal-interval bet filter (r2 deferred) → B8
-- [ ] Kalman / adaptive-rate team ratings (r2 deferred) → B8
+- [x] NBA absence / DNP adjustment (`AbsenceBook.cs` wired to backtest, **no result recorded**) → B1
+- [x] Conformal-interval bet filter (r2 deferred) → B8
+- [x] Kalman / adaptive-rate team ratings (r2 deferred) → B8
 - [ ] Inverse-variance blend weight (coin flip 7/14 folds) → B9
 
 ## C. Variants never built (live-only)
-- [ ] `+injury-guard`: ESPN injury / status changes in the last 24h (NBA, NFL, NCAA) → B1
+- [x] `+injury-guard`: ESPN injury / status changes in the last 24h (NBA, NFL, NCAA) → B1
 - [ ] `+roster-reset`: after major trades / transfers, for promoted / relegated clubs → B2
-- [ ] `consensus-outlier` (Kaunitz): bet the venue that's off from the cross-venue consensus → B6
-- [ ] `line-move-follow`: bet only when the line moved toward us → B6
+- [x] `consensus-outlier` (Kaunitz): bet the venue that's off from the cross-venue consensus → B6
+- [x] `line-move-follow`: bet only when the line moved toward us → B6
 
 ## D. Leagues / markets never or not properly tested
 - [ ] NCAAF totals (16 SBRO seasons imported in r3 W15) → C2
