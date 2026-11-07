@@ -47,3 +47,11 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] Seasonality scan: historical CLV by season phase → wave calendar → A5
 - [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
 - [x] Generic sport-pack template so a league is a config, not a project → C0
+
+## F. Wave R (point-in-time / no-cheating)
+- [x] As-of cutoff in every model builder + leak test → R1
+- [x] Append-only decision log (run id, SHA, watermark, venues, injury) + settlement table → R2
+- [x] Same-book close → R3
+- [x] Checkpoint reporter → R5
+- [ ] Real DK price on paper tickets → R6
+- [ ] AsOfView / IStrategy / day engine / vault → R7–R10

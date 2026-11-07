@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Domain;
 
@@ -64,10 +68,56 @@ public sealed class CandidateEntry
     public DateTimeOffset StoredAt { get; set; }
 }
 
+/// <summary>Append-only decision row (R2). Never updated; settle via <see cref="DecisionSettlement"/>.</summary>
+public sealed class DecisionLogEntry
+{
+    public long Id { get; set; }
+    public Guid RunId { get; set; }
+    public DateTimeOffset DecidedAt { get; set; }
+    public string GitSha { get; set; } = "";
+    public string VariantId { get; set; } = "";
+    public int RegistryVersion { get; set; }
+    public string Sport { get; set; } = "";
+    public string GameKey { get; set; } = "";
+    public string? Side { get; set; }
+    public double? Line { get; set; }
+    public int AmericanOdds { get; set; }
+    public double ModelProb { get; set; }
+    public double Ev { get; set; }
+    public double AbsEdge { get; set; }
+    public string? SkipReason { get; set; }
+    public int? MaxGameId { get; set; }
+    public DateTimeOffset? MaxTipoffIncluded { get; set; }
+    /// <summary>Comma-separated odds snapshot ids used at decision time.</summary>
+    public string? OddsSnapshotIds { get; set; }
+    /// <summary>Compact venue line+price JSON (capture time included).</summary>
+    public string? VenueLinesJson { get; set; }
+    public string? InjuryRosterHash { get; set; }
+    public string? InjuryRosterJson { get; set; }
+}
+
+/// <summary>Settlement for a <see cref="DecisionLogEntry"/> — separate table, never mutates the log.</summary>
+public sealed class DecisionSettlement
+{
+    public long Id { get; set; }
+    public long DecisionLogId { get; set; }
+    public string Result { get; set; } = "";
+    public double? PnL { get; set; }
+    public double? CloseLine { get; set; }
+    public double? ClvPts { get; set; }
+    public string? CloseBook { get; set; }
+    public DateTimeOffset? CloseCapturedAt { get; set; }
+    public double? MinutesBeforeStart { get; set; }
+    public bool CrossBookClose { get; set; }
+    public DateTimeOffset SettledAt { get; set; }
+}
+
 public sealed class VariantDbContext(DbContextOptions<VariantDbContext> options) : DbContext(options)
 {
     public DbSet<ShadowEntry> ShadowEntries => Set<ShadowEntry>();
     public DbSet<CandidateEntry> CandidateEntries => Set<CandidateEntry>();
+    public DbSet<DecisionLogEntry> DecisionLogEntries => Set<DecisionLogEntry>();
+    public DbSet<DecisionSettlement> DecisionSettlements => Set<DecisionSettlement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +140,23 @@ public sealed class VariantDbContext(DbContextOptions<VariantDbContext> options)
             e.Property(x => x.Away).HasMaxLength(64);
             e.Property(x => x.SeasonPhase).HasMaxLength(32);
         });
+        modelBuilder.Entity<DecisionLogEntry>(e =>
+        {
+            e.HasIndex(x => x.RunId);
+            e.HasIndex(x => new { x.VariantId, x.GameKey, x.DecidedAt });
+            e.Property(x => x.VariantId).HasMaxLength(32);
+            e.Property(x => x.Sport).HasMaxLength(16);
+            e.Property(x => x.GameKey).HasMaxLength(128);
+            e.Property(x => x.GitSha).HasMaxLength(64);
+            e.Property(x => x.SkipReason).HasMaxLength(32);
+            e.Property(x => x.InjuryRosterHash).HasMaxLength(64);
+        });
+        modelBuilder.Entity<DecisionSettlement>(e =>
+        {
+            e.HasIndex(x => x.DecisionLogId).IsUnique();
+            e.Property(x => x.Result).HasMaxLength(8);
+            e.Property(x => x.CloseBook).HasMaxLength(32);
+        });
     }
 }
 
@@ -107,7 +174,183 @@ public static class VariantLedger
         // EnsureCreated is a no-op when ShadowEntries already exists — add Candidates additively.
         await EnsureCandidateTableAsync(db, ct);
         await EnsureShadowCloseColumnsAsync(db, ct);
+        await EnsureDecisionLogTablesAsync(db, ct);
         return (db, dbPath);
+    }
+
+    static async Task EnsureDecisionLogTablesAsync(VariantDbContext db, CancellationToken ct)
+    {
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS "DecisionLogEntries" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_DecisionLogEntries" PRIMARY KEY AUTOINCREMENT,
+                "RunId" TEXT NOT NULL,
+                "DecidedAt" TEXT NOT NULL,
+                "GitSha" TEXT NOT NULL,
+                "VariantId" TEXT NOT NULL,
+                "RegistryVersion" INTEGER NOT NULL,
+                "Sport" TEXT NOT NULL,
+                "GameKey" TEXT NOT NULL,
+                "Side" TEXT NULL,
+                "Line" REAL NULL,
+                "AmericanOdds" INTEGER NOT NULL,
+                "ModelProb" REAL NOT NULL,
+                "Ev" REAL NOT NULL,
+                "AbsEdge" REAL NOT NULL,
+                "SkipReason" TEXT NULL,
+                "MaxGameId" INTEGER NULL,
+                "MaxTipoffIncluded" TEXT NULL,
+                "OddsSnapshotIds" TEXT NULL,
+                "VenueLinesJson" TEXT NULL,
+                "InjuryRosterHash" TEXT NULL,
+                "InjuryRosterJson" TEXT NULL
+            );
+            """, ct);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS "DecisionSettlements" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_DecisionSettlements" PRIMARY KEY AUTOINCREMENT,
+                "DecisionLogId" INTEGER NOT NULL,
+                "Result" TEXT NOT NULL,
+                "PnL" REAL NULL,
+                "CloseLine" REAL NULL,
+                "ClvPts" REAL NULL,
+                "CloseBook" TEXT NULL,
+                "CloseCapturedAt" TEXT NULL,
+                "MinutesBeforeStart" REAL NULL,
+                "CrossBookClose" INTEGER NOT NULL DEFAULT 0,
+                "SettledAt" TEXT NOT NULL
+            );
+            """, ct);
+        await db.Database.ExecuteSqlRawAsync(
+            """CREATE INDEX IF NOT EXISTS "IX_DecisionLogEntries_RunId" ON "DecisionLogEntries" ("RunId");""", ct);
+        await db.Database.ExecuteSqlRawAsync(
+            """CREATE UNIQUE INDEX IF NOT EXISTS "IX_DecisionSettlements_DecisionLogId" ON "DecisionSettlements" ("DecisionLogId");""", ct);
+    }
+
+    static string? _gitSha;
+
+    public static string ResolveGitSha()
+    {
+        if (_gitSha is not null) return _gitSha;
+        var env = Environment.GetEnvironmentVariable("GIT_COMMIT")
+                  ?? Environment.GetEnvironmentVariable("GITHUB_SHA");
+        if (!string.IsNullOrWhiteSpace(env))
+            return _gitSha = env.Trim();
+        try
+        {
+            var psi = new ProcessStartInfo("git", "rev-parse HEAD")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            using var p = Process.Start(psi);
+            var sha = p?.StandardOutput.ReadToEnd().Trim() ?? "";
+            p?.WaitForExit(2000);
+            if (sha.Length >= 7) return _gitSha = sha;
+        }
+        catch { /* */ }
+        return _gitSha = "unknown";
+    }
+
+    public static string HashPayload(string payload)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    /// <summary>Append-only decision insert. Never updates prior rows.</summary>
+    public static async Task<DecisionLogEntry> AppendDecisionAsync(
+        VariantDbContext db,
+        Guid runId,
+        string variantId,
+        string sport,
+        string gameKey,
+        VariantDecision d,
+        SlateCandidate? candidate = null,
+        int? maxGameId = null,
+        DateTimeOffset? maxTipoffIncluded = null,
+        string? oddsSnapshotIds = null,
+        CancellationToken ct = default)
+    {
+        var decidedAt = DateTimeOffset.UtcNow;
+        // shortcut: venue capture times = decided_at until tracker snapshot ids are threaded through AsOfView
+        var venue = new Dictionary<string, object?>
+        {
+            ["draftkings"] = new
+            {
+                line = candidate?.Line ?? d.Line,
+                openLine = candidate?.OpenLine,
+                overAmerican = candidate?.DkOverAmerican,
+                underAmerican = candidate?.DkUnderAmerican,
+                capturedAt = decidedAt,
+            },
+        };
+        var venueJson = JsonSerializer.Serialize(venue);
+        var injuryJson = JsonSerializer.Serialize(new
+        {
+            injuryFlag = candidate?.InjuryFlag,
+            rosterFlag = candidate?.RosterFlag,
+            seasonPhase = candidate?.SeasonPhase,
+        });
+        var row = new DecisionLogEntry
+        {
+            RunId = runId,
+            DecidedAt = decidedAt,
+            GitSha = ResolveGitSha(),
+            VariantId = variantId,
+            RegistryVersion = VariantRegistry.RegistryVersion,
+            Sport = sport,
+            GameKey = gameKey,
+            Side = d.Side,
+            Line = d.Line,
+            AmericanOdds = d.AmericanOdds,
+            ModelProb = d.ModelProb,
+            Ev = d.Ev,
+            AbsEdge = d.AbsEdge,
+            SkipReason = d.Pick ? null : d.SkipReason,
+            MaxGameId = maxGameId,
+            MaxTipoffIncluded = maxTipoffIncluded,
+            OddsSnapshotIds = oddsSnapshotIds,
+            VenueLinesJson = venueJson,
+            InjuryRosterJson = injuryJson,
+            InjuryRosterHash = HashPayload(injuryJson),
+        };
+        db.DecisionLogEntries.Add(row);
+        await db.SaveChangesAsync(ct);
+        return row;
+    }
+
+    public static async Task AppendSettlementAsync(
+        VariantDbContext db,
+        long decisionLogId,
+        string result,
+        double? pnl,
+        double? closeLine,
+        double? clvPts,
+        string? closeBook,
+        DateTimeOffset? closeCapturedAt,
+        double? minutesBeforeStart,
+        bool crossBookClose,
+        CancellationToken ct = default)
+    {
+        if (await db.DecisionSettlements.AnyAsync(s => s.DecisionLogId == decisionLogId, ct))
+            return;
+        db.DecisionSettlements.Add(new DecisionSettlement
+        {
+            DecisionLogId = decisionLogId,
+            Result = result,
+            PnL = pnl,
+            CloseLine = closeLine,
+            ClvPts = clvPts,
+            CloseBook = closeBook,
+            CloseCapturedAt = closeCapturedAt,
+            MinutesBeforeStart = minutesBeforeStart,
+            CrossBookClose = crossBookClose,
+            SettledAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync(ct);
     }
 
     static async Task EnsureShadowCloseColumnsAsync(VariantDbContext db, CancellationToken ct)

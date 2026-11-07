@@ -161,7 +161,10 @@ public static class VariantBackfill
         var xgBook = sport == "MLS" ? new ScoringBook(alpha: alpha, leagueInit: 2.7) : null;
         var xgSeen = new HashSet<string>(StringComparer.Ordinal);
         var dc = useDc ? new DixonColesBook(alpha: alpha) : null;
-        var serieCutoff = DateTimeOffset.UtcNow.AddYears(-3);
+        // Reproducible 3y window relative to last tipoff in warehouse (not wall-clock UtcNow).
+        var serieCutoff = games.Count > 0
+            ? games[^1].TipoffUtc.AddYears(-3)
+            : DateTimeOffset.UtcNow.AddYears(-3);
         var shutoffSignal = new Dictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
         var n = 0;
 
@@ -227,11 +230,13 @@ public static class VariantBackfill
         await VariantLedger.UpsertCandidateAsync(vdb, c, ct);
 
         VariantDecision? signal = null;
+        var runId = Guid.NewGuid();
         var n = 0;
         foreach (var v in VariantRegistry.All)
         {
             var d = VariantRegistry.Evaluate(v, c, v.LeagueShutoff ? paused : null);
             await VariantLedger.UpsertAsync(vdb, v.Id, c.Sport, key, d, c.OpenLine, c.Line, ct);
+            await VariantLedger.AppendDecisionAsync(vdb, runId, v.Id, c.Sport, key, d, c, ct: ct);
             if (v.Id.Equals(Guards.ShutoffSignalVariantId, StringComparison.OrdinalIgnoreCase))
                 signal = d;
             n++;

@@ -50,6 +50,7 @@ public static class VariantEvaluate
         if (VariantRegistry.All.Any(v => v.LeagueShutoff))
             paused = await VariantLedger.PausedLeaguesAsync(db, ct: ct);
 
+        var runId = Guid.NewGuid();
         var n = 0;
         foreach (var c in candidates)
         {
@@ -61,6 +62,7 @@ public static class VariantEvaluate
             {
                 var d = VariantRegistry.Evaluate(v, c, v.LeagueShutoff ? paused : null);
                 await VariantLedger.UpsertAsync(db, v.Id, c.Sport, key, d, c.OpenLine, c.Line, ct);
+                await VariantLedger.AppendDecisionAsync(db, runId, v.Id, c.Sport, key, d, c, ct: ct);
                 n++;
             }
         }

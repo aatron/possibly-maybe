@@ -127,6 +127,8 @@ public static class VariantSkip
 public static class VariantRegistry
 {
     public const string V0Id = "V0";
+    /// <summary>Bump when registry shape / Evaluate contract changes (R2 decision log).</summary>
+    public const int RegistryVersion = 1;
     public const double DefaultEdgeCapEv = Guards.RecommendedEdgeCap;
     public const double DefaultNbaLineMoveK = Guards.RecommendedNbaLineMoveK;
     public const double DefaultSoccerLineMoveK = Guards.RecommendedSoccerLineMoveK;

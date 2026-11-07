@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** Wave R (R1/R2/R6–R10); D1–D5. r3-W16 Composer-only handoff.
+**Next action:** Wave R (R6–R10); D1–D5. R1+R2 done.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -31,8 +31,8 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | C6-bundesliga | Bundesliga pack (A4 #2 ready) | Composer | `../pm-r4-c6-bundesliga` `r4/c6-bundesliga` | Tier A | done | d6799f7 |
 | C6-nhl | NHL pack (A4 #3; Tier A O→C-gated) | Composer | `../pm-r4-c6-nhl` `r4/c6-nhl` | shadow + tracker | done | (this merge) |
 | C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | done | (this commit) |
-| R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
-| R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
+| R1 | As-of cutoff in all model builders | Composer | main | `r1_proof.md` leak test | done | (this commit) |
+| R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | main | `r2_proof.md` schema test | done | (this commit) |
 | R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | done | (batch land) |
 | R4 | replay --asof command | — | — | — | superseded by R7–R9 (replay = engine over logged dates) | |
 | R7 | Point-in-time AsOfView (no DB handle for strategies) | Composer | `../pm-r4-r7` | leak tests | pending (A1+R1/R2) | |
@@ -68,3 +68,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | Unified VariantCore + landed B1/B3/B4/B6/B7/B8 families on main (236 tests). C6-bundesliga/nhl + A5/C7 remain. |
 | 2026-11-07 | C6-bundesliga + C6-nhl merged (244 tests). A5/C7 + Wave R remain. |
 | 2026-11-07 | A5 seasonality-scan + C7 SPREAD/ML candidate store landed (254 tests). Wave R next. |
+| 2026-11-07 | R1 as-of cutoff + R2 append-only DecisionLog landed (260 tests). Proofs `r1_proof.md` / `r2_proof.md`. |

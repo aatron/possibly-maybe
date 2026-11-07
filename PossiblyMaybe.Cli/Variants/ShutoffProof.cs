@@ -151,7 +151,9 @@ public static class ShutoffProof
         var xgBook = sport == "MLS" ? new ScoringBook(alpha: alpha, leagueInit: 2.7) : null;
         var xgSeen = new HashSet<string>(StringComparer.Ordinal);
         var dc = useDc ? new DixonColesBook(alpha: alpha) : null;
-        var serieCutoff = DateTimeOffset.UtcNow.AddYears(-3);
+        var serieCutoff = games.Count > 0
+            ? games[^1].TipoffUtc.AddYears(-3)
+            : DateTimeOffset.UtcNow.AddYears(-3);
         var signal = new List<(double Clv, double Pnl)>();
         var v3 = VariantRegistry.Require(Guards.ShutoffSignalVariantId);
 

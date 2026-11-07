@@ -79,6 +79,13 @@ public static class VariantSettle
                         pnl = -1;
                     }
 
+                    double? clvPts = null;
+                    if (sameBook && closeLine is { } cl)
+                    {
+                        var overClv = TotalsMath.OverClvPoints(row.Line.Value, cl);
+                        clvPts = sideOver ? overClv : -overClv;
+                    }
+
                     row.Result = result;
                     row.PnL = pnl;
                     row.CloseLine = closeLine;
@@ -86,14 +93,33 @@ public static class VariantSettle
                     row.CloseCapturedAt = captured;
                     row.MinutesBeforeStart = mins;
                     row.CrossBookClose = closeLine is not null && !sameBook;
-                    row.ClvPts = null;
-                    if (sameBook && closeLine is { } cl)
-                    {
-                        var overClv = TotalsMath.OverClvPoints(row.Line.Value, cl);
-                        row.ClvPts = sideOver ? overClv : -overClv;
-                    }
+                    row.ClvPts = clvPts;
                     row.SettledAt = DateTimeOffset.UtcNow;
                     settled++;
+
+                    // R2: settle newest unsettled DecisionLog row; never mutate the log.
+                    var logId = await vdb.DecisionLogEntries.AsNoTracking()
+                        .Where(e => e.VariantId == row.VariantId && e.GameKey == row.GameKey && e.SkipReason == null)
+                        .OrderByDescending(e => e.Id)
+                        .Select(e => (long?)e.Id)
+                        .FirstOrDefaultAsync(ct);
+                    if (logId is { } lid
+                        && !await vdb.DecisionSettlements.AnyAsync(s => s.DecisionLogId == lid, ct))
+                    {
+                        vdb.DecisionSettlements.Add(new DecisionSettlement
+                        {
+                            DecisionLogId = lid,
+                            Result = result,
+                            PnL = pnl,
+                            CloseLine = closeLine,
+                            ClvPts = clvPts,
+                            CloseBook = closeBook,
+                            CloseCapturedAt = captured,
+                            MinutesBeforeStart = mins,
+                            CrossBookClose = closeLine is not null && !sameBook,
+                            SettledAt = DateTimeOffset.UtcNow,
+                        });
+                    }
                 }
             }
 

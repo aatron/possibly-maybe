@@ -210,7 +210,8 @@ public static class DailySlate
     public static async Task<List<SlateCandidate>> BuildNbaCandidatesAsync(
         string dbPath, string yyyymmdd, CancellationToken ct = default)
     {
-        var (pace, sigma) = await BuildNbaPaceAndSigmaAsync(dbPath, ct);
+        var asOf = PointInTime.SlateAsOf(yyyymmdd);
+        var (pace, sigma) = await BuildNbaPaceAndSigmaAsync(dbPath, asOf, ct);
         var games = await FetchNbaScoreboardAsync(yyyymmdd, ct);
         var stale = games.Count > 0 && await IsLeagueStaleAsync("NBA", dbPath, yyyymmdd, ct);
         var list = new List<SlateCandidate>();
@@ -236,7 +237,8 @@ public static class DailySlate
         string dbPath, string yyyymmdd, CancellationToken ct = default)
     {
         var pack = SportPackRegistry.Ncaab;
-        var book = await BuildNcaabScoringBookAsync(dbPath, ct);
+        var asOf = PointInTime.SlateAsOf(yyyymmdd);
+        var book = await BuildNcaabScoringBookAsync(dbPath, asOf, ct);
         var games = await FetchNcaabScoreboardAsync(yyyymmdd, ct);
         var stale = games.Count > 0 && await IsLeagueStaleAsync("NCAAB", dbPath, yyyymmdd, ct);
         var list = new List<SlateCandidate>();
@@ -265,7 +267,8 @@ public static class DailySlate
         if (!SoccerEspnPaths.TryGetValue(sport, out var espnLeague))
             throw new ArgumentException($"No live slate for {sport}.");
 
-        var (_, w, minEdge, minEv, lambdas) = await BuildSoccerModelAsync(sport, dbPath, ct);
+        var asOf = PointInTime.SlateAsOf(yyyymmdd);
+        var (_, w, minEdge, minEv, lambdas) = await BuildSoccerModelAsync(sport, dbPath, asOf, ct);
         var games = await FetchSoccerScoreboardAsync(sport, espnLeague, yyyymmdd, ct);
         var stale = games.Count > 0 && await IsLeagueStaleAsync(sport, dbPath, yyyymmdd, ct);
         var list = new List<SlateCandidate>();
@@ -297,7 +300,8 @@ public static class DailySlate
         string dbPath, string yyyymmdd, CancellationToken ct = default)
     {
         var pack = SportPackRegistry.Nhl;
-        var lambdas = await BuildNhlModelAsync(dbPath, ct);
+        var asOf = PointInTime.SlateAsOf(yyyymmdd);
+        var lambdas = await BuildNhlModelAsync(dbPath, asOf, ct);
         var games = await FetchNhlScoreboardAsync(yyyymmdd, ct);
         var stale = games.Count > 0 && await IsLeagueStaleAsync("NHL", dbPath, yyyymmdd, ct);
         var list = new List<SlateCandidate>();
@@ -387,14 +391,17 @@ public static class DailySlate
         return Directory.GetCurrentDirectory();
     }
 
-    private static async Task<ScoringBook> BuildNcaabScoringBookAsync(string dbPath, CancellationToken ct)
+    private static async Task<ScoringBook> BuildNcaabScoringBookAsync(
+        string dbPath, DateTimeOffset? asOf, CancellationToken ct)
     {
         var pack = SportPackRegistry.Ncaab;
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
-        var games = (await db.Games.AsNoTracking()
-                .Where(g => g.Sport == "NCAAB" && g.HomeScore != null)
-                .ToListAsync(ct))
+        var games = PointInTime.AsOf(
+                await db.Games.AsNoTracking()
+                    .Where(g => g.Sport == "NCAAB" && g.HomeScore != null)
+                    .ToListAsync(ct),
+                g => g.TipoffUtc, asOf)
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
         var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: NcaabChampConfig.LeagueInitTotal);
@@ -404,13 +411,15 @@ public static class DailySlate
     }
 
     private static async Task<(PaceEfficiencyBook Pace, double Sigma)> BuildNbaPaceAndSigmaAsync(
-        string dbPath, CancellationToken ct)
+        string dbPath, DateTimeOffset? asOf, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
-        var games = (await db.Games.AsNoTracking()
-                .Where(g => g.Sport == "NBA" && g.HomeScore != null)
-                .ToListAsync(ct))
+        var games = PointInTime.AsOf(
+                await db.Games.AsNoTracking()
+                    .Where(g => g.Sport == "NBA" && g.HomeScore != null)
+                    .ToListAsync(ct),
+                g => g.TipoffUtc, asOf)
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
         Dictionary<int, GameBox> boxes = [];
@@ -442,13 +451,15 @@ public static class DailySlate
     }
 
     private static async Task<(string ModelName, double W, double MinEdge, double MinEv, Func<string, string, (double Lh, double La)> Lambdas)>
-        BuildSoccerModelAsync(string sport, string dbPath, CancellationToken ct)
+        BuildSoccerModelAsync(string sport, string dbPath, DateTimeOffset? asOf, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
-        var games = (await db.Games.AsNoTracking()
-                .Where(g => g.Sport == sport && g.HomeScore != null)
-                .ToListAsync(ct))
+        var games = PointInTime.AsOf(
+                await db.Games.AsNoTracking()
+                    .Where(g => g.Sport == sport && g.HomeScore != null)
+                    .ToListAsync(ct),
+                g => g.TipoffUtc, asOf)
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
 
@@ -497,7 +508,8 @@ public static class DailySlate
 
         if (sport == "SERIEA")
         {
-            var cutoff = DateTimeOffset.UtcNow.AddYears(-3);
+            var decisionTime = asOf ?? DateTimeOffset.UtcNow;
+            var cutoff = decisionTime.AddYears(-3);
             var dc = new DixonColesBook(alpha: SerieAChampConfig.DcAlpha);
             var goals = new ScoringBook(alpha: SerieAChampConfig.DcAlpha, leagueInit: 2.7);
             foreach (var g in games)
@@ -536,14 +548,16 @@ public static class DailySlate
     }
 
     private static async Task<Func<string, string, (double Lh, double La)>> BuildNhlModelAsync(
-        string dbPath, CancellationToken ct)
+        string dbPath, DateTimeOffset? asOf, CancellationToken ct)
     {
         var pack = SportPackRegistry.Nhl;
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
-        var games = (await db.Games.AsNoTracking()
-                .Where(g => g.Sport == "NHL" && g.HomeScore != null)
-                .ToListAsync(ct))
+        var games = PointInTime.AsOf(
+                await db.Games.AsNoTracking()
+                    .Where(g => g.Sport == "NHL" && g.HomeScore != null)
+                    .ToListAsync(ct),
+                g => g.TipoffUtc, asOf)
             .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
             .ToList();
         var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: NhlShadowConfig.LeagueInit);
