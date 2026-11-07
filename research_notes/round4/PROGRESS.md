@@ -29,6 +29,12 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | C5 | La Liga + EFL shadow | Composer | `../pm-r4-c5` `r4/c5` | Tier A | running | |
 | C6 | New leagues (per A4) | Composer | `../pm-r4-c6-<league>` | per league | pending (A4) | |
 | C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | running | |
+| R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
+| R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
+| R3 | Same-book close | Composer | after A2 `../pm-r4-r3` | % same-book close | pending (A2) | |
+| R4 | replay --asof command | Composer | `../pm-r4-r4` | 11-07 diff = 0 | pending (A1, R1, R2) | |
+| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` | stage test | pending (A3) | |
+| R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
 | D3 | Training-process review | Auto / Composer | reports | — | pending (end) | |
@@ -44,3 +50,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | Plan: no Opus — Auto/Composer only. A4 Opus could not be interrupted mid-run; fresh Auto/Composer A4 launched (overwrite any Opus census). r3-W16 still on external Claude Code — reassign off Opus when that session can stop. |
 | 2026-11-07 | C0 merged `--no-ff` → main @ eb3ad96 (162 tests). Launched C1–C5 worktrees. |
 | 2026-11-07 | A2 merged @ 597cd2a; A1 merged @ a537a6c (167 tests, 11 py). Launched A5 + B1–B9 + C7. |
+| 2026-11-07 | User: record data so any model can be re-run without cheating → Wave R (R1–R6) added; R1/R2 should amend A1 while it is running. |

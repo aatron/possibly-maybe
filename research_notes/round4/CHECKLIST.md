@@ -47,3 +47,12 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Seasonality scan: historical CLV by season phase → wave calendar → A5
 - [ ] Trial registry + promotion / demotion ladder (shadow → paper → user-approved real) → A3
 - [x] Generic sport-pack template so a league is a config, not a project → C0
+
+## F. Point-in-time record + no-cheating replay (user 2026-11-07)
+- [ ] As-of cutoff in every model builder; slate currently uses all scored games and Serie A uses `UtcNow` → R1
+- [ ] Append-only decision log: run id, git SHA, variant version, data watermark, venue prices + capture times, injury snapshot → R2
+- [ ] Same-book closing line + price (close book, capture time, minutes before start) → R3
+- [ ] `replay --asof` that reproduces logged decisions and reports n / CLV / PnL per variant → R4
+- [ ] Checkpoint reporter: 50 / 100–200 / 500 / 1,500 bet stages per variant × league → R5
+- [ ] Real DK price at bet (not −110) on paper tickets → R6
+
