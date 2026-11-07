@@ -242,6 +242,7 @@ public static class PaperLedger
         double? finalTotal,
         double? closeLine,
         int? closeAmerican,
+        ResolvedSettleClose? meta = null,
         CancellationToken ct = default)
     {
         result = result.ToUpperInvariant();
@@ -250,12 +251,15 @@ public static class PaperLedger
 
         var row = await db.LedgerEntries.FindAsync([id], ct)
             ?? throw new InvalidOperationException($"ledger id {id} not found");
-        ApplySettle(row, result, finalTotal, closeLine, closeAmerican);
+        ApplySettle(row, result, finalTotal, closeLine, closeAmerican, meta);
         await db.SaveChangesAsync(ct);
         return row;
     }
 
-    /// <summary>Settle every scheme lane for a ticket group or game key.</summary>
+    /// <summary>
+    /// Settle every scheme lane for a ticket group or game key.
+    /// When <paramref name="closeLine"/> is null and warehouse paths are set, resolves same-book close per venue.
+    /// </summary>
     public static async Task<IReadOnlyList<LedgerEntry>> SettleGroupAsync(
         AppDbContext db,
         string groupOrGameKey,
@@ -263,6 +267,8 @@ public static class PaperLedger
         double? finalTotal,
         double? closeLine,
         int? closeAmerican,
+        string? warehouseDbPath = null,
+        string? snapshotsDbPath = null,
         CancellationToken ct = default)
     {
         result = result.ToUpperInvariant();
@@ -275,17 +281,40 @@ public static class PaperLedger
         if (rows.Count == 0)
             throw new InvalidOperationException($"no open tickets for '{groupOrGameKey}'");
 
-        foreach (var row in rows)
-            ApplySettle(row, result, finalTotal, closeLine, closeAmerican);
+        foreach (var venueGroup in rows.GroupBy(r => PaperVenues.Normalize(r.Venue)))
+        {
+            ResolvedSettleClose? meta = null;
+            double? cl = closeLine;
+            int? ca = closeAmerican;
+            double? ft = finalTotal;
+            if (!string.IsNullOrEmpty(warehouseDbPath) && (cl is null || ft is null))
+            {
+                var sample = venueGroup.First();
+                var resolved = await ResolveSettleLinesAsync(
+                    warehouseDbPath!, snapshotsDbPath, sample.GameKey, sample.Sport, venueGroup.Key, ct);
+                ft ??= resolved.FinalTotal;
+                if (cl is null)
+                {
+                    meta = resolved;
+                    cl = resolved.CloseLine;
+                    ca ??= resolved.CloseAmerican;
+                }
+            }
+
+            foreach (var row in venueGroup)
+                ApplySettle(row, result, ft, cl, ca, meta);
+        }
+
         await db.SaveChangesAsync(ct);
         return rows;
     }
 
     /// <summary>
-    /// FinalTotal = score total. CloseLine/ClvPts only from a market close — never from the final.
+    /// FinalTotal = score total. CloseLine stored from market; ClvPts only on same-book close (R3).
     /// </summary>
     public static void ApplySettle(
-        LedgerEntry row, string result, double? finalTotal, double? closeLine, int? closeAmerican)
+        LedgerEntry row, string result, double? finalTotal, double? closeLine, int? closeAmerican,
+        ResolvedSettleClose? meta = null)
     {
         row.Result = result;
         row.FinalTotal = finalTotal;
@@ -298,25 +327,39 @@ public static class PaperLedger
             _ => 0,
         };
         row.ClvPts = null;
-        if (closeLine is { } cl)
+        row.CloseBook = meta?.CloseBook;
+        row.CloseCapturedAt = meta?.CloseCapturedAt;
+        row.MinutesBeforeStart = meta?.MinutesBeforeStart;
+        row.CrossBookClose = meta is { SameBook: false, CloseLine: not null };
+        // Explicit CLI close with no meta → treat as same-book for the ticket venue.
+        var sameBook = meta?.SameBook ?? closeLine is not null;
+        if (sameBook && closeLine is { } cl)
         {
+            row.CrossBookClose = false;
+            row.CloseBook ??= SameBookClose.BookLabel(SameBookClose.BookForVenue(row.Venue));
             row.ClvPts = row.Side is "OVER" ? cl - row.Line
                 : row.Side is "UNDER" ? row.Line - cl
                 : row.Line - cl;
         }
     }
 
-    /// <summary>Market close + final total for a paper game key (warehouse Close, else tracker last pre-start).</summary>
-    public static async Task<(double? CloseLine, int? CloseAmerican, double? FinalTotal)> ResolveSettleLinesAsync(
+    /// <summary>
+    /// Market close + final for a paper game key, preferring the ticket venue's book (R3).
+    /// Cross-book closes are returned with <see cref="ResolvedSettleClose.SameBook"/> = false.
+    /// </summary>
+    public static async Task<ResolvedSettleClose> ResolveSettleLinesAsync(
         string warehouseDbPath,
         string? snapshotsDbPath,
         string gameKey,
         string sport,
+        string? venue = null,
         CancellationToken ct = default)
     {
-        double? close = null;
-        int? closeAm = null;
+        var want = SameBookClose.BookForVenue(venue);
         double? final = null;
+        OddsSnapshot? same = null;
+        OddsSnapshot? other = null;
+        DateTimeOffset? tip = null;
 
         if (File.Exists(warehouseDbPath))
         {
@@ -326,37 +369,74 @@ public static class PaperLedger
             var game = await FindWarehouseGameAsync(wdb, sport, gameKey, ct);
             if (game is not null)
             {
+                tip = game.TipoffUtc;
                 if (game.HomeScore is { } hs && game.AwayScore is { } as_)
                     final = hs + as_;
 
                 var snaps = await wdb.OddsSnapshots.AsNoTracking()
-                    .Where(o => o.GameId == game.Id && o.Market == "TOTAL" && o.PriceKind == PriceKind.Close)
+                    .Where(o => o.GameId == game.Id && o.Market == "TOTAL" && o.Line != null)
                     .ToListAsync(ct);
-                // Prefer DK/consensus when present; else any book close (Kalshi / Crypto last).
-                snaps = snaps.OrderByDescending(o => o.CapturedAt).ToList();
-                var prefer = snaps.FirstOrDefault(s => s.Book is Book.DraftKings or Book.Consensus or Book.Pinnacle)
-                             ?? snaps.FirstOrDefault();
-                if (prefer?.Line is { } cl)
-                {
-                    close = cl;
-                    closeAm = prefer.AmericanOdds;
-                }
+                // Prefer labelled Close; else last capture at/before tip for that book.
+                same = PickBookClose(snaps, want, game.TipoffUtc);
+                if (same is null)
+                    other = snaps
+                        .Where(s => s.PriceKind == PriceKind.Close || s.CapturedAt <= game.TipoffUtc)
+                        .OrderByDescending(s => s.PriceKind == PriceKind.Close)
+                        .ThenByDescending(s => s.CapturedAt)
+                        .FirstOrDefault();
             }
         }
 
-        if (close is null && !string.IsNullOrEmpty(snapshotsDbPath)
-            && LineTrackerImporter.TryCloseFromSnapshots(snapshotsDbPath!, sport, gameKey) is { } tr)
+        if (same is null && !string.IsNullOrEmpty(snapshotsDbPath)
+            && LineTrackerImporter.TryCloseFromSnapshots(
+                snapshotsDbPath!, sport, gameKey, SameBookClose.TrackerVenueForBook(want)) is { } tr)
         {
-            close = tr.Line;
-            closeAm = tr.American;
+            var mins = tr.MinutesToStart;
+            var captured = tip is { } t && mins is { } m ? t.AddMinutes(-m) : (DateTimeOffset?)null;
+            var am = SameBookClose.AdjustCloseAmerican(tr.American, venue);
+            return new ResolvedSettleClose(
+                tr.Line, am, final, SameBookClose.BookLabel(want), captured, mins, SameBook: true);
         }
 
-        return (close, closeAm, final);
+        if (same is { Line: { } sameLine })
+        {
+            var mins = tip is { } t ? (t - same.CapturedAt).TotalMinutes : (double?)null;
+            var am = SameBookClose.AdjustCloseAmerican(same.AmericanOdds, venue);
+            return new ResolvedSettleClose(
+                sameLine, am, final, SameBookClose.BookLabel(same.Book), same.CapturedAt, mins, SameBook: true);
+        }
+
+        if (other is { Line: { } otherLine })
+        {
+            var mins = tip is { } t ? (t - other.CapturedAt).TotalMinutes : (double?)null;
+            return new ResolvedSettleClose(
+                otherLine, other.AmericanOdds, final, SameBookClose.BookLabel(other.Book),
+                other.CapturedAt, mins, SameBook: false);
+        }
+
+        return new ResolvedSettleClose(null, null, final, null, null, null, SameBook: false);
+    }
+
+    static OddsSnapshot? PickBookClose(
+        IReadOnlyList<OddsSnapshot> snaps, Book want, DateTimeOffset tipoff)
+    {
+        if (want == Book.Unknown) return null;
+        var bookSnaps = snaps.Where(s => s.Book == want).ToList();
+        if (bookSnaps.Count == 0) return null;
+        var labelled = bookSnaps
+            .Where(s => s.PriceKind == PriceKind.Close)
+            .OrderByDescending(s => s.CapturedAt)
+            .FirstOrDefault();
+        if (labelled is not null) return labelled;
+        return bookSnaps
+            .Where(s => s.CapturedAt <= tipoff)
+            .OrderByDescending(s => s.CapturedAt)
+            .FirstOrDefault();
     }
 
     /// <summary>
     /// Null fake CloseLine/ClvPts (finals masquerading as closes); set FinalTotal from scores when known;
-    /// refill CloseLine only when a market close is knowable. Returns (settled, withTrueClose).
+    /// refill CloseLine only when a market close is knowable. Returns (settled, withSameBookClv).
     /// </summary>
     public static async Task<(int Settled, int WithTrueClose)> BackfillLiveClvAsync(
         AppDbContext paperDb,
@@ -368,32 +448,21 @@ public static class PaperLedger
             .Where(r => r.Result != null)
             .ToListAsync(ct);
         var withClose = 0;
-        foreach (var group in rows.GroupBy(r => (r.GameKey, r.Sport)))
+        foreach (var group in rows.GroupBy(r => (r.GameKey, r.Sport, Venue: PaperVenues.Normalize(r.Venue))))
         {
-            var (close, closeAm, final) = await ResolveSettleLinesAsync(
-                warehouseDbPath, snapshotsDbPath, group.Key.GameKey, group.Key.Sport, ct);
+            var resolved = await ResolveSettleLinesAsync(
+                warehouseDbPath, snapshotsDbPath, group.Key.GameKey, group.Key.Sport, group.Key.Venue, ct);
             foreach (var row in group)
             {
-                if (final is null && row.FinalTotal is null && row.CloseLine is { } oldCl && close is null)
-                    final = oldCl; // prior settles stuffed the final into CloseLine
-                if (final is not null)
-                    row.FinalTotal = final;
+                if (resolved.FinalTotal is null && row.FinalTotal is null
+                    && row.CloseLine is { } oldCl && resolved.CloseLine is null)
+                    row.FinalTotal = oldCl; // prior settles stuffed the final into CloseLine
+                else if (resolved.FinalTotal is not null)
+                    row.FinalTotal = resolved.FinalTotal;
 
-                if (close is { } cl)
-                {
-                    row.CloseLine = cl;
-                    row.CloseAmerican = closeAm;
-                    row.ClvPts = row.Side is "OVER" ? cl - row.Line
-                        : row.Side is "UNDER" ? row.Line - cl
-                        : row.Line - cl;
+                ApplyCloseFields(row, resolved);
+                if (resolved.SameBook && resolved.CloseLine is not null)
                     withClose++;
-                }
-                else
-                {
-                    row.CloseLine = null;
-                    row.CloseAmerican = null;
-                    row.ClvPts = null;
-                }
             }
         }
 
@@ -401,13 +470,64 @@ public static class PaperLedger
         return (rows.Count, withClose);
     }
 
+    static void ApplyCloseFields(LedgerEntry row, ResolvedSettleClose resolved)
+    {
+        if (resolved.CloseLine is { } cl)
+        {
+            row.CloseLine = cl;
+            row.CloseAmerican = resolved.CloseAmerican;
+            row.CloseBook = resolved.CloseBook;
+            row.CloseCapturedAt = resolved.CloseCapturedAt;
+            row.MinutesBeforeStart = resolved.MinutesBeforeStart;
+            row.CrossBookClose = !resolved.SameBook;
+            if (resolved.SameBook)
+            {
+                row.ClvPts = row.Side is "OVER" ? cl - row.Line
+                    : row.Side is "UNDER" ? row.Line - cl
+                    : row.Line - cl;
+            }
+            else
+                row.ClvPts = null;
+        }
+        else
+        {
+            row.CloseLine = null;
+            row.CloseAmerican = null;
+            row.CloseBook = null;
+            row.CloseCapturedAt = null;
+            row.MinutesBeforeStart = null;
+            row.CrossBookClose = false;
+            row.ClvPts = null;
+        }
+    }
+
     public static async Task<(int Settled, int WithTrueClose)> TrueCloseStatsAsync(
         AppDbContext db, CancellationToken ct = default)
     {
         var settled = await db.LedgerEntries.AsNoTracking()
             .Where(r => r.Result != null).ToListAsync(ct);
-        var with = settled.Count(r => r.CloseLine is not null && r.ClvPts is not null);
+        var with = settled.Count(r => r.CloseLine is not null && r.ClvPts is not null && !r.CrossBookClose);
         return (settled.Count, with);
+    }
+
+    /// <summary>Same-book close ≤15 min before tip, per sport (R3 proof).</summary>
+    public static async Task<IReadOnlyList<(string Sport, int Settled, int SameBook, int Fresh15)>>
+        SameBookCloseStatsAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var settled = await db.LedgerEntries.AsNoTracking()
+            .Where(r => r.Result != null).ToListAsync(ct);
+        return settled
+            .GroupBy(r => string.IsNullOrEmpty(r.Sport) ? "?" : r.Sport)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var n = g.Count();
+                var same = g.Count(r => r.CloseLine is not null && !r.CrossBookClose && r.ClvPts is not null);
+                var fresh = g.Count(r =>
+                    r.CloseLine is not null && !r.CrossBookClose && SameBookClose.IsFresh(r.MinutesBeforeStart));
+                return (g.Key, n, same, fresh);
+            })
+            .ToList();
     }
 
     static async Task<Game?> FindWarehouseGameAsync(
@@ -459,7 +579,14 @@ public static class PaperLedger
         Console.WriteLine(StakeGate.StatusLine(clvN, clvMean));
         var (settledN, trueCloseN) = await TrueCloseStatsAsync(db, ct);
         var pct = settledN == 0 ? 0.0 : 100.0 * trueCloseN / settledN;
-        Console.WriteLine($"True-close CLV: {trueCloseN}/{settledN} settled ({pct:0.#}%) have market CloseLine");
+        Console.WriteLine($"Same-book CLV: {trueCloseN}/{settledN} settled ({pct:0.#}%) have same-book CloseLine");
+        foreach (var (sport, n, same, fresh) in await SameBookCloseStatsAsync(db, ct))
+        {
+            var sp = n == 0 ? 0.0 : 100.0 * same / n;
+            var fp = n == 0 ? 0.0 : 100.0 * fresh / n;
+            Console.WriteLine(
+                $"  {sport}: same-book {same}/{n} ({sp:0.#}%); ≤15m {fresh}/{n} ({fp:0.#}%)");
+        }
         foreach (var venue in PaperVenues.All)
         {
             Console.WriteLine($"--- {venue} leaderboard ---");

@@ -34,6 +34,6 @@ public static class VariantShadow
         var n = await VariantEvaluate.RecordAsync(variantsDbPath, candidates, ct);
         Console.WriteLine($"variants-shadow: recorded {n} variant×game rows from {candidates.Count} candidates ({yyyymmdd})");
 
-        await VariantDashboard.WriteAsync(variantsDbPath, uiDir, ct);
+        await VariantDashboard.WriteAsync(variantsDbPath, uiDir, ct: ct);
     }
 }

@@ -146,8 +146,16 @@ public sealed class LedgerEntry
     /// <summary>W, L, P, or null while open.</summary>
     public string? Result { get; set; }
     public double? PnL { get; set; }
-    /// <summary>Market-close CLV in points (OVER: close−line; UNDER: line−close). Null without a true close.</summary>
+    /// <summary>Market-close CLV in points (OVER: close−line; UNDER: line−close). Null without a same-book close.</summary>
     public double? ClvPts { get; set; }
+    /// <summary>Book label used for CloseLine (R3). Null when no close stored.</summary>
+    public string? CloseBook { get; set; }
+    /// <summary>When the closing snapshot was captured (UTC).</summary>
+    public DateTimeOffset? CloseCapturedAt { get; set; }
+    /// <summary>Tipoff − capture, in minutes (positive = before start).</summary>
+    public double? MinutesBeforeStart { get; set; }
+    /// <summary>True when CloseLine came from a different venue's book — excluded from CLV.</summary>
+    public bool CrossBookClose { get; set; }
     public bool IsPaper { get; set; } = true;
     /// <summary>Stake scheme code: Flat, Kelly2, Kelly5, EvProp, ConfBand, EdgeBand.</summary>
     public string Scheme { get; set; } = "Flat";

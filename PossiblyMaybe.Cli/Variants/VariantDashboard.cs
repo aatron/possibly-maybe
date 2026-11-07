@@ -6,21 +6,28 @@ namespace PossiblyMaybe.Cli.Variants;
 
 public static class VariantDashboard
 {
-    public static async Task WriteAsync(string variantsDbPath, string uiDir, CancellationToken ct = default)
+    public static async Task WriteAsync(
+        string variantsDbPath,
+        string uiDir,
+        string? radarDbPath = null,
+        CancellationToken ct = default)
     {
         var (db, _) = await VariantLedger.OpenAsync(variantsDbPath, ct);
         await using (db)
         {
             var rows = await db.ShadowEntries.AsNoTracking().ToListAsync(ct);
-            var payload = BuildPayload(rows);
+            var radarPath = radarDbPath
+                ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(variantsDbPath)) ?? "data", "radar.db");
+            var waveRows = await RadarStore.LoadCellsAsync(radarPath, ct);
+            var payload = BuildPayload(rows, waveRows);
             Directory.CreateDirectory(uiDir);
             var path = Path.Combine(uiDir, "variants.html");
             await File.WriteAllTextAsync(path, Render(payload), ct);
-            Console.WriteLine($"Wrote {path} ({rows.Count} shadow rows).");
+            Console.WriteLine($"Wrote {path} ({rows.Count} shadow rows, {waveRows.Count} wave cells).");
         }
     }
 
-    private static object BuildPayload(List<ShadowEntry> rows)
+    private static object BuildPayload(List<ShadowEntry> rows, IReadOnlyList<RadarCellRow> waveRows)
     {
         var byVar = rows.GroupBy(r => r.VariantId).ToDictionary(g => g.Key, g => g.ToList());
         var variants = VariantRegistry.All.Select(v =>
@@ -82,11 +89,44 @@ public static class VariantDashboard
             };
         }).ToList();
 
+        var waves = waveRows.Select(w =>
+        {
+            var cp = string.IsNullOrEmpty(w.Checkpoint)
+                ? Checkpoints.Evaluate(w.N, w.MeanClv, w.ClvSe)
+                : null;
+            return new
+            {
+                league = w.League,
+                market = w.Market,
+                variantId = w.VariantId,
+                n = w.N,
+                meanClv = w.MeanClv,
+                clvSe = w.ClvSe,
+                rollingClv = w.RollingClv,
+                cusum = w.Cusum,
+                pValue = w.PValue,
+                bhSignificant = w.BhSignificant,
+                wave = w.Wave,
+                stage = w.Stage,
+                checkpoint = cp?.Stage.ToString() ?? w.Checkpoint,
+                checkpointVerdict = cp?.Verdict ?? w.CheckpointVerdict,
+                allowsWideStake = cp?.AllowsWideStake ?? w.AllowsWideStake,
+                weeksOn = w.WeeksOn,
+                nTrials = w.NTrials,
+                promoteEligible = w.PromoteEligible,
+                demote = w.Demote,
+            };
+        }).ToList();
+        var nTrials = waveRows.Count == 0 ? 0 : waveRows.Max(w => w.NTrials);
+
         return new
         {
             generatedAt = DateTimeOffset.UtcNow.ToString("o"),
             variants,
             v0Id = VariantRegistry.V0Id,
+            waves,
+            nTrials,
+            bhQ = WaveRadar.BhQ,
         };
     }
 
@@ -151,6 +191,20 @@ public static class VariantDashboard
   <div class="chart-wrap">
     <canvas id="clv" height="120"></canvas>
   </div>
+  <section>
+    <h2 style="margin:0 0 0.4rem;font-size:1.05rem;">Waves</h2>
+    <p class="muted" id="waveSub">No radar scan yet.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>League</th><th>Mkt</th><th>Variant</th><th>n</th><th>CLV ± SE</th>
+          <th>Rolling</th><th>CUSUM</th><th>p</th><th>BH</th><th>Wave</th>
+          <th>Ladder</th><th>Checkpoint</th><th>Verdict</th><th>Wks</th><th>N_trials</th>
+        </tr>
+      </thead>
+      <tbody id="waveRows"></tbody>
+    </table>
+  </section>
 </main>
 <script>
 const DATA = __DATA_JSON__;
@@ -173,6 +227,40 @@ function stats(v, league) {
 
 function fmt(n, d=1) { return (n==null||Number.isNaN(n)) ? '—' : n.toFixed(d); }
 function cls(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : ''; }
+
+(function renderWaves() {
+  const waves = DATA.waves || [];
+  const waveSub = document.getElementById('waveSub');
+  const nTrials = DATA.nTrials ?? 0;
+  const bhQ = DATA.bhQ ?? 0.1;
+  if (!waves.length) {
+    waveSub.textContent = `No radar scan yet · N_trials=0 · BH q=${bhQ}`;
+    return;
+  }
+  const on = waves.filter(w => w.wave === 'On').length;
+  const bh = waves.filter(w => w.bhSignificant).length;
+  const wide = waves.filter(w => w.allowsWideStake).length;
+  waveSub.textContent = `ON=${on} · BH_sig=${bh} · wide_stake=${wide} · N_trials=${nTrials} · BH q=${bhQ} · ckpt 50/100–200/500/1500`;
+  const tb = document.getElementById('waveRows');
+  tb.innerHTML = '';
+  for (const w of waves) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${w.league}</td><td>${w.market}</td><td><strong>${w.variantId}</strong></td>
+      <td>${w.n}</td>
+      <td class="${cls(w.meanClv)}">${fmt(w.meanClv,2)}±${fmt(w.clvSe,2)}</td>
+      <td class="${cls(w.rollingClv)}">${fmt(w.rollingClv,2)}</td>
+      <td>${fmt(w.cusum,1)}</td>
+      <td>${fmt(w.pValue,4)}</td>
+      <td>${w.bhSignificant ? 'Y' : '—'}</td>
+      <td class="${w.wave==='On'?'pos':'muted'}">${w.wave}</td>
+      <td>${w.stage}</td>
+      <td>${w.checkpoint}</td>
+      <td>${w.checkpointVerdict}</td>
+      <td>${w.weeksOn}</td>
+      <td>${w.nTrials}</td>`;
+    tb.appendChild(tr);
+  }
+})();
 
 let unitsChart, clvChart;
 function render() {

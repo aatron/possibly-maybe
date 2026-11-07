@@ -9,13 +9,18 @@ namespace PossiblyMaybe.Cli.Variants;
 /// How to run (repo root):
 ///   dotnet run -c Release --project PossiblyMaybe.Cli -- variants-backfill
 ///   # optional: variants-backfill [warehouse.db] [variants.db]
-/// Covers walk-forward NBA seasons (pre-holdout + holdout) and soccer champs, plus replay 20261030–20261106.
+/// Covers every season in warehouse for r3 paper leagues (NBA + HOLD-PASS soccer).
+/// Persists <see cref="CandidateEntry"/> rows first; variants are filters. Replay window
+/// {ReplayStart}–{ReplayEnd} is included in the full walk-forward.
 /// V0 should reproduce champ-style GO set on the same open-line / −110 gates (Normal-σ NBA).
 /// </summary>
 public static class VariantBackfill
 {
     public static readonly string ReplayStart = "20261030";
     public static readonly string ReplayEnd = "20261106";
+
+    /// <summary>r3 path + C6 shadow leagues — backfill every season present in the warehouse for these.</summary>
+    public static readonly string[] R3Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "EPL"];
 
     public static async Task RunAsync(
         string warehouseDbPath,
@@ -29,16 +34,25 @@ public static class VariantBackfill
                 .UseSqlite($"Data Source={warehouseDbPath}").Options;
             await using var wdb = new AppDbContext(options);
 
-            // Full history includes Tier A folds and replay window {ReplayStart}–{ReplayEnd}.
-            Console.WriteLine($"variants-backfill: NBA walk-forward (incl. replay {ReplayStart}–{ReplayEnd})…");
-            var nba = await BackfillNbaAsync(wdb, vdb, ct);
-            Console.WriteLine($"  NBA candidate-rows×variants written≈{nba}");
+            var present = (await wdb.Games.AsNoTracking()
+                    .Select(g => g.Sport).Distinct().ToListAsync(ct))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA" })
+            foreach (var sport in R3Leagues)
             {
-                Console.WriteLine($"variants-backfill: {sport}…");
-                var n = await BackfillSoccerAsync(wdb, vdb, sport, ct);
-                Console.WriteLine($"  {sport} written≈{n}");
+                if (!present.Contains(sport))
+                {
+                    Console.WriteLine($"variants-backfill: {sport} — no games in warehouse, skip");
+                    continue;
+                }
+
+                Console.WriteLine(sport == "NBA"
+                    ? $"variants-backfill: NBA walk-forward all seasons (incl. replay {ReplayStart}–{ReplayEnd})…"
+                    : $"variants-backfill: {sport} all seasons…");
+                var n = sport == "NBA"
+                    ? await BackfillNbaAsync(wdb, vdb, ct)
+                    : await BackfillSoccerAsync(wdb, vdb, sport, ct);
+                Console.WriteLine($"  {sport} candidate×variant writes≈{n}");
             }
         }
 
@@ -115,6 +129,8 @@ public static class VariantBackfill
                 LigaMxChampConfig.EmaAlpha, false),
             "SERIEA" => (SerieAChampConfig.MarketWeight, SerieAChampConfig.MinAbsTotalEdge, SerieAChampConfig.MinEv,
                 SerieAChampConfig.DcAlpha, true),
+            "EPL" => (EplChampConfig.MarketWeight, EplChampConfig.MinAbsTotalEdge, EplChampConfig.MinEv,
+                EplChampConfig.EmaAlpha, false),
             _ => throw new ArgumentException(sport),
         };
 
@@ -200,6 +216,8 @@ public static class VariantBackfill
         var paused = window is not null && Guards.LeaguePausedByRollingClv(window)
             ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) { c.Sport }
             : null;
+
+        await VariantLedger.UpsertCandidateAsync(vdb, c, ct);
 
         VariantDecision? signal = null;
         var n = 0;

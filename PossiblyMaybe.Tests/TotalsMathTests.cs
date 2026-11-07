@@ -151,4 +151,17 @@ public class TotalsMathTests
         await Assert.That(pHigh).IsGreaterThan(0.7);
         await Assert.That(pLow).IsLessThan(0.3);
     }
+
+    [Test]
+    public async Task MarketBlend_inverse_variance_matches_weighted_mean()
+    {
+        // σ_m=2, σ_ℓ=1 → w_line = σ_m²/(σ_m²+σ_ℓ²) = 4/5 = 0.8
+        await Assert.That(MarketBlend.MarketWeightFromSigmas(2, 1)).IsEqualTo(0.8).Within(1e-12);
+        await Assert.That(MarketBlend.MarketWeightFromRatio(2)).IsEqualTo(0.8).Within(1e-12);
+        var exp = MarketBlend.InverseVariance(model: 100, line: 220, sigmaModel: 2, sigmaLine: 1);
+        await Assert.That(exp).IsEqualTo(0.2 * 100 + 0.8 * 220).Within(1e-9);
+        var (sm, sl) = MarketBlend.FromResidualMoments(sumSqModelErr: 400, sumSqLineErr: 100, n: 100);
+        await Assert.That(sm).IsEqualTo(2.0).Within(1e-12);
+        await Assert.That(sl).IsEqualTo(1.0).Within(1e-12);
+    }
 }
