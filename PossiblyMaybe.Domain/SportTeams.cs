@@ -168,7 +168,14 @@ public static class SportTeams
         return LigaMx.TryGetValue(t, out var c) ? c : null;
     }
 
-    /// <summary>Map ESPN / common names → warehouse La Liga team strings.</summary>
+    /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
+    public static string? TryEpl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Epl.TryGetValue(t, out var c) ? c : null;
+    }
+
     public static string? TryLaLiga(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
@@ -176,18 +183,11 @@ public static class SportTeams
         return LaLiga.TryGetValue(t, out var c) ? c : null;
     }
 
-    /// <summary>Map ESPN / common names → warehouse EFL Championship team strings.</summary>
     public static string? TryEfl(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
         var t = raw.Trim();
         return Efl.TryGetValue(t, out var c) ? c : null;
-    /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
-    public static string? TryEpl(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var t = raw.Trim();
-        return Epl.TryGetValue(t, out var c) ? c : null;
     }
 
     private static readonly Dictionary<string, string> Ligue1 = new(StringComparer.OrdinalIgnoreCase)
@@ -341,6 +341,8 @@ public static class SportTeams
         ["Wrexham"] = "Wrexham", ["Wrexham AFC"] = "Wrexham",
         ["Wycombe Wanderers"] = "Wycombe Wanderers", ["Wycombe"] = "Wycombe Wanderers",
         ["Lincoln City"] = "Lincoln City", ["Lincoln"] = "Lincoln City",
+    };
+
     private static readonly Dictionary<string, string> Epl = new(StringComparer.OrdinalIgnoreCase)
     {
         ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth", ["BOU"] = "AFC Bournemouth",
@@ -390,8 +392,7 @@ public static class SportTeams
         Func<string?, string?> map = sport.ToUpperInvariant() switch
         {
             "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx,
-            "LALIGA" => TryLaLiga, "EFL" => TryEfl, _ => _ => null,
-            "EPL" => TryEpl, _ => _ => null,
+            "EPL" => TryEpl, "LALIGA" => TryLaLiga, "EFL" => TryEfl, _ => _ => null,
         };
         var hit = map(display) ?? map(shortName);
         if (hit is not null) return hit;

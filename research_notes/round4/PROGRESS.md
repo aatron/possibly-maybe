@@ -62,3 +62,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | User: blind day-by-day sim for any new approach → R7–R10 added; recommend R7–R9 before wave B (variants written once as strategies). |
 | 2026-11-07 | Merged B2, B5, C2, C4 (191+ tests). |
 | 2026-11-07 | r3-W16 Opus agent stopped on user request; progress inventoried → `W16_archive_org_HANDOFF.md`. |
+| 2026-11-07 | Batch land: C1, C3, C5, C6-epl, R3, R5 on main. C6-bundesliga/nhl + B1/B3/B4/B6/B7/B8 still in worktrees (VariantCore/SportTeams merge debt). |
