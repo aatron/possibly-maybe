@@ -20,7 +20,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | B6 | consensus-outlier, line-move-follow | Composer | `../pm-r4-b6` `r4/b6` | live | running | |
 | B7 | +fitted-curve, strict / EV-band | Composer | `../pm-r4-b7` `r4/b7` | Tier A | running | |
 | B8 | +conformal, kalman | Composer | `../pm-r4-b8` `r4/b8` | Tier A | running | |
-| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A | running | |
+| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A FAIL → shadow only | done | 10ef936 |
 | C0 | Sport-pack template | Composer | `../pm-r4-c0` `r4/c0` | MLS identical | done | eb3ad96 |
 | C1 | NCAAB totals | Composer | `../pm-r4-c1` `r4/c1` | Tier A / C | running | |
 | C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C | running | |
@@ -54,3 +54,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | A2 merged @ 597cd2a; A1 merged @ a537a6c (167 tests, 11 py). Launched A5 + B1–B9 + C7. |
 | 2026-11-07 | User: record data so any model can be re-run without cheating → Wave R (R1–R6) added; R1/R2 should amend A1 while it is running. |
 | 2026-11-07 | A3 merged @ 3ddce67 (172 tests). A4 census done. Launched C6-epl, C6-bundesliga, C6-nhl. |
+| 2026-11-07 | B9 merged @ 10ef936 (174 tests). |
