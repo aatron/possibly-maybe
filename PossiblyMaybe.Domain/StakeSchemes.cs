@@ -11,16 +11,16 @@ public static class StakeTrial
 
 /// <summary>
 /// Schemes that can stake above 2% (Kelly5) stay capped at 2% until live paper CLV clears.
-/// Rule: global across all venues/schemes — settled rows with ClvPts, n≥100 and mean &gt; 0.
+/// Rule (R5): global — settled ClvPts rows reach <see cref="Checkpoints.PnlConfirmsN"/> and mean &gt; 0.
 /// </summary>
 public static class StakeGate
 {
-    public const int MinClvN = 100;
+    public const int MinClvN = Checkpoints.PnlConfirmsN;
     public const double SoftCapFrac = 0.02;
     public const double WideCapFrac = 0.05;
 
     public static bool IsKelly5Promoted(int clvN, double meanClvPts)
-        => clvN >= MinClvN && meanClvPts > 0;
+        => Checkpoints.AllowsWideStake(clvN, meanClvPts);
 
     public static string StatusLine(int clvN, double meanClvPts)
     {
