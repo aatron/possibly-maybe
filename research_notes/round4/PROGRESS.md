@@ -35,7 +35,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
 | R3 | Same-book close | Composer | after A2 `../pm-r4-r3` | % same-book close | pending (A2) | |
 | R4 | replay --asof command | Composer | `../pm-r4-r4` | 11-07 diff = 0 | pending (A1, R1, R2) | |
-| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` | stage test | pending (A3) | |
+| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | done (branch) | |
 | R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
@@ -53,4 +53,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | C0 merged `--no-ff` → main @ eb3ad96 (162 tests). Launched C1–C5 worktrees. |
 | 2026-11-07 | A2 merged @ 597cd2a; A1 merged @ a537a6c (167 tests, 11 py). Launched A5 + B1–B9 + C7. |
 | 2026-11-07 | User: record data so any model can be re-run without cheating → Wave R (R1–R6) added; R1/R2 should amend A1 while it is running. |
+| 2026-11-07 | R5 checkpoint reporter on `r4/r5`: `Checkpoints.cs`, Waves UI CLV±SE/stage, stake gate floor → 1500; proof `r5_proof.md`. |
 | 2026-11-07 | A3 merged @ 3ddce67 (172 tests). A4 census done. Launched C6-epl, C6-bundesliga, C6-nhl. |

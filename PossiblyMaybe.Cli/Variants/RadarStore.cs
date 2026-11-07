@@ -12,12 +12,16 @@ public sealed class RadarCellRow
     public string VariantId { get; set; } = "";
     public int N { get; set; }
     public double MeanClv { get; set; }
+    public double ClvSe { get; set; }
     public double RollingClv { get; set; }
     public double Cusum { get; set; }
     public double PValue { get; set; }
     public bool BhSignificant { get; set; }
     public string Wave { get; set; } = "Off";
     public string Stage { get; set; } = "Shadow";
+    public string Checkpoint { get; set; } = "TooSoon";
+    public string CheckpointVerdict { get; set; } = "wait";
+    public bool AllowsWideStake { get; set; }
     public int WeeksOn { get; set; }
     public int NTrials { get; set; }
     public bool PromoteEligible { get; set; }
@@ -40,6 +44,8 @@ public sealed class RadarDbContext(DbContextOptions<RadarDbContext> options) : D
             e.Property(x => x.VariantId).HasMaxLength(32);
             e.Property(x => x.Wave).HasMaxLength(8);
             e.Property(x => x.Stage).HasMaxLength(16);
+            e.Property(x => x.Checkpoint).HasMaxLength(16);
+            e.Property(x => x.CheckpointVerdict).HasMaxLength(16);
         });
     }
 }
@@ -56,7 +62,24 @@ public static class RadarStore
             .UseSqlite($"Data Source={dbPath}").Options;
         var db = new RadarDbContext(options);
         await db.Database.EnsureCreatedAsync(ct);
+        await EnsureCheckpointColumnsAsync(db, ct);
         return (db, dbPath);
+    }
+
+    /// <summary>EnsureCreated never ALTERs — add R5 columns on existing radar.db.</summary>
+    static async Task EnsureCheckpointColumnsAsync(RadarDbContext db, CancellationToken ct)
+    {
+        foreach (var sql in new[]
+                 {
+                     """ALTER TABLE "Cells" ADD COLUMN "ClvSe" REAL NOT NULL DEFAULT 0;""",
+                     """ALTER TABLE "Cells" ADD COLUMN "Checkpoint" TEXT NOT NULL DEFAULT 'TooSoon';""",
+                     """ALTER TABLE "Cells" ADD COLUMN "CheckpointVerdict" TEXT NOT NULL DEFAULT 'wait';""",
+                     """ALTER TABLE "Cells" ADD COLUMN "AllowsWideStake" INTEGER NOT NULL DEFAULT 0;""",
+                 })
+        {
+            try { await db.Database.ExecuteSqlRawAsync(sql, ct); }
+            catch { /* column already present (fresh EnsureCreated or prior migrate) */ }
+        }
     }
 
     public static async Task<Dictionary<string, LadderStage>> LoadStagesAsync(
@@ -102,6 +125,7 @@ public static class RadarStore
             var userReal = row.UserRealFlag;
             row.N = r.N;
             row.MeanClv = r.MeanClv;
+            row.ClvSe = r.ClvSe;
             row.RollingClv = r.RollingClv;
             row.Cusum = r.Cusum;
             row.PValue = r.PValue;
@@ -110,6 +134,9 @@ public static class RadarStore
             row.Stage = userReal && r.Stage != LadderStage.Shadow
                 ? nameof(LadderStage.RealCandidate)
                 : r.Stage.ToString();
+            row.Checkpoint = r.Checkpoint.ToString();
+            row.CheckpointVerdict = r.CheckpointVerdict;
+            row.AllowsWideStake = r.AllowsWideStake;
             if (userReal && r.Demote)
             {
                 row.UserRealFlag = false;
