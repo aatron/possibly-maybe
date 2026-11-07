@@ -47,9 +47,23 @@
   <div class="chart-wrap">
     <canvas id="clv" height="120"></canvas>
   </div>
+  <section>
+    <h2 style="margin:0 0 0.4rem;font-size:1.05rem;">Waves</h2>
+    <p class="muted" id="waveSub">No radar scan yet.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>League</th><th>Mkt</th><th>Variant</th><th>n</th><th>Mean CLV</th>
+          <th>Rolling</th><th>CUSUM</th><th>p</th><th>BH</th><th>Wave</th>
+          <th>Stage</th><th>Wks</th><th>N_trials</th>
+        </tr>
+      </thead>
+      <tbody id="waveRows"></tbody>
+    </table>
+  </section>
 </main>
 <script>
-const DATA = {"generatedAt":"2026-11-07T16:59:27.0567233\u002B00:00","variants":[{"id":"V0","label":"champ-2026-11-07","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V0L","label":"legacy-logistic-nba","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V1","label":"\u002Bedgecap","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V2","label":"\u002Blinemove","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V3","label":"\u002Bedgecap\u002Blinemove","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V4","label":"\u002Bshutoff","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V5","label":"\u002Brealjuice","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V-SA0","label":"no-seriea","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}}],"v0Id":"V0"};
+const DATA = {"generatedAt":"2026-11-07T17:17:19.7205696\u002B00:00","variants":[{"id":"V0","label":"champ-2026-11-07","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V0L","label":"legacy-logistic-nba","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V1","label":"\u002Bedgecap","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V2","label":"\u002Blinemove","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V3","label":"\u002Bedgecap\u002Blinemove","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V4","label":"\u002Bshutoff","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V5","label":"\u002Brealjuice","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}},{"id":"V-SA0","label":"no-seriea","n":0,"flatUnits":0,"hitRate":0,"meanClv":null,"leagues":[],"skips":{}}],"v0Id":"V0","waves":[],"nTrials":0,"bhQ":0.1};
 const sub = document.getElementById('sub');
 sub.textContent = `generated ${DATA.generatedAt} · ${DATA.variants.length} variants`;
 const leagueSel = document.getElementById('league');
@@ -69,6 +83,37 @@ function stats(v, league) {
 
 function fmt(n, d=1) { return (n==null||Number.isNaN(n)) ? '—' : n.toFixed(d); }
 function cls(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : ''; }
+
+(function renderWaves() {
+  const waves = DATA.waves || [];
+  const waveSub = document.getElementById('waveSub');
+  const nTrials = DATA.nTrials ?? 0;
+  const bhQ = DATA.bhQ ?? 0.1;
+  if (!waves.length) {
+    waveSub.textContent = `No radar scan yet · N_trials=0 · BH q=${bhQ}`;
+    return;
+  }
+  const on = waves.filter(w => w.wave === 'On').length;
+  const bh = waves.filter(w => w.bhSignificant).length;
+  waveSub.textContent = `ON=${on} · BH_sig=${bh} · N_trials=${nTrials} · BH q=${bhQ}`;
+  const tb = document.getElementById('waveRows');
+  tb.innerHTML = '';
+  for (const w of waves) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${w.league}</td><td>${w.market}</td><td><strong>${w.variantId}</strong></td>
+      <td>${w.n}</td>
+      <td class="${cls(w.meanClv)}">${fmt(w.meanClv,2)}</td>
+      <td class="${cls(w.rollingClv)}">${fmt(w.rollingClv,2)}</td>
+      <td>${fmt(w.cusum,1)}</td>
+      <td>${fmt(w.pValue,4)}</td>
+      <td>${w.bhSignificant ? 'Y' : '—'}</td>
+      <td class="${w.wave==='On'?'pos':'muted'}">${w.wave}</td>
+      <td>${w.stage}</td>
+      <td>${w.weeksOn}</td>
+      <td>${w.nTrials}</td>`;
+    tb.appendChild(tr);
+  }
+})();
 
 let unitsChart, clvChart;
 function render() {

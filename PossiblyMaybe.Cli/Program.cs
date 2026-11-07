@@ -730,7 +730,16 @@ switch (command)
     case "variants-dashboard":
     {
         var root = FindRepoRoot();
-        await VariantDashboard.WriteAsync(VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"));
+        await VariantDashboard.WriteAsync(
+            VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"), RadarStore.DefaultDbPath(root));
+        return 0;
+    }
+    case "variants-radar":
+    {
+        var root = FindRepoRoot();
+        var vdb = args.Length > 1 ? args[1] : VariantLedger.DefaultDbPath(root);
+        var rdb = args.Length > 2 ? args[2] : RadarStore.DefaultDbPath(root);
+        await VariantRadar.RunAsync(vdb, rdb, Path.Combine(root, "ui"));
         return 0;
     }
     case "variants-reeval":
@@ -838,6 +847,7 @@ static void PrintUsage()
           variants-reeval [variants.db]  Re-filter variants over stored candidates (no model re-run)
           variants-settle [db]       Auto-settle open shadow picks (no confirm)
           variants-dashboard         Write ui/variants.html
+          variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);
