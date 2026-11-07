@@ -168,6 +168,20 @@ public static class SportTeams
         return LigaMx.TryGetValue(t, out var c) ? c : null;
     }
 
+    /// <summary>Map ESPN / common names → warehouse La Liga team strings.</summary>
+    public static string? TryLaLiga(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return LaLiga.TryGetValue(t, out var c) ? c : null;
+    }
+
+    /// <summary>Map ESPN / common names → warehouse EFL Championship team strings.</summary>
+    public static string? TryEfl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Efl.TryGetValue(t, out var c) ? c : null;
     /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
     public static string? TryEpl(string? raw)
     {
@@ -255,6 +269,78 @@ public static class SportTeams
         ["Toluca"] = "Toluca", ["Deportivo Toluca"] = "Toluca", ["TOL"] = "Toluca",
     };
 
+    private static readonly Dictionary<string, string> LaLiga = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Alaves"] = "Alaves", ["Deportivo Alavés"] = "Alaves", ["Alavés"] = "Alaves", ["ALA"] = "Alaves",
+        ["Almeria"] = "Almeria", ["UD Almería"] = "Almeria", ["Almería"] = "Almeria",
+        ["Athletic Bilbao"] = "Athletic Bilbao", ["Athletic Club"] = "Athletic Bilbao", ["ATH"] = "Athletic Bilbao",
+        ["Atletico Madrid"] = "Atletico Madrid", ["Atlético Madrid"] = "Atletico Madrid",
+        ["Atlético de Madrid"] = "Atletico Madrid", ["ATM"] = "Atletico Madrid", ["Atlético"] = "Atletico Madrid",
+        ["Cadiz"] = "Cadiz", ["Cádiz"] = "Cadiz", ["Cádiz CF"] = "Cadiz",
+        ["Celta Vigo"] = "Celta Vigo", ["RC Celta"] = "Celta Vigo", ["Celta"] = "Celta Vigo", ["CEL"] = "Celta Vigo",
+        ["Eibar"] = "Eibar", ["Elche"] = "Elche", ["Elche CF"] = "Elche", ["ELC"] = "Elche",
+        ["FC Barcelona"] = "FC Barcelona", ["Barcelona"] = "FC Barcelona", ["BAR"] = "FC Barcelona",
+        ["Getafe"] = "Getafe", ["Getafe CF"] = "Getafe", ["GET"] = "Getafe",
+        ["Girona"] = "Girona", ["Girona FC"] = "Girona", ["GIR"] = "Girona",
+        ["Granada CF"] = "Granada CF", ["Granada"] = "Granada CF",
+        ["Las Palmas"] = "Las Palmas", ["UD Las Palmas"] = "Las Palmas",
+        ["Leganes"] = "Leganes", ["Leganés"] = "Leganes", ["CD Leganés"] = "Leganes",
+        ["Levante"] = "Levante", ["Levante UD"] = "Levante", ["LEV"] = "Levante",
+        ["Mallorca"] = "Mallorca", ["RCD Mallorca"] = "Mallorca", ["MLL"] = "Mallorca",
+        ["Osasuna"] = "Osasuna", ["CA Osasuna"] = "Osasuna", ["OSA"] = "Osasuna",
+        ["RCD Espanyol"] = "RCD Espanyol", ["Espanyol"] = "RCD Espanyol", ["ESP"] = "RCD Espanyol",
+        ["Rayo Vallecano"] = "Rayo Vallecano", ["Rayo"] = "Rayo Vallecano", ["RAY"] = "Rayo Vallecano",
+        ["Real Betis"] = "Real Betis", ["Betis"] = "Real Betis", ["BET"] = "Real Betis",
+        ["Real Madrid"] = "Real Madrid", ["RMA"] = "Real Madrid",
+        ["Real Oviedo"] = "Real Oviedo", ["Oviedo"] = "Real Oviedo",
+        ["Real Sociedad"] = "Real Sociedad", ["RSO"] = "Real Sociedad",
+        ["Real Valladolid"] = "Real Valladolid", ["Valladolid"] = "Real Valladolid",
+        ["SD Huesca"] = "SD Huesca", ["Huesca"] = "SD Huesca",
+        ["Sevilla"] = "Sevilla", ["Sevilla FC"] = "Sevilla", ["SEV"] = "Sevilla",
+        ["Valencia"] = "Valencia", ["Valencia CF"] = "Valencia", ["VAL"] = "Valencia",
+        ["Villarreal"] = "Villarreal", ["Villarreal CF"] = "Villarreal", ["VIL"] = "Villarreal",
+    };
+
+    private static readonly Dictionary<string, string> Efl = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth",
+        ["Aston Villa"] = "Aston Villa",
+        ["Barnsley"] = "Barnsley", ["Birmingham City"] = "Birmingham City", ["Birmingham"] = "Birmingham City", ["BIR"] = "Birmingham City",
+        ["Blackburn Rovers"] = "Blackburn Rovers", ["Blackburn"] = "Blackburn Rovers",
+        ["Blackpool"] = "Blackpool", ["Bolton Wanderers"] = "Bolton Wanderers", ["Bolton"] = "Bolton Wanderers",
+        ["Brentford"] = "Brentford", ["Bristol City"] = "Bristol City",
+        ["Burnley"] = "Burnley", ["Cardiff City"] = "Cardiff City", ["Cardiff"] = "Cardiff City",
+        ["Charlton Athletic"] = "Charlton Athletic", ["Charlton"] = "Charlton Athletic",
+        ["Coventry City"] = "Coventry City", ["Coventry"] = "Coventry City",
+        ["Derby County"] = "Derby County", ["Derby"] = "Derby County",
+        ["Fulham"] = "Fulham", ["Huddersfield Town"] = "Huddersfield Town", ["Huddersfield"] = "Huddersfield Town",
+        ["Hull City"] = "Hull City", ["Hull"] = "Hull City",
+        ["Ipswich Town"] = "Ipswich Town", ["Ipswich"] = "Ipswich Town",
+        ["Leeds United"] = "Leeds United", ["Leeds"] = "Leeds United",
+        ["Leicester City"] = "Leicester City", ["Leicester"] = "Leicester City",
+        ["Luton Town"] = "Luton Town", ["Luton"] = "Luton Town",
+        ["Middlesbrough"] = "Middlesbrough", ["Millwall"] = "Millwall",
+        ["Norwich City"] = "Norwich City", ["Norwich"] = "Norwich City", ["NOR"] = "Norwich City",
+        ["Nottingham Forest"] = "Nottingham Forest", ["Nott'm Forest"] = "Nottingham Forest",
+        ["Oxford United"] = "Oxford United", ["Oxford"] = "Oxford United",
+        ["Peterborough United"] = "Peterborough United", ["Peterborough"] = "Peterborough United",
+        ["Plymouth Argyle"] = "Plymouth Argyle", ["Plymouth"] = "Plymouth Argyle",
+        ["Portsmouth"] = "Portsmouth", ["Preston North End"] = "Preston North End", ["Preston"] = "Preston North End", ["PNE"] = "Preston North End",
+        ["Queens Park Rangers (QPR)"] = "Queens Park Rangers (QPR)",
+        ["Queens Park Rangers"] = "Queens Park Rangers (QPR)", ["QPR"] = "Queens Park Rangers (QPR)",
+        ["Reading"] = "Reading", ["Rotherham United"] = "Rotherham United", ["Rotherham"] = "Rotherham United",
+        ["Sheffield United"] = "Sheffield United", ["Sheffield Utd"] = "Sheffield United",
+        ["Sheffield Wednesday"] = "Sheffield Wednesday", ["Sheffield Wed"] = "Sheffield Wednesday",
+        ["Southampton"] = "Southampton", ["Stoke City"] = "Stoke City", ["Stoke"] = "Stoke City", ["STK"] = "Stoke City",
+        ["Sunderland A.F.C"] = "Sunderland A.F.C", ["Sunderland"] = "Sunderland A.F.C", ["Sunderland AFC"] = "Sunderland A.F.C",
+        ["Swansea City"] = "Swansea City", ["Swansea"] = "Swansea City",
+        ["Watford"] = "Watford", ["WAT"] = "Watford",
+        ["West Bromwich(WBA)"] = "West Bromwich(WBA)",
+        ["West Bromwich Albion"] = "West Bromwich(WBA)", ["West Brom"] = "West Bromwich(WBA)", ["WBA"] = "West Bromwich(WBA)",
+        ["Wigan Athletic"] = "Wigan Athletic", ["Wigan"] = "Wigan Athletic",
+        ["Wrexham"] = "Wrexham", ["Wrexham AFC"] = "Wrexham",
+        ["Wycombe Wanderers"] = "Wycombe Wanderers", ["Wycombe"] = "Wycombe Wanderers",
+        ["Lincoln City"] = "Lincoln City", ["Lincoln"] = "Lincoln City",
     private static readonly Dictionary<string, string> Epl = new(StringComparer.OrdinalIgnoreCase)
     {
         ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth", ["BOU"] = "AFC Bournemouth",
@@ -304,6 +390,7 @@ public static class SportTeams
         Func<string?, string?> map = sport.ToUpperInvariant() switch
         {
             "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx,
+            "LALIGA" => TryLaLiga, "EFL" => TryEfl, _ => _ => null,
             "EPL" => TryEpl, _ => _ => null,
         };
         var hit = map(display) ?? map(shortName);

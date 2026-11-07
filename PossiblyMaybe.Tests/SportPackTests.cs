@@ -44,6 +44,40 @@ public class SportPackTests
     }
 
     [Test]
+    public async Task LaLiga_And_Efl_Packs_Shadow_Gates_And_Oregon()
+    {
+        var la = SportPackRegistry.Get("LALIGA");
+        await Assert.That(la.LeagueId).IsEqualTo("LALIGA");
+        await Assert.That(la.Market).IsEqualTo(LaLigaShadowConfig.Market);
+        await Assert.That(la.Model).IsEqualTo(LaLigaShadowConfig.Model);
+        await Assert.That(la.MarketWeight).IsEqualTo(LaLigaShadowConfig.MarketWeight);
+        await Assert.That(la.MinEv).IsEqualTo(LaLigaShadowConfig.MinEv);
+        await Assert.That(la.MinAbsTotalEdge).IsEqualTo(LaLigaShadowConfig.MinAbsTotalEdge);
+        await Assert.That(la.EmaAlpha).IsEqualTo(LaLigaShadowConfig.EmaAlpha);
+        await Assert.That(la.TierCHoldoutSeason).IsEqualTo("2024-2025");
+        await Assert.That(la.SkipSeason).IsEqualTo("2025-2026");
+        await Assert.That(la.OregonNames.Count).IsEqualTo(0);
+        await Assert.That(la.OregonNamesExcluded()).IsTrue();
+        await Assert.That(la.ResolveAlias("Barcelona")).IsEqualTo("FC Barcelona");
+        await Assert.That(la.ResolveAlias("Atlético Madrid")).IsEqualTo("Atletico Madrid");
+        await Assert.That(SportTeams.ResolveSoccer("LALIGA", "BAR", "Barcelona", "Barcelona")).IsEqualTo("FC Barcelona");
+
+        var efl = SportPackRegistry.Get("EFL");
+        await Assert.That(efl.LeagueId).IsEqualTo("EFL");
+        await Assert.That(efl.Model).IsEqualTo(EflShadowConfig.Model);
+        await Assert.That(efl.MarketWeight).IsEqualTo(EflShadowConfig.MarketWeight);
+        await Assert.That(efl.EmaAlpha).IsEqualTo(EflShadowConfig.EmaAlpha);
+        await Assert.That(efl.OregonNamesExcluded()).IsTrue();
+        await Assert.That(efl.ResolveAlias("QPR")).IsEqualTo("Queens Park Rangers (QPR)");
+        await Assert.That(efl.ResolveAlias("West Brom")).IsEqualTo("West Bromwich(WBA)");
+        await Assert.That(SportTeams.ResolveSoccer("EFL", "WBA", "West Bromwich Albion", "West Brom"))
+            .IsEqualTo("West Bromwich(WBA)");
+
+        // Cardinal rule still applies even though no Oregon clubs live in these leagues
+        await Assert.That(OregonExclusion.IsExcluded("LALIGA", "Portland Timbers")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("EFL", "Oregon Ducks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("LALIGA", "Real Madrid")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("EFL", "Leeds United")).IsFalse();
     public async Task Ncaab_Pack_Matches_ChampConfig_Oregon_And_HoldoutLock()
     {
         var pack = SportPackRegistry.Get("NCAAB");

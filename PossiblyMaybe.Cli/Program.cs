@@ -94,6 +94,7 @@ switch (command)
     }
     case "refresh-results":
     {
+        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL finals from ESPN (+NBA box, MLS xG)
         // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL finals from ESPN (+NBA box, MLS xG)
         var repoRoot = FindRepoRoot();
         var through = args.Length > 1 && args[1].Length == 8
@@ -345,6 +346,30 @@ switch (command)
         await PoissonCdfTierA.RunAsync(dbPath, filter);
         return 0;
     }
+    case "tier-a-shadow-soccer":
+    {
+        // tier-a-shadow-soccer [SPORT|all] [db] — Tier A folds for LALIGA/EFL shadow packs
+        var repoRoot = FindRepoRoot();
+        var filter = args.Length > 1 && !args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            && !args[1].Equals("all", StringComparison.OrdinalIgnoreCase)
+            ? args[1]
+            : null;
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await SoccerShadowTierA.RunAsync(dbPath, filter);
+        return 0;
+    }
     case "tier-a-guards":
     {
         // tier-a-guards [db] — edge-cap + line-move Tier A sweep + removed-bet proof
@@ -529,6 +554,10 @@ switch (command)
     }
     case "slate-soccer":
     {
+        // slate-soccer <SPORT> [yyyymmdd] [bank]  — paper MLS|LIGUE1|LIGAMX|SERIEA; shadow LALIGA|EFL
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|LALIGA|EFL> [yyyymmdd] [bank]");
         // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA|EPL
         if (args.Length < 2)
         {
@@ -537,6 +566,11 @@ switch (command)
         }
         var repoRoot = FindRepoRoot();
         var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
         var date = args.Length > 2 && args[2].Length == 8 ? args[2]
             : DateTime.UtcNow.ToString("yyyyMMdd");
         var bank = args.Length > 3 && double.TryParse(args[3], out var b) ? b : 1000.0;
@@ -908,6 +942,7 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
+          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL (ESPN; NBA box, MLS xG)
           refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL (ESPN; NBA box, MLS xG)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
@@ -921,12 +956,14 @@ static void PrintUsage()
           sweep-mlb / sweep-nfl / sweep-ncaaf / sweep-mls  Soft-spot sweeps (MLB / NFL / NCAAF / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
+          tier-a-shadow-soccer [SPORT|all] [db]  Tier A folds for LALIGA/EFL shadow packs
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
           tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
           tier-a-shutoff [db]            V3 vs V4 rolling-CLV shutoff PnL / max DD
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
+          slate-soccer <SPORT> [day] [bank]  paper MLS|LIGUE1|LIGAMX|SERIEA; shadow LALIGA|EFL
           slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; EPL shadow
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go

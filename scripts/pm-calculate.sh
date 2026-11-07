@@ -191,7 +191,7 @@ echo ">>> Kalshi vs DraftKings (open paper tickets)"
 python3 "$ROOT/scripts/kalshi_compare.py" --paper-db "$ROOT/paper.db" || echo "(Kalshi compare skipped/failed — continuing)"
 
 echo
-echo ">>> refresh results: NBA (games+box), MLS (games+ASA xG), LIGUE1, LIGAMX, SERIEA -> through $YESTERDAY"
+echo ">>> refresh results: NBA (games+box), MLS (games+ASA xG), LIGUE1, LIGAMX, SERIEA, LALIGA, EFL -> through $YESTERDAY"
 "${CLI[@]}" refresh-results "$YESTERDAY" || echo "(refresh-results failed — STALE DATA guard will block GOs for old leagues)"
 
 SLATE_LOG="$(mktemp)"

@@ -9,6 +9,7 @@ using PossiblyMaybe.Domain.SportPacks;
 namespace PossiblyMaybe.Cli.Paper;
 
 /// <summary>
+/// Live soft-spot slate: NBA PaceEff + soccer (paper HOLD-PASS + shadow FAIL leagues).
 /// Live soft-spot slate: NBA PaceEff + NCAAB (shadow) + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA).
 /// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0; all variants go to shadow ledger.
 /// Live soft-spot slate: NBA PaceEff + soccer (paper HOLD-PASS + shadow leagues).
@@ -36,6 +37,8 @@ public static class DailySlate
             ["LIGUE1"] = "fra.1",
             ["LIGAMX"] = "mex.1",
             ["SERIEA"] = "ita.1",
+            ["LALIGA"] = "esp.1",
+            ["EFL"] = "eng.2",
             ["EPL"] = "eng.1",
         };
 
@@ -111,12 +114,14 @@ public static class DailySlate
     public static Task RunMlsAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
         => RunSoccerAsync("MLS", dbPath, yyyymmdd, bankroll, ct);
 
+    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow FAIL (LALIGA/EFL).</summary>
     /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow (EPL).</summary>
     public static async Task RunSoccerAsync(
         string sport, string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         sport = sport.ToUpperInvariant();
         if (!SoccerEspnPaths.ContainsKey(sport))
+            throw new ArgumentException($"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL.");
             throw new ArgumentException($"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: EPL.");
 
         List<SlateCandidate> candidates;
@@ -138,6 +143,8 @@ public static class DailySlate
             "LIGUE1" => Ligue1ChampConfig.Model,
             "LIGAMX" => LigaMxChampConfig.Model,
             "SERIEA" => SerieAChampConfig.Model,
+            "LALIGA" => SportPackRegistry.LaLiga.Model,
+            "EFL" => SportPackRegistry.Efl.Model,
             "EPL" => SportPackRegistry.Epl.Model,
             _ => sport,
         };
@@ -161,6 +168,7 @@ public static class DailySlate
         if (paper)
             PrintChampGos(candidates, bankroll);
         else
+            Console.WriteLine($"SHADOW-ONLY {sport} (FAIL champ) — {candidates.Count} candidates → ledger (no paper-go).");
             Console.WriteLine($"SHADOW-ONLY {sport} (pre-Tier-A) — {candidates.Count} candidates → ledger (no paper-go).");
         await RecordShadowAsync(dbPath, candidates, ct);
     }
@@ -442,6 +450,9 @@ public static class DailySlate
                 });
         }
 
+        if (sport is "LALIGA" or "EFL")
+        {
+            var pack = SportPackRegistry.Get(sport);
         if (sport == "EPL")
         {
             var pack = SportPackRegistry.Epl;

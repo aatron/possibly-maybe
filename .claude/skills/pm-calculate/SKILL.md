@@ -45,4 +45,4 @@ bash scripts/pm-calculate.sh 20261028
 - `paper-go` places independently per venue from that venue’s odds
 - Within a venue, live schemes share the pick; sizing differs
 - No extra capital; ruined lane stays out on that venue through 2026-12-31
-- Live soccer slates: **MLS, LIGUE1, LIGAMX, SERIEA** only (HOLD PASS). EFL / La Liga FAIL. Darts / cricket: no Gate 0.
+- Live soccer paper slates: **MLS, LIGUE1, LIGAMX, SERIEA** (HOLD PASS). **LALIGA / EFL** are shadow-only (FAIL champs; still in `variants-shadow` + refresh-results). Darts / cricket: no Gate 0.
