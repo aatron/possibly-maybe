@@ -24,19 +24,23 @@ public static class TeamCodes
         ["mil"] = "MIL", ["milwaukee"] = "MIL", ["milwaukee bucks"] = "MIL",
         ["min"] = "MIN", ["minnesota"] = "MIN", ["minnesota timberwolves"] = "MIN",
         ["no"] = "NOP", ["nop"] = "NOP", ["nor"] = "NOP", ["nok"] = "NOP", ["noh"] = "NOP",
-        ["new orleans"] = "NOP", ["new orleans pelicans"] = "NOP",
-        ["ny"] = "NYK", ["nyk"] = "NYK", ["new york"] = "NYK", ["new york knicks"] = "NYK",
+        ["new orleans"] = "NOP", ["new orleans pelicans"] = "NOP", ["neworleans"] = "NOP",
+        ["ny"] = "NYK", ["nyk"] = "NYK", ["new york"] = "NYK", ["new york knicks"] = "NYK", ["newyork"] = "NYK",
         // shortcut: SEA→OKC merges franchises; split if Elo continuity must be audited separately
         ["okc"] = "OKC", ["oklahoma city"] = "OKC", ["oklahoma city thunder"] = "OKC", ["sea"] = "OKC",
+        ["oklahomacity"] = "OKC",
         ["orl"] = "ORL", ["orlando"] = "ORL", ["orlando magic"] = "ORL",
         ["phi"] = "PHI", ["philadelphia"] = "PHI", ["philadelphia 76ers"] = "PHI",
         ["phx"] = "PHX", ["phoenix"] = "PHX", ["phoenix suns"] = "PHX", ["pho"] = "PHX",
         ["por"] = "POR", ["portland"] = "POR", ["portland trail blazers"] = "POR",
         ["sa"] = "SAS", ["sas"] = "SAS", ["san antonio"] = "SAS", ["san antonio spurs"] = "SAS",
+        ["sanantonio"] = "SAS",
         ["sac"] = "SAC", ["sacramento"] = "SAC", ["sacramento kings"] = "SAC",
         ["tor"] = "TOR", ["toronto"] = "TOR", ["toronto raptors"] = "TOR",
         ["uta"] = "UTA", ["utah"] = "UTA", ["utah jazz"] = "UTA", ["uth"] = "UTA",
         ["was"] = "WAS", ["washington"] = "WAS", ["washington wizards"] = "WAS", ["wsh"] = "WAS",
+        // SBRO CamelCase tokens
+        ["lalakers"] = "LAL", ["laclippers"] = "LAC",
     };
 
     public static string? TryNormalize(string? raw)

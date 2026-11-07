@@ -38,6 +38,25 @@ public static class SportTeams
         ["Steelers"] = "PIT", ["Texans"] = "HOU", ["Titans"] = "TEN", ["Vikings"] = "MIN",
         ["BuffaloBills"] = "BUF", ["KCChiefs"] = "KC", ["LVRaiders"] = "LV", ["Oakland"] = "LV",
         ["SanDiego"] = "LAC", ["St.Louis"] = "LAR", ["Tampa"] = "TB", ["Washingtom"] = "WAS",
+        // SBRO city / CamelCase
+        ["Arizona"] = "ARI", ["Atlanta"] = "ATL", ["Baltimore"] = "BAL", ["Buffalo"] = "BUF",
+        ["Carolina"] = "CAR", ["Chicago"] = "CHI", ["Cincinnati"] = "CIN", ["Cleveland"] = "CLE",
+        ["Dallas"] = "DAL", ["Denver"] = "DEN", ["Detroit"] = "DET",
+        ["Green Bay"] = "GB", ["GreenBay"] = "GB",
+        ["Houston"] = "HOU", ["Houston Texans"] = "HOU", ["HoustonTexans"] = "HOU",
+        ["Indianapolis"] = "IND", ["Jacksonville"] = "JAX",
+        ["Kansas City"] = "KC", ["KansasCity"] = "KC", ["Kansas"] = "KC",
+        ["Miami"] = "MIA", ["Minnesota"] = "MIN",
+        ["New England"] = "NE", ["NewEngland"] = "NE",
+        ["New Orleans"] = "NO", ["NewOrleans"] = "NO",
+        ["NY Giants"] = "NYG", ["NYGiants"] = "NYG", ["NY Jets"] = "NYJ", ["NYJets"] = "NYJ",
+        ["Philadelphia"] = "PHI", ["Pittsburgh"] = "PIT",
+        ["San Diego"] = "LAC", ["San Francisco"] = "SF", ["SanFrancisco"] = "SF",
+        ["Seattle"] = "SEA", ["St. Louis"] = "LAR",
+        ["Tampa Bay"] = "TB", ["TampaBay"] = "TB",
+        ["Tennessee"] = "TEN", ["Washington"] = "WAS",
+        ["LA Rams"] = "LAR", ["LARams"] = "LAR", ["LA Chargers"] = "LAC", ["LAChargers"] = "LAC",
+        ["Las Vegas"] = "LV", ["LasVegas"] = "LV",
     };
 
     private static readonly Dictionary<string, string> Mlb = new(StringComparer.OrdinalIgnoreCase)
@@ -247,4 +266,54 @@ public static class SportTeams
 
     public static string GameKey(string sport, DateOnly date, string home, string away)
         => $"{sport.ToLowerInvariant()}:{date:yyyy-MM-dd}:{home}:{away}";
+
+    /// <summary>
+    /// Minimal NCAA school → short code for GameKey. Oregon spellings map to exclusion codes;
+    /// everything else gets a stable sanitized token from the SBRO name.
+    /// </summary>
+    public static string NcaaCode(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "unk";
+        var spaced = SplitCamel(raw.Trim());
+        if (Ncaa.TryGetValue(spaced, out var code) || Ncaa.TryGetValue(raw.Trim(), out code))
+            return code;
+        return SanitizeNcaa(spaced);
+    }
+
+    static string SplitCamel(string raw)
+    {
+        var sb = new System.Text.StringBuilder(raw.Length + 4);
+        char prev = '\0';
+        foreach (var ch in raw)
+        {
+            if (char.IsUpper(ch) && prev != '\0' && (char.IsLower(prev) || char.IsDigit(prev)))
+                sb.Append(' ');
+            sb.Append(ch);
+            prev = ch;
+        }
+        return string.Join(' ', sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    static string SanitizeNcaa(string spaced)
+    {
+        var sb = new System.Text.StringBuilder(spaced.Length);
+        foreach (var ch in spaced.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch)) sb.Append(ch);
+        }
+        var s = sb.ToString();
+        return s.Length == 0 ? "unk" : s.Length <= 16 ? s : s[..16];
+    }
+
+    private static readonly Dictionary<string, string> Ncaa = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Oregon cardinal set → codes OregonExclusion already knows
+        ["Oregon"] = "ore", ["Oregon Ducks"] = "ore", ["Ducks"] = "ore",
+        ["Oregon State"] = "orst", ["OregonState"] = "orst", ["Oregon St"] = "orst",
+        ["Oregon St."] = "orst", ["Oregon State Beavers"] = "orst", ["Beavers"] = "orst",
+        ["Portland State"] = "port", ["PortlandState"] = "port", ["Portland St"] = "port",
+        ["Portland St."] = "port", ["Portland State Vikings"] = "port",
+        ["Portland U"] = "up", ["PortlandU"] = "up", ["University of Portland"] = "up",
+        ["Portland Pilots"] = "up", ["Pilots"] = "up", ["Portlandu"] = "up",
+    };
 }
