@@ -591,28 +591,16 @@ switch (command)
         var (db, _) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
-            var probe = await db.LedgerEntries.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Result == null
-                    && (r.TicketGroup == args[1] || r.GameKey == args[1]));
-            if (probe is not null && (finalTotal is null || closeLine is null))
-            {
-                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
-                    warehouse, snaps, probe.GameKey, probe.Sport);
-                finalTotal ??= autoFinal;
-                if (closeLine is null)
-                {
-                    closeLine = autoClose;
-                    closeOdds ??= autoAm;
-                }
-            }
-
+            // Per-venue same-book close when closeLine omitted (R3).
             var rows = await PaperLedger.SettleGroupAsync(
-                db, args[1], args[2], finalTotal, closeLine, closeOdds);
+                db, args[1], args[2], finalTotal, closeLine, closeOdds,
+                (finalTotal is null || closeLine is null) ? warehouse : null,
+                closeLine is null ? snaps : null);
             Console.WriteLine(
-                $"SETTLED-GO n={rows.Count} {args[1]} → {args[2]} final={finalTotal} close={closeLine}");
+                $"SETTLED-GO n={rows.Count} {args[1]} → {args[2]} final={finalTotal ?? rows.FirstOrDefault()?.FinalTotal} close={(closeLine is null ? "auto-same-book" : closeLine.ToString())}");
             foreach (var row in rows)
                 Console.WriteLine(
-                    $"  #{row.Id} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
+                    $"  #{row.Id} {row.Venue,-8} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00} close={row.CloseLine} book={row.CloseBook} cross={row.CrossBookClose} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
@@ -635,21 +623,24 @@ switch (command)
         await using (db)
         {
             var existing = await db.LedgerEntries.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            ResolvedSettleClose? meta = null;
             if (existing is not null && (finalTotal is null || closeLine is null))
             {
-                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
-                    warehouse, snaps, existing.GameKey, existing.Sport);
-                finalTotal ??= autoFinal;
+                meta = await PaperLedger.ResolveSettleLinesAsync(
+                    warehouse, snaps, existing.GameKey, existing.Sport, existing.Venue);
+                finalTotal ??= meta.Value.FinalTotal;
                 if (closeLine is null)
                 {
-                    closeLine = autoClose;
-                    closeOdds ??= autoAm;
+                    closeLine = meta.Value.CloseLine;
+                    closeOdds ??= meta.Value.CloseAmerican;
                 }
+                else
+                    meta = null; // explicit close → ApplySettle treats as same-book
             }
 
-            var row = await PaperLedger.SettleAsync(db, id, args[2], finalTotal, closeLine, closeOdds);
+            var row = await PaperLedger.SettleAsync(db, id, args[2], finalTotal, closeLine, closeOdds, meta);
             Console.WriteLine(
-                $"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} final={row.FinalTotal} close={row.CloseLine} clvPts={row.ClvPts:+0.0;-0.0}");
+                $"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} final={row.FinalTotal} close={row.CloseLine} book={row.CloseBook} cross={row.CrossBookClose} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
