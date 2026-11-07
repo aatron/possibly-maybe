@@ -48,6 +48,7 @@ public static class LineTrackerImporter
         var gameIdsTouched = new HashSet<int>();
         var booksWritten = new HashSet<Book>();
         var snaps = new List<OddsSnapshot>();
+        var unmatched = 0;
 
         foreach (var grp in groups)
         {
@@ -57,10 +58,17 @@ public static class LineTrackerImporter
             var oc = ResolveOpenClose(grp.ToList(), preferEspnOpenLine: grp.Key.Venue == "espn");
             if (oc.OpenLine is null && oc.CloseLine is null) continue;
 
-            if (!TryParseTeams(grp.Key.GameKey, out var away, out var home, out var etDate))
+            if (!TryParseTeams(grp.Key.GameKey, out var awayRaw, out var homeRaw, out _))
                 continue;
 
-            var g = FindOrCreateGame(db, games, grp.Key.Sport, home, away, etDate, grp.Key.StartUtc);
+            // Match warehouse games only — never invent GameIds (A2).
+            var g = FindGame(games, grp.Key.Sport, homeRaw, awayRaw, grp.Key.StartUtc);
+            if (g is null)
+            {
+                unmatched++;
+                continue;
+            }
+
             gameIdsTouched.Add(g.Id);
             booksWritten.Add(book.Value);
 
@@ -98,9 +106,16 @@ public static class LineTrackerImporter
         var nBoth = gamesWithBoth.Count;
         var pct = nGames == 0 ? 0.0 : 100.0 * nBoth / nGames;
         Console.WriteLine(
-            $"line-tracker import: snaps={snaps.Count} games={nGames} venue-groups={groups.Count}");
+            $"line-tracker import: snaps={snaps.Count} games={nGames} venue-groups={groups.Count} unmatched={unmatched}");
         Console.WriteLine(
             $"line-tracker coverage: {nBoth}/{nGames} games ({pct:0.#}%) have open+close");
+        foreach (var sport in sports.OrderBy(s => s, StringComparer.OrdinalIgnoreCase))
+        {
+            var sportGames = allGames.Where(g => g.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase)).ToList();
+            var sportBoth = gamesWithBoth.Count(g => g.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase));
+            var sp = sportGames.Count == 0 ? 0.0 : 100.0 * sportBoth / sportGames.Count;
+            Console.WriteLine($"  {sport}: {sportBoth}/{sportGames.Count} ({sp:0.#}%) open+close");
+        }
     }
 
     /// <summary>Last pre-start total from line_snapshots.db for a paper game key (sport + yyyymmdd away@home).</summary>
@@ -236,38 +251,49 @@ public static class LineTrackerImporter
         return true;
     }
 
-    static Game FindOrCreateGame(
-        AppDbContext db, List<Game> games, string sport, string home, string away,
-        DateOnly etDate, DateTimeOffset startUtc)
+    /// <summary>Map tracker abbr → warehouse team string; unmapped keeps own code (never another club).</summary>
+    public static string ResolveTeam(string sport, string code) => sport.ToUpperInvariant() switch
     {
-        // Prefer tipoff proximity so doubleheaders on the same SourceKey date still split.
+        "NFL" => SportTeams.TryNfl(code) ?? code,
+        "MLB" => SportTeams.TryMlb(code) ?? code,
+        "NBA" => TeamCodes.TryNormalize(code) ?? code,
+        "MLS" => SportTeams.TryMls(code) ?? code,
+        "LIGUE1" => SportTeams.TryLigue1(code) ?? code,
+        "SERIEA" => SportTeams.TrySerieA(code) ?? code,
+        "LIGAMX" => SportTeams.TryLigaMx(code) ?? code,
+        "NCAAB" or "NCAAF" => SportTeams.NcaaCode(code),
+        _ => code,
+    };
+
+    /// <summary>Match an existing warehouse game by sport + teams + tipoff; never creates rows.</summary>
+    public static Game? FindGame(
+        List<Game> games, string sport, string homeRaw, string awayRaw, DateTimeOffset startUtc)
+    {
+        var home = ResolveTeam(sport, homeRaw);
+        var away = ResolveTeam(sport, awayRaw);
+        // Prefer tipoff proximity so doubleheaders on the same date still split.
         var hit = games
             .Where(g => g.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase)
-                        && g.HomeTeam == home && g.AwayTeam == away
+                        && TeamEquals(g.HomeTeam, home, homeRaw)
+                        && TeamEquals(g.AwayTeam, away, awayRaw)
                         && Math.Abs((g.TipoffUtc - startUtc).TotalHours) < 14)
             .OrderBy(g => Math.Abs((g.TipoffUtc - startUtc).TotalMinutes))
             .FirstOrDefault();
         if (hit is not null) return hit;
 
-        var key = SportTeams.GameKey(sport.ToLowerInvariant(), etDate, home, away);
-        // Doubleheader: append UTC HHMM when date-only SourceKey already taken.
-        if (games.Any(g => g.SourceKey == key))
-            key = $"{key}:{startUtc.UtcDateTime:HHmm}";
-
-        var g = new Game
-        {
-            Sport = sport.ToUpperInvariant(),
-            Season = etDate.Year.ToString(CultureInfo.InvariantCulture),
-            SourceKey = key,
-            TipoffUtc = startUtc,
-            HomeTeam = home,
-            AwayTeam = away,
-        };
-        db.Games.Add(g);
-        db.SaveChanges();
-        games.Add(g);
-        return g;
+        // Soccer warehouse keys use UTC calendar date; tracker game_key uses ET — allow ±1 day on SourceKey date.
+        return games
+            .Where(g => g.Sport.Equals(sport, StringComparison.OrdinalIgnoreCase)
+                        && TeamEquals(g.HomeTeam, home, homeRaw)
+                        && TeamEquals(g.AwayTeam, away, awayRaw)
+                        && Math.Abs((g.TipoffUtc.UtcDateTime.Date - startUtc.UtcDateTime.Date).TotalDays) <= 1)
+            .OrderBy(g => Math.Abs((g.TipoffUtc - startUtc).TotalMinutes))
+            .FirstOrDefault();
     }
+
+    static bool TeamEquals(string warehouse, string resolved, string raw)
+        => warehouse.Equals(resolved, StringComparison.OrdinalIgnoreCase)
+           || warehouse.Equals(raw, StringComparison.OrdinalIgnoreCase);
 
     static OddsSnapshot TotalSnap(
         int gameId, Book book, double line, int american, PriceKind kind, DateTimeOffset at, bool assumed)
