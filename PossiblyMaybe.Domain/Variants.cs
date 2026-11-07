@@ -69,9 +69,10 @@ public static class VariantSkip
 public static class VariantRegistry
 {
     public const string V0Id = "V0";
-    public const double DefaultEdgeCapEv = 0.30;
-    public const double DefaultNbaLineMoveK = 1.5;
-    public const double DefaultSoccerLineMoveK = 0.5;
+    // Align with W2 Tier A picks in Guards.cs (NBA edge-cap alone fails proof; still used for soccer + live absurds).
+    public const double DefaultEdgeCapEv = Guards.RecommendedEdgeCap;
+    public const double DefaultNbaLineMoveK = Guards.RecommendedNbaLineMoveK;
+    public const double DefaultSoccerLineMoveK = Guards.RecommendedSoccerLineMoveK;
 
     private static readonly HashSet<string> NoSerieA = new(StringComparer.OrdinalIgnoreCase)
     {

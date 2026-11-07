@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for W1 + W15 Composer agents; parent merges `--no-ff`. Then W5 / W6 / W7. W4 deferred. W2 / W3 / W8 / W13 / W14 done.
+**Next action:** wait for W5 / W6 / W7 / W15 / W16. W1–W3 / W8 / W13 / W14 done. W4 deferred.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -9,13 +9,13 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 |---|---|---|---|---|---|---|
 | W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league: before NBA 10-25, soccer 2026-05 → after NBA 11-07, MLS 11-02, L1 11-06, LMX 11-07, SA 11-06 (live DB) | done | 4dda009 |
 | D0 | User decision: PaperLedger.cs / ui WIP | user | — | — | done: parent committed WIP as-is | 3ac0431 |
-| W1 | Variant registry + shadow ledger + variants.html + backfill | Composer | `../pm-r3-variants` `r3/variants` | V0 backfill = champ | **running** | |
+| W1 | Variant registry + shadow ledger + variants.html + backfill | Composer | `../pm-r3-variants` `r3/variants` | registry + shadow + ui; thresholds aligned to Guards | done | 48b9e5e |
 | W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` `r3/guards` | line-move PASS; edge-cap 25% soccer PASS / NBA FAIL (see w2_guard_proof.md) | done | 1ae2f73 |
 | W3 | Tracker importer + doubleheader key | Composer | `../pm-r3-tracker-import` `r3/tracker-import` | smoke 15/15 O+C; key `yyyymmdd AWAY@HOME HHMM` | done | ca7c064 |
 | W4 | Always-on tracker (GH Actions) | Composer | `../pm-r3-always-on` | sleep-night coverage | **deferred (user: not yet)** | |
-| W5 | Live CLV fix | Composer | `../pm-r3-live-clv` | % true close | pending (after W1) | |
-| W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` | % soccer GOs priced | pending (after W1) | |
-| W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` | drawdown vs V3 | pending (W1) | |
+| W5 | Live CLV fix | Composer | `../pm-r3-live-clv` `r3/live-clv` | % true close | **running** | |
+| W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` `r3/venues` | % soccer GOs priced | **running** | |
+| W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` `r3/shutoff` | drawdown vs V3 | **running** | |
 | W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible (STAKE GATE in `paper`) | done | b3e6ca2 |
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
@@ -43,3 +43,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W3 merged (ca7c064, 128 tests on main). `import-line-tracker`; doubleheader key with HHMM. |
 | 2026-11-07 | W2 merged (1ae2f73, 135 tests). Defaults: edge-cap 25%, NBA k=2, soccer k=0.5. NBA edge-cap fails removed-bet proof (visible loser / live absurd defense only). |
 | 2026-11-07 | User: archive.org line history → W16 launched (Opus, download only; import = Composer). Wave items are being implemented by another session, not this one. |
+| 2026-11-07 | W1 merged (48b9e5e, 141 tests). Shadow ledger + variants.html; Defaults aligned to Guards (25% / NBA k=2). W5/W6/W7 launched. |
