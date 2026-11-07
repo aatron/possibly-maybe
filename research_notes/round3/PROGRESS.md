@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for parallel Composer agents W1 / W2 to finish; parent reviews and merges `--no-ff`. W15 running. Then W5 / W6 / W7. W4 deferred. W3 / W8 / W13 / W14 done.
+**Next action:** wait for W1 + W15 Composer agents; parent merges `--no-ff`. Then W5 / W6 / W7. W4 deferred. W2 / W3 / W8 / W13 / W14 done.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -10,7 +10,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league: before NBA 10-25, soccer 2026-05 → after NBA 11-07, MLS 11-02, L1 11-06, LMX 11-07, SA 11-06 (live DB) | done | 4dda009 |
 | D0 | User decision: PaperLedger.cs / ui WIP | user | — | — | done: parent committed WIP as-is | 3ac0431 |
 | W1 | Variant registry + shadow ledger + variants.html + backfill | Composer | `../pm-r3-variants` `r3/variants` | V0 backfill = champ | **running** | |
-| W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` `r3/guards` | removed bets lose | **running** | |
+| W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` `r3/guards` | line-move PASS; edge-cap 25% soccer PASS / NBA FAIL (see w2_guard_proof.md) | done | 1ae2f73 |
 | W3 | Tracker importer + doubleheader key | Composer | `../pm-r3-tracker-import` `r3/tracker-import` | smoke 15/15 O+C; key `yyyymmdd AWAY@HOME HHMM` | done | ca7c064 |
 | W4 | Always-on tracker (GH Actions) | Composer | `../pm-r3-always-on` | sleep-night coverage | **deferred (user: not yet)** | |
 | W5 | Live CLV fix | Composer | `../pm-r3-live-clv` | % true close | pending (after W1) | |
@@ -40,3 +40,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W14 merged (3ba836a, 111 tests). CamelCase normalize + Pilots; dropped misleading NCAA `psu` code. |
 | 2026-11-07 | W15 Composer agent launched (`r3/import-odds`). |
 | 2026-11-07 | W3 merged (ca7c064, 128 tests on main). `import-line-tracker`; doubleheader key with HHMM. |
+| 2026-11-07 | W2 merged (1ae2f73, 135 tests). Defaults: edge-cap 25%, NBA k=2, soccer k=0.5. NBA edge-cap fails removed-bet proof (visible loser / live absurd defense only). |
