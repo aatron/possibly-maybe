@@ -427,10 +427,10 @@ switch (command)
     }
     case "slate-soccer":
     {
-        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA
+        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA|BUNDESLIGA
         if (args.Length < 2)
         {
-            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA> [yyyymmdd] [bank]");
+            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|BUNDESLIGA> [yyyymmdd] [bank]");
             return 1;
         }
         var repoRoot = FindRepoRoot();
@@ -829,7 +829,7 @@ static void PrintUsage()
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
-          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA HOLD-PASS slates
+          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; BUNDESLIGA shadow
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go

@@ -63,9 +63,11 @@ class ParseTests(unittest.TestCase):
 
 class MultiSportParseTests(unittest.TestCase):
     def test_sports_table_covers_a2_leagues(self):
-        need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL"}
+        need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "BUNDESLIGA"}
         self.assertTrue(need <= set(lt.SPORTS))
         self.assertEqual(lt.SPORTS["NFL"]["kalshi"], "KXNFLTOTAL")
+        self.assertEqual(lt.SPORTS["BUNDESLIGA"]["kalshi"], "KXBUNDESLIGATOTAL")
+        self.assertIsNone(lt.SPORTS["BUNDESLIGA"]["cdc"])
         self.assertIsNone(lt.SPORTS["LALIGA"]["kalshi"])
         self.assertIsNone(lt.SPORTS["NCAAB"]["cdc"])
 

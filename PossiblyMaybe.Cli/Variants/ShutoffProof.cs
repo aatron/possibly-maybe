@@ -20,7 +20,7 @@ public static class ShutoffProof
         {
             await NbaAsync(wdb, ct),
         };
-        foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA" })
+        foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA", "BUNDESLIGA" })
             rows.Add(await SoccerAsync(wdb, sport, ct));
         return rows;
     }
@@ -120,6 +120,8 @@ public static class ShutoffProof
                 LigaMxChampConfig.EmaAlpha, false),
             "SERIEA" => (SerieAChampConfig.MarketWeight, SerieAChampConfig.MinAbsTotalEdge, SerieAChampConfig.MinEv,
                 SerieAChampConfig.DcAlpha, true),
+            "BUNDESLIGA" => (BundesligaShadowConfig.MarketWeight, BundesligaShadowConfig.MinAbsTotalEdge,
+                BundesligaShadowConfig.MinEv, BundesligaShadowConfig.EmaAlpha, false),
             _ => throw new ArgumentException(sport),
         };
 
