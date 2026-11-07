@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** Wave R (R6–R10); D1–D5. R1+R2 done.
+**Next action:** Wave R (R6, R8–R10); D1–D5. R1+R2+R7 done.
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -35,12 +35,12 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | main | `r2_proof.md` schema test | done | (this commit) |
 | R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | done | (batch land) |
 | R4 | replay --asof command | — | — | — | superseded by R7–R9 (replay = engine over logged dates) | |
-| R7 | Point-in-time AsOfView (no DB handle for strategies) | Composer | `../pm-r4-r7` | leak tests | pending (A1+R1/R2) | |
+| R7 | Point-in-time AsOfView (no DB handle for strategies) | Composer | main | `r7_proof.md` leak tests | done | (this commit) |
 | R8 | IStrategy plug-in + port champions | Composer | `../pm-r4-r8` | reproduce Tier A/B | pending (R7) | |
 | R9 | Day-stepping engine shared with live | Composer | `../pm-r4-r9` | live == engine today | pending (R7) | |
 | R10 | Vault + trial ledger + nested tuning + no sim-only promotion | Composer | `../pm-r4-r10` | vault refusal test | pending (R8, R9) | |
 | R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | done | (batch land) |
-| R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
+| R6 | Real DK price on paper tickets | Composer | main | `r6_proof.md` 0%→real when DK present | done | (this commit) |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
 | D3 | Training-process review | Auto / Composer | reports | — | pending (end) | |
@@ -69,3 +69,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | C6-bundesliga + C6-nhl merged (244 tests). A5/C7 + Wave R remain. |
 | 2026-11-07 | A5 seasonality-scan + C7 SPREAD/ML candidate store landed (254 tests). Wave R next. |
 | 2026-11-07 | R1 as-of cutoff + R2 append-only DecisionLog landed (260 tests). Proofs `r1_proof.md` / `r2_proof.md`. |
+| 2026-11-07 | R6 real DK price on paper tickets: PaperChamp + AssumedJuice / CLV exclusion (267 tests). Proof `r6_proof.md` (before 0% real on 180 DK tickets). |
+| 2026-11-07 | R7 AsOfView skeleton + leak proofs landed (264 tests). Proof `r7_proof.md`. R6 WIP left unstaged in tree. |
