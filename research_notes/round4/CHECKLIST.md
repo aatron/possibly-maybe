@@ -7,7 +7,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] NCAAB totals pack (r3 W10) → C1
 - [x] Training-process review across all books (r2 phase 6 / r3 W11) → D3 (`reports/training_process_review.md`)
 - [x] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4 (`reports/round4_waves.md`)
-- [ ] archive.org odds history (r3 W16, **agent still running**) → import in C0 / league items
+- [x] archive.org odds history (r3 W16 partial): NHL SBRO + AUS NFL totals imported in Round 5 T2a/T2b; remaining sports still open → see W16 handoff
 - [ ] Always-on tracker while laptop sleeps (r3 W4), **deferred by user**, stays parked
 - [ ] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
 
@@ -42,6 +42,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Line tracker covers NFL / MLB only; needs **every** league for live CLV / consensus → A2
 
 ## E. Infrastructure for "waves of soft spots"
+- [x] Durable vault + trial ledger across CLI restarts (Round 5 T1 `data/vault.db`)
 - [ ] Shadow ledger stores **every candidate** (all games × all model outputs), so a variant is a filter, not a re-run → A1
 - [ ] Wave radar: rolling CLV per league × market × variant, sequential alerts + false-discovery control → A3
 - [x] Seasonality scan: historical CLV by season phase → wave calendar → A5
