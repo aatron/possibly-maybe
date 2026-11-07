@@ -1,7 +1,7 @@
 # Round 4: progress
 
 ## ▶ RESUME HERE
-**Next action:** D1–D5. Wave R (R1–R3, R5–R10) done.
+**Next action:** D1, D2, D5. D3/D4 done (`reports/training_process_review.md`, `reports/round4_waves.md`).
 Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer only (see W16 handoff).
 
 ## Ledger
@@ -43,8 +43,8 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | R6 | Real DK price on paper tickets | Composer | main | `r6_proof.md` 0%→real when DK present | done | (this commit) |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
-| D3 | Training-process review | Auto / Composer | reports | — | pending (end) | |
-| D4 | Round-4 waves report | Auto / Composer | reports | — | pending (end) | |
+| D3 | Training-process review | Auto / Composer | reports | `reports/training_process_review.md` | done | (this commit) |
+| D4 | Round-4 waves report | Auto / Composer | reports | `reports/round4_waves.md` | done | (this commit) |
 | D5 | Green tests, clean run, push | parent | main | — | pending | |
 | r3-W16 | archive.org odds (carried) | Composer | notes + data/raw | O→C seasons | **done** — `round3/archive_org_odds.md`; NHL SBRO 15 szn + MLB 2016 + AUS NFL 2022–25 totals on disk; page snapshots rejected; PT skip; import Composer follow-up | |
 
@@ -74,3 +74,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3-W16 → Composer o
 | 2026-11-07 | R8 IStrategy + V0TotalsStrategy (Evaluate-equivalent fixtures). 272 tests. Proof `r8_proof.md`. |
 | 2026-11-07 | R9 DayEngine + `engine-day` CLI (synthetic slate == Evaluate(V0)). 274 tests. Proof `r9_proof.md`. |
 | 2026-11-07 | R10 vault + trial ledger + nested walk-forward + PromotionPolicy. 279 tests. Proof `r10_proof.md`. |
+| 2026-11-07 | D3 + D4 close-out reports: `reports/training_process_review.md`, `reports/round4_waves.md` (from existing proofs; no invented Tier A). |

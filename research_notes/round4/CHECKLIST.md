@@ -5,8 +5,8 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 ## A. Carried over from round 3
 - [ ] Serie A keep/fix/drop verdict (r3 W9) → D2
 - [ ] NCAAB totals pack (r3 W10) → C1
-- [ ] Training-process review across all books (r2 phase 6 / r3 W11) → D3
-- [ ] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4
+- [x] Training-process review across all books (r2 phase 6 / r3 W11) → D3 (`reports/training_process_review.md`)
+- [x] Round-3 value report: proof tables + variant leaderboard (r3 W11) → D4 (`reports/round4_waves.md`)
 - [ ] archive.org odds history (r3 W16, **agent still running**) → import in C0 / league items
 - [ ] Always-on tracker while laptop sleeps (r3 W4), **deferred by user**, stays parked
 - [ ] Verify V5 `+realjuice` reads real DK prices on every league, not −110 → A1
