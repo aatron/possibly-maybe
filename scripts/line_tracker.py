@@ -2,6 +2,7 @@
 """Snapshot logger for NFL/MLB TOTALS lines (ESPN, Kalshi, Crypto.com) -> data/line_snapshots.db.
 
 Append-only table `line_snapshots`; open = first snapshot, close = last pre-start snapshot.
+game_key = `yyyymmdd AWAY@HOME HHMM` (ET date + kickoff; HHMM keeps doubleheaders distinct).
 Public unauthenticated GETs only. Run every 15-30 min; `--report` prints movement + best price.
 Add a sport (NCAAF, ...) by adding one SPORTS entry. Never touches paper.db.
 """
@@ -75,6 +76,12 @@ def american_price(a) -> float | None:
 
 # ---- parsing (pure; unit-tested) ----
 
+def game_key(start: datetime, away: str, home: str) -> str:
+    """Doubleheader-safe: ET date + teams + ET kickoff HHMM (game_key alone was not enough)."""
+    et = start.astimezone(ET)
+    return f"{et:%Y%m%d} {away}@{home} {et:%H%M}"
+
+
 def parse_espn(sb: dict, sport: str) -> list[dict]:
     """Pre-game events with a total -> game dicts incl. one espn row."""
     canon = CANON.get(sport, {})
@@ -87,7 +94,7 @@ def parse_espn(sb: dict, sport: str) -> list[dict]:
         away, home = (canon.get(t[k]["abbreviation"], t[k]["abbreviation"]) for k in ("away", "home"))
         start = datetime.fromisoformat(ev["date"].replace("Z", "+00:00"))
         g = {"sport": sport, "start": start, "away": away, "home": home, "nick": (t["away"]["name"], t["home"]["name"]),
-             "key": f"{start.astimezone(ET):%Y%m%d} {away}@{home}", "rows": []}
+             "key": game_key(start, away, home), "rows": []}
         odds = (comp.get("odds") or [None])[0]
         line = num((odds or {}).get("overUnder"))
         if line is not None:

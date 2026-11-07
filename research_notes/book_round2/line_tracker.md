@@ -8,7 +8,7 @@ Per run (one `captured_at` UTC): for every pre-game ESPN event in the next 5 day
 - `espn`: `overUnder` close line, over/under American odds (+ implied price), ESPN-reported `open_line`, provider (Draft Kings) in `source`.
 - `kalshi`: every open strike of the totals series: yes(over)/no(under) bid and ask in dollars.
 - `cryptocom`: every full-game `Over X` contract: `over_ask` = yes, `under_ask` = no (no bids published).
-- `game_key` = `yyyymmdd AWAY@HOME` (US Eastern date, repo team codes, e.g. WSH -> WAS for NFL), `start_utc`, `minutes_to_start`.
+- `game_key` = `yyyymmdd AWAY@HOME HHMM` (US Eastern date + kickoff, repo team codes, e.g. WSH -> WAS for NFL), `start_utc`, `minutes_to_start`.
 Games already started/finished are skipped, so the last stored snapshot is the pre-start close. Off-season (MLB now): ESPN returns 0 events, nothing is fetched or stored. Source failures are logged and skipped. Rerunning in the same second is a no-op (UNIQUE key). Runtime ~10 s.
 
 ## Schedule (not installed)
