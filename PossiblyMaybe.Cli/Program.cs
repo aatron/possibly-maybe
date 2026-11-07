@@ -1,6 +1,7 @@
 ﻿using PossiblyMaybe.Cli.Backtest;
 using PossiblyMaybe.Cli.Import;
 using PossiblyMaybe.Cli.Paper;
+using PossiblyMaybe.Cli.Variants;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
 
@@ -601,6 +602,50 @@ switch (command)
         }
         return 0;
     }
+    case "variants-shadow":
+    {
+        // Settle + evaluate slate day + write ui/variants.html (no paper confirmation).
+        var root = FindRepoRoot();
+        var warehouse = args.Length > 2 ? args[2] : Path.Combine(root, "possiblymaybe.db");
+        var day = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        if (args.Length > 1 && args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+        {
+            warehouse = args[1];
+            day = DateTime.UtcNow.ToString("yyyyMMdd");
+        }
+        await VariantShadow.RunAsync(
+            warehouse, VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"), day);
+        return 0;
+    }
+    case "variants-backfill":
+    {
+        var root = FindRepoRoot();
+        var warehouse = args.Length > 1 ? args[1] : Path.Combine(root, "possiblymaybe.db");
+        var vdb = args.Length > 2 ? args[2] : VariantLedger.DefaultDbPath(root);
+        if (!File.Exists(warehouse))
+        {
+            Console.Error.WriteLine($"DB not found: {warehouse}");
+            return 2;
+        }
+        await VariantBackfill.RunAsync(warehouse, vdb);
+        await VariantDashboard.WriteAsync(vdb, Path.Combine(root, "ui"));
+        return 0;
+    }
+    case "variants-settle":
+    {
+        var root = FindRepoRoot();
+        var warehouse = args.Length > 1 ? args[1] : Path.Combine(root, "possiblymaybe.db");
+        var n = await VariantSettle.SettleOpenAsync(VariantLedger.DefaultDbPath(root), warehouse);
+        Console.WriteLine($"variants-settle: {n}");
+        return 0;
+    }
+    case "variants-dashboard":
+    {
+        var root = FindRepoRoot();
+        await VariantDashboard.WriteAsync(VariantLedger.DefaultDbPath(root), Path.Combine(root, "ui"));
+        return 0;
+    }
     case "ensure-db":
     {
         var dbPath = args.Length > 1 ? args[1] : "possiblymaybe.db";
@@ -687,6 +732,10 @@ static void PrintUsage()
           settle <id> <W|L|P> …    Settle one ledger id
           paper [paper.db]         Leaderboard of all stake lanes
           dashboard                Write ui/index.html equity + leaderboard
+          variants-shadow [yyyymmdd] Settle + eval slate → data/variants.db + ui/variants.html
+          variants-backfill [db]     Walk-forward + replay week into shadow ledger
+          variants-settle [db]       Auto-settle open shadow picks (no confirm)
+          variants-dashboard         Write ui/variants.html
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);

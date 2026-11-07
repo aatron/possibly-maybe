@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using PossiblyMaybe.Cli.Variants;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
 
@@ -8,6 +9,7 @@ namespace PossiblyMaybe.Cli.Paper;
 
 /// <summary>
 /// Live soft-spot slate: NBA PaceEff + HOLD-PASS soccer (MLS / Ligue1 / LigaMX / SerieA).
+/// Each game → one <see cref="SlateCandidate"/>; champ GO print uses V0; all variants go to shadow ledger.
 /// </summary>
 public static class DailySlate
 {
@@ -34,70 +36,35 @@ public static class DailySlate
         => latestResult is null
            || DateTime.ParseExact(yyyymmdd, "yyyyMMdd", null).Date - latestResult.Value.UtcDateTime.Date > TimeSpan.FromDays(StaleDays);
 
-    private static async Task<bool> WarnIfStaleAsync(string sport, string dbPath, string yyyymmdd, CancellationToken ct)
+    private static async Task<bool> IsLeagueStaleAsync(string sport, string dbPath, string yyyymmdd, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
         var latest = await Import.ResultsRefresh.LatestResultAsync(db, sport, ct);
-        if (!IsStale(latest, yyyymmdd)) return false;
+        return IsStale(latest, yyyymmdd);
+    }
+
+    private static async Task WarnIfStaleAsync(string sport, string dbPath, string yyyymmdd, CancellationToken ct)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
+        await using var db = new AppDbContext(options);
+        var latest = await Import.ResultsRefresh.LatestResultAsync(db, sport, ct);
+        if (!IsStale(latest, yyyymmdd)) return;
         Console.WriteLine($"STALE DATA: {sport} newest result in DB is {(latest is null ? "NONE" : latest.Value.ToString("yyyy-MM-dd"))}"
             + $" (> {StaleDays} days before {yyyymmdd}) — NO GOs for {sport}. Run: refresh-results");
-        return true;
     }
 
     public static async Task RunNbaAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
-        var (pace, sigma) = await BuildNbaPaceAndSigmaAsync(dbPath, ct);
-        var games = await FetchNbaScoreboardAsync(yyyymmdd, ct);
-        Console.WriteLine($"######## NBA SLATE {yyyymmdd} bankroll=${bankroll:F0} PaceEff+Normalσ={sigma:F2} ########");
-        if (games.Count > 0 && await WarnIfStaleAsync("NBA", dbPath, yyyymmdd, ct)) return;
-        Console.WriteLine($"Gate: w={ChampConfig.MarketWeight} |exp−line|≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0} ¼Kelly≤2%");
-        var gos = 0;
-        foreach (var g in games)
-        {
-            if (OregonExclusion.IsExcluded("NBA", g.Home, g.Away))
-            {
-                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
-                continue;
-            }
-            var modelExp = pace.ExpectedTotal(g.Home, g.Away);
-            var line = g.Total ?? await FetchEspnTotalAsync("basketball", "nba", g.EspnId, ct);
-            if (line is null)
-            {
-                Console.WriteLine($"SKIP {g.Away}@{g.Home} — no total");
-                continue;
-            }
+        var candidates = await BuildNbaCandidatesAsync(dbPath, yyyymmdd, ct);
+        Console.WriteLine($"######## NBA SLATE {yyyymmdd} bankroll=${bankroll:F0} PaceEff+Normalσ ########");
+        if (candidates.Count > 0 && candidates[0].Stale)
+            await WarnIfStaleAsync("NBA", dbPath, yyyymmdd, ct);
+        else
+            Console.WriteLine($"Gate: w={ChampConfig.MarketWeight} |exp−line|≥{ChampConfig.MinAbsTotalEdge} EV≥{ChampConfig.MinEv:P0} ¼Kelly≤2%");
 
-            var exp = ChampConfig.MarketWeight * line.Value + (1 - ChampConfig.MarketWeight) * modelExp;
-            var edge = exp - line.Value;
-            var juice = -110;
-            if (Math.Abs(edge) < ChampConfig.MinAbsTotalEdge)
-            {
-                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  model={modelExp:F1} line={line:F1} edge={edge:F1}");
-                continue;
-            }
-
-            var betOver = edge > 0;
-            var pOver = TotalsMath.NormalOverProb(exp, line.Value, sigma);
-            var p = betOver ? pOver : 1 - pOver;
-            var advice = BetDecider.Advise(p, juice, bankroll, ChampConfig.MinEv);
-            var side = betOver ? "OVER" : "UNDER";
-            if (!advice.Go)
-            {
-                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  {side} {line:F1} edge={edge:F1} ({advice.Reason})");
-                continue;
-            }
-
-            gos++;
-            var key = $"{yyyymmdd} {g.Away}@{g.Home}";
-            Console.WriteLine(
-                $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F1} edge={edge:F1} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
-            Console.WriteLine($"    paper-go \"{key}\" {side} {line.Value} {juice} {p:F3} {Math.Abs(edge):F2} NBA");
-        }
-
-        Console.WriteLine(gos == 0
-            ? "No NBA soft spots today — sit out. That is a win for bankroll discipline."
-            : $"NBA GO tickets: {gos}");
+        PrintChampGos(candidates, bankroll);
+        await RecordShadowAsync(dbPath, candidates, ct);
     }
 
     public static Task RunMlsAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
@@ -108,14 +75,13 @@ public static class DailySlate
         string sport, string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         sport = sport.ToUpperInvariant();
-        if (!SoccerEspnPaths.TryGetValue(sport, out var espnLeague))
+        if (!SoccerEspnPaths.ContainsKey(sport))
             throw new ArgumentException($"No live slate for {sport}. PASS paper: MLS, LIGUE1, LIGAMX, SERIEA.");
 
-        var (modelName, w, minEdge, minEv, lambdas) = await BuildSoccerModelAsync(sport, dbPath, ct);
-        List<SlateGame> games;
+        List<SlateCandidate> candidates;
         try
         {
-            games = await FetchSoccerScoreboardAsync(sport, espnLeague, yyyymmdd, ct);
+            candidates = await BuildSoccerCandidatesAsync(sport, dbPath, yyyymmdd, ct);
         }
         catch (Exception ex)
         {
@@ -124,68 +90,153 @@ public static class DailySlate
             return;
         }
 
+        var modelName = sport switch
+        {
+            "MLS" => MlsChampConfig.Model,
+            "LIGUE1" => Ligue1ChampConfig.Model,
+            "LIGAMX" => LigaMxChampConfig.Model,
+            "SERIEA" => SerieAChampConfig.Model,
+            _ => sport,
+        };
         Console.WriteLine($"######## {sport} SLATE {yyyymmdd} bankroll=${bankroll:F0} paper {modelName} ########");
-        Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdfFor(sport) ? "poisson" : "logistic")}");
-        if (games.Count == 0)
+        if (candidates.Count == 0)
         {
             Console.WriteLine($"No {sport} games on this date.");
             return;
         }
-        if (await WarnIfStaleAsync(sport, dbPath, yyyymmdd, ct)) return;
+        if (candidates[0].Stale)
+            await WarnIfStaleAsync(sport, dbPath, yyyymmdd, ct);
+        else
+        {
+            var w = candidates[0].MarketWeight;
+            var minEdge = candidates[0].MinAbsEdge;
+            var minEv = candidates[0].MinEv;
+            Console.WriteLine($"Gate: w={w} |exp−line|≥{minEdge} EV≥{minEv:P0} p={(SoccerOverProbConfig.UsePoissonCdfFor(sport) ? "poisson" : "logistic")}");
+        }
 
-        var gos = 0;
+        PrintChampGos(candidates, bankroll);
+        await RecordShadowAsync(dbPath, candidates, ct);
+    }
+
+    public static async Task<List<SlateCandidate>> BuildNbaCandidatesAsync(
+        string dbPath, string yyyymmdd, CancellationToken ct = default)
+    {
+        var (pace, sigma) = await BuildNbaPaceAndSigmaAsync(dbPath, ct);
+        var games = await FetchNbaScoreboardAsync(yyyymmdd, ct);
+        var stale = games.Count > 0 && await IsLeagueStaleAsync("NBA", dbPath, yyyymmdd, ct);
+        var list = new List<SlateCandidate>();
         foreach (var g in games)
         {
-            if (g.Home.StartsWith("?", StringComparison.Ordinal) || g.Away.StartsWith("?", StringComparison.Ordinal))
-            {
-                Console.WriteLine($"SKIP {g.Away}@{g.Home} — unmapped ESPN team");
-                continue;
-            }
-            if (OregonExclusion.IsExcluded(sport, g.Home, g.Away))
-            {
-                Console.WriteLine($"EXCLUDED (Oregon rule) {g.Away}@{g.Home}");
-                continue;
-            }
+            var modelExp = pace.ExpectedTotal(g.Home, g.Away);
+            var odds = g.Total is { } t
+                ? new EspnOdds(t, null, null)
+                : await FetchEspnOddsAsync("basketball", "nba", g.EspnId, ct);
+            list.Add(new SlateCandidate(
+                "NBA", yyyymmdd, g.Home, g.Away,
+                modelExp, null, null,
+                odds?.Total, odds?.Total, // live open≈current until tracker import
+                odds?.OverAmerican, odds?.UnderAmerican,
+                sigma,
+                ChampConfig.MarketWeight, ChampConfig.MinAbsTotalEdge, ChampConfig.MinEv,
+                stale));
+        }
+        return list;
+    }
 
+    public static async Task<List<SlateCandidate>> BuildSoccerCandidatesAsync(
+        string sport, string dbPath, string yyyymmdd, CancellationToken ct = default)
+    {
+        sport = sport.ToUpperInvariant();
+        if (!SoccerEspnPaths.TryGetValue(sport, out var espnLeague))
+            throw new ArgumentException($"No live slate for {sport}.");
+
+        var (_, w, minEdge, minEv, lambdas) = await BuildSoccerModelAsync(sport, dbPath, ct);
+        var games = await FetchSoccerScoreboardAsync(sport, espnLeague, yyyymmdd, ct);
+        var stale = games.Count > 0 && await IsLeagueStaleAsync(sport, dbPath, yyyymmdd, ct);
+        var list = new List<SlateCandidate>();
+        foreach (var g in games)
+        {
+            if (g.Home.StartsWith('?') || g.Away.StartsWith('?'))
+            {
+                list.Add(new SlateCandidate(
+                    sport, yyyymmdd, g.Home, g.Away,
+                    0, null, null, null, null, null, null, 0, w, minEdge, minEv, stale));
+                continue;
+            }
             var (lh, la) = lambdas(g.Home, g.Away);
             var modelExp = lh + la;
-            var line = g.Total ?? await FetchEspnTotalAsync("soccer", espnLeague, g.EspnId, ct);
-            if (line is null)
-            {
-                Console.WriteLine($"SKIP {g.Away}@{g.Home} — no total");
-                continue;
-            }
+            var odds = g.Total is { } t
+                ? new EspnOdds(t, null, null)
+                : await FetchEspnOddsAsync("soccer", espnLeague, g.EspnId, ct);
+            list.Add(new SlateCandidate(
+                sport, yyyymmdd, g.Home, g.Away,
+                modelExp, lh, la,
+                odds?.Total, odds?.Total,
+                odds?.OverAmerican, odds?.UnderAmerican,
+                0, w, minEdge, minEv, stale));
+        }
+        return list;
+    }
 
-            var exp = w * line.Value + (1 - w) * modelExp;
-            var edge = exp - line.Value;
-            var juice = -110;
-            if (Math.Abs(edge) < minEdge)
+    private static void PrintChampGos(IReadOnlyList<SlateCandidate> candidates, double bankroll)
+    {
+        var gos = 0;
+        var sport = candidates.Count > 0 ? candidates[0].Sport : "";
+        foreach (var c in candidates)
+        {
+            var d = VariantRegistry.Evaluate(VariantRegistry.V0, c);
+            var key = VariantRegistry.GameKey(c);
+            if (!d.Pick)
             {
-                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  model={modelExp:F2} line={line:F1} edge={edge:+0.00;-0.00}");
-                continue;
-            }
-
-            var betOver = edge > 0;
-            var pOver = SoccerOverProbConfig.OverProb(lh, la, exp, line.Value, sport);
-            var p = betOver ? pOver : 1 - pOver;
-            var advice = BetDecider.Advise(p, juice, bankroll, minEv);
-            var side = betOver ? "OVER" : "UNDER";
-            if (!advice.Go)
-            {
-                Console.WriteLine($"NO-GO {g.Away}@{g.Home}  {side} {line:F1} ({advice.Reason})");
+                if (d.SkipReason == VariantSkip.Excluded)
+                    Console.WriteLine($"EXCLUDED (Oregon rule) {c.Away}@{c.Home}");
+                else if (d.SkipReason == VariantSkip.Stale)
+                    continue; // header already warned
+                else if (d.SkipReason == VariantSkip.NoLine)
+                    Console.WriteLine($"SKIP {c.Away}@{c.Home} — no total");
+                else if (d.SkipReason == VariantSkip.NoEdge)
+                    Console.WriteLine($"NO-GO {c.Away}@{c.Home}  model={c.ModelExp:F1} line={c.Line:F1} edge={(c.Line is { } ln ? c.MarketWeight * ln + (1 - c.MarketWeight) * c.ModelExp - ln : 0):+0.0;-0.0}");
+                else if (d.Side is { } side)
+                    Console.WriteLine($"NO-GO {c.Away}@{c.Home}  {side} {c.Line:F1} ({d.SkipReason}: EV={d.Ev:P1})");
+                else if (c.Home.StartsWith('?') || c.Away.StartsWith('?'))
+                    Console.WriteLine($"SKIP {c.Away}@{c.Home} — unmapped ESPN team");
+                else
+                    Console.WriteLine($"NO-GO {c.Away}@{c.Home}  ({d.SkipReason})");
                 continue;
             }
 
             gos++;
-            var key = $"{yyyymmdd} {g.Away}@{g.Home}";
             Console.WriteLine(
-                $"GO  {key}  {side} {line:F1} @{juice}  model={modelExp:F2} edge={edge:+0.00;-0.00} EV={advice.Ev:P1} stake=${advice.StakeFraction * bankroll:F2}");
-            Console.WriteLine($"    paper-go \"{key}\" {side} {line.Value} {juice} {p:F3} {Math.Abs(edge):F2} {sport}");
+                $"GO  {key}  {d.Side} {d.Line:F1} @{d.AmericanOdds}  model={c.ModelExp:F1} edge={d.AbsEdge:F1} EV={d.Ev:P1} stake=${BetDecider.Advise(d.ModelProb, d.AmericanOdds, bankroll, c.MinEv).StakeFraction * bankroll:F2}");
+            Console.WriteLine($"    paper-go \"{key}\" {d.Side} {d.Line} {d.AmericanOdds} {d.ModelProb:F3} {d.AbsEdge:F2} {c.Sport}");
         }
 
         Console.WriteLine(gos == 0
-            ? $"No {sport} soft spots today — sit out."
+            ? (sport == "NBA"
+                ? "No NBA soft spots today — sit out. That is a win for bankroll discipline."
+                : $"No {sport} soft spots today — sit out.")
             : $"{sport} GO tickets: {gos}");
+    }
+
+    private static async Task RecordShadowAsync(string warehouseDbPath, List<SlateCandidate> candidates, CancellationToken ct)
+    {
+        var root = FindRepoRootNear(warehouseDbPath);
+        var vpath = VariantLedger.DefaultDbPath(root);
+        var n = await VariantEvaluate.RecordAsync(vpath, candidates, ct);
+        if (n > 0)
+            Console.WriteLine($"  [shadow] {n} variant×game rows → {vpath}");
+    }
+
+    private static string FindRepoRootNear(string dbPath)
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? ".");
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "PossiblyMaybe.sln")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return Directory.GetCurrentDirectory();
     }
 
     private static async Task<(PaceEfficiencyBook Pace, double Sigma)> BuildNbaPaceAndSigmaAsync(
@@ -281,8 +332,6 @@ public static class DailySlate
 
         if (sport == "SERIEA")
         {
-            // Multiplicative DC over many seasons can collapse Att/Def to the floor.
-            // Live book: last 3 calendar seasons only (same α / gates as holdout champ).
             var cutoff = DateTimeOffset.UtcNow.AddYears(-3);
             var dc = new DixonColesBook(alpha: SerieAChampConfig.DcAlpha);
             var goals = new ScoringBook(alpha: SerieAChampConfig.DcAlpha, leagueInit: 2.7);
@@ -299,7 +348,6 @@ public static class DailySlate
                 {
                     var (lh, la) = dc.ExpectedLambdas(home, away);
                     var t = lh + la;
-                    // Pathological collapse → goals EMA fallback (still same edge/EV gates).
                     return t is >= 1.5 and <= 5.0 ? (lh, la) : goals.ExpectedLambdas(home, away);
                 });
         }
@@ -391,7 +439,7 @@ public static class DailySlate
         return SportTeams.ResolveSoccer(sport, abbr, display, shortName);
     }
 
-    private static async Task<double?> FetchEspnTotalAsync(string sport, string league, string espnId, CancellationToken ct)
+    private static async Task<EspnOdds?> FetchEspnOddsAsync(string sport, string league, string espnId, CancellationToken ct)
     {
         try
         {
@@ -399,6 +447,8 @@ public static class DailySlate
                 $"https://sports.core.api.espn.com/v2/sports/{sport}/leagues/{league}/events/{espnId}/competitions/{espnId}/odds";
             using var doc = await Http.GetFromJsonAsync<JsonDocument>(url, ct);
             if (doc is null || !doc.RootElement.TryGetProperty("items", out var items)) return null;
+
+            EspnOdds? any = null;
             foreach (var it in items.EnumerateArray())
             {
                 if (!it.TryGetProperty("$ref", out var pref)) continue;
@@ -407,37 +457,36 @@ public static class DailySlate
                 using var det = await Http.GetFromJsonAsync<JsonDocument>(refUrl, ct);
                 if (det is null) continue;
                 var root = det.RootElement;
+                if (!root.TryGetProperty("overUnder", out var ou) || !ou.TryGetDouble(out var total))
+                    continue;
+                var over = ReadAmerican(root, "overOdds");
+                var under = ReadAmerican(root, "underOdds");
                 var prov = root.TryGetProperty("provider", out var p) && p.TryGetProperty("name", out var n)
                     ? n.GetString() ?? ""
                     : "";
-                // Prefer DraftKings / ESPN BET for soft retail number
+                var odds = new EspnOdds(total, over, under);
                 if (prov.Contains("Draft", StringComparison.OrdinalIgnoreCase)
                     || prov.Contains("ESPN BET", StringComparison.OrdinalIgnoreCase)
                     || prov.Contains("FanDuel", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (root.TryGetProperty("overUnder", out var ou) && ou.TryGetDouble(out var v))
-                        return v;
-                }
+                    return odds;
+                any ??= odds;
             }
-
-            // any provider
-            foreach (var it in items.EnumerateArray())
-            {
-                if (!it.TryGetProperty("$ref", out var pref)) continue;
-                var refUrl = pref.GetString()?.Replace("http://", "https://");
-                if (refUrl is null) continue;
-                using var det = await Http.GetFromJsonAsync<JsonDocument>(refUrl, ct);
-                if (det?.RootElement.TryGetProperty("overUnder", out var ou) == true && ou.TryGetDouble(out var v))
-                    return v;
-            }
+            return any;
         }
         catch
         {
             return null;
         }
+    }
 
+    private static int? ReadAmerican(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var el)) return null;
+        if (el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var i)) return i;
+        if (el.ValueKind == JsonValueKind.String && int.TryParse(el.GetString(), out var s)) return s;
         return null;
     }
 
     private readonly record struct SlateGame(string EspnId, string Home, string Away, double? Total);
+    private readonly record struct EspnOdds(double Total, int? OverAmerican, int? UnderAmerican);
 }

@@ -1,0 +1,199 @@
+using Microsoft.EntityFrameworkCore;
+using PossiblyMaybe.Data;
+using PossiblyMaybe.Domain;
+
+namespace PossiblyMaybe.Cli.Variants;
+
+/// <summary>
+/// Historical shadow fill so variants start with history.
+/// How to run (repo root):
+///   dotnet run -c Release --project PossiblyMaybe.Cli -- variants-backfill
+///   # optional: variants-backfill [warehouse.db] [variants.db]
+/// Covers walk-forward NBA seasons (pre-holdout + holdout) and soccer champs, plus replay 20261030–20261106.
+/// V0 should reproduce champ-style GO set on the same open-line / −110 gates (Normal-σ NBA).
+/// </summary>
+public static class VariantBackfill
+{
+    public static readonly string ReplayStart = "20261030";
+    public static readonly string ReplayEnd = "20261106";
+
+    public static async Task RunAsync(
+        string warehouseDbPath,
+        string variantsDbPath,
+        CancellationToken ct = default)
+    {
+        var (vdb, _) = await VariantLedger.OpenAsync(variantsDbPath, ct);
+        await using (vdb)
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite($"Data Source={warehouseDbPath}").Options;
+            await using var wdb = new AppDbContext(options);
+
+            // Full history includes Tier A folds and replay window {ReplayStart}–{ReplayEnd}.
+            Console.WriteLine($"variants-backfill: NBA walk-forward (incl. replay {ReplayStart}–{ReplayEnd})…");
+            var nba = await BackfillNbaAsync(wdb, vdb, ct);
+            Console.WriteLine($"  NBA candidate-rows×variants written≈{nba}");
+
+            foreach (var sport in new[] { "MLS", "LIGUE1", "LIGAMX", "SERIEA" })
+            {
+                Console.WriteLine($"variants-backfill: {sport}…");
+                var n = await BackfillSoccerAsync(wdb, vdb, sport, ct);
+                Console.WriteLine($"  {sport} written≈{n}");
+            }
+        }
+
+        var settled = await VariantSettle.SettleOpenAsync(variantsDbPath, warehouseDbPath, ct);
+        Console.WriteLine($"  settled {settled} shadow picks");
+    }
+
+    private static async Task<int> BackfillNbaAsync(
+        AppDbContext wdb, VariantDbContext vdb, CancellationToken ct)
+    {
+        var games = (await wdb.Games.AsNoTracking()
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        Dictionary<int, GameBox> boxes = [];
+        try { boxes = await wdb.GameBoxes.AsNoTracking().ToDictionaryAsync(b => b.GameId, ct); }
+        catch { /* */ }
+        var odds = await wdb.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL").ToListAsync(ct);
+        var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var pace = new PaceEfficiencyBook();
+        var resid = new ExpandingResidualSigma();
+        var n = 0;
+        foreach (var g in games)
+        {
+            byGame.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var modelExp = pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+            var day = g.TipoffUtc.UtcDateTime.ToString("yyyyMMdd");
+
+            if (open?.Line is { } line)
+            {
+                var c = new SlateCandidate(
+                    "NBA", day, g.HomeTeam, g.AwayTeam,
+                    modelExp, null, null,
+                    line, line, // open-line backfill: no intraday move until W3
+                    open.AmericanOdds == 0 ? -110 : open.AmericanOdds,
+                    open.AmericanOdds == 0 ? -110 : open.AmericanOdds,
+                    resid.Sigma,
+                    ChampConfig.MarketWeight, ChampConfig.MinAbsTotalEdge, ChampConfig.MinEv,
+                    Stale: false);
+                n += await WriteAllAsync(vdb, c, ct);
+
+                var exp = ChampConfig.MarketWeight * line + (1 - ChampConfig.MarketWeight) * modelExp;
+                if (g.HomeScore is { } hs && g.AwayScore is { } as_)
+                    resid.Observe(hs + as_ - exp);
+            }
+
+            if (boxes.TryGetValue(g.Id, out var b))
+            {
+                pace.Update(g.HomeTeam, g.AwayTeam,
+                    b.FgaHome, b.OrebHome, b.TovHome, b.FtaHome, b.PtsHome, b.Fg3aHome,
+                    b.FgaAway, b.OrebAway, b.TovAway, b.FtaAway, b.PtsAway, b.Fg3aAway);
+            }
+        }
+        return n;
+    }
+
+    private static async Task<int> BackfillSoccerAsync(
+        AppDbContext wdb, VariantDbContext vdb, string sport, CancellationToken ct)
+    {
+        var (w, minEdge, minEv, alpha, useDc) = sport switch
+        {
+            "MLS" => (MlsChampConfig.MarketWeight, MlsChampConfig.MinAbsTotalEdge, MlsChampConfig.MinEv,
+                MlsChampConfig.EmaAlpha, false),
+            "LIGUE1" => (Ligue1ChampConfig.MarketWeight, Ligue1ChampConfig.MinAbsTotalEdge, Ligue1ChampConfig.MinEv,
+                Ligue1ChampConfig.EmaAlpha, false),
+            "LIGAMX" => (LigaMxChampConfig.MarketWeight, LigaMxChampConfig.MinAbsTotalEdge, LigaMxChampConfig.MinEv,
+                LigaMxChampConfig.EmaAlpha, false),
+            "SERIEA" => (SerieAChampConfig.MarketWeight, SerieAChampConfig.MinAbsTotalEdge, SerieAChampConfig.MinEv,
+                SerieAChampConfig.DcAlpha, true),
+            _ => throw new ArgumentException(sport),
+        };
+
+        var games = (await wdb.Games.AsNoTracking()
+                .Where(g => g.Sport == sport && g.HomeScore != null)
+                .ToListAsync(ct))
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+        var odds = await wdb.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL").ToListAsync(ct);
+        var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        Dictionary<int, MlsGameXg>? xg = null;
+        if (sport == "MLS")
+        {
+            try { xg = await wdb.MlsGameXgs.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
+            catch { xg = null; }
+        }
+
+        var goals = new ScoringBook(alpha: alpha, leagueInit: 2.7);
+        var xgBook = sport == "MLS" ? new ScoringBook(alpha: alpha, leagueInit: 2.7) : null;
+        var xgSeen = new HashSet<string>(StringComparer.Ordinal);
+        var dc = useDc ? new DixonColesBook(alpha: alpha) : null;
+        var serieCutoff = DateTimeOffset.UtcNow.AddYears(-3);
+        var n = 0;
+
+        foreach (var g in games)
+        {
+            byGame.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            double lh, la;
+            if (sport == "MLS" && xgBook is not null
+                && xgSeen.Contains(g.HomeTeam) && xgSeen.Contains(g.AwayTeam))
+                (lh, la) = xgBook.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            else if (dc is not null && g.TipoffUtc >= serieCutoff)
+            {
+                (lh, la) = dc.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+                var t = lh + la;
+                if (t is < 1.5 or > 5.0)
+                    (lh, la) = goals.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+            }
+            else
+                (lh, la) = goals.ExpectedLambdas(g.HomeTeam, g.AwayTeam);
+
+            var modelExp = lh + la;
+            var day = g.TipoffUtc.UtcDateTime.ToString("yyyyMMdd");
+            if (open?.Line is { } line)
+            {
+                var c = new SlateCandidate(
+                    sport, day, g.HomeTeam, g.AwayTeam,
+                    modelExp, lh, la,
+                    line, line,
+                    -110, -110,
+                    0, w, minEdge, minEv, Stale: false);
+                n += await WriteAllAsync(vdb, c, ct);
+            }
+
+            goals.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            if (dc is not null && g.TipoffUtc >= serieCutoff)
+                dc.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
+            if (xgBook is not null && xg is not null && xg.TryGetValue(g.Id, out var row))
+            {
+                xgBook.Update(g.HomeTeam, g.AwayTeam, row.HomeXg, row.AwayXg);
+                xgSeen.Add(g.HomeTeam);
+                xgSeen.Add(g.AwayTeam);
+            }
+        }
+        return n;
+    }
+
+    private static async Task<int> WriteAllAsync(VariantDbContext vdb, SlateCandidate c, CancellationToken ct)
+    {
+        var key = VariantRegistry.GameKey(c);
+        var n = 0;
+        foreach (var v in VariantRegistry.All)
+        {
+            var d = VariantRegistry.Evaluate(v, c);
+            await VariantLedger.UpsertAsync(vdb, v.Id, c.Sport, key, d, c.OpenLine, c.Line, ct);
+            n++;
+        }
+        return n;
+    }
+}
