@@ -56,4 +56,5 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [x] Real DK price on paper tickets → R6
 - [x] AsOfView (no DB for strategies) → R7
 - [x] IStrategy + V0 port → R8
-- [ ] Day engine / vault → R9–R10
+- [x] Day engine (R9 skeleton + `engine-day`) → R9
+- [ ] Vault + trial ledger → R10

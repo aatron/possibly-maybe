@@ -2,6 +2,7 @@
 using PossiblyMaybe.Cli.Backtest;
 using PossiblyMaybe.Cli.Import;
 using PossiblyMaybe.Cli.Paper;
+using PossiblyMaybe.Cli.Replay;
 using PossiblyMaybe.Cli.Variants;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
@@ -976,6 +977,31 @@ switch (command)
         await VariantDashboard.WriteAsync(vdb, Path.Combine(root, "ui"));
         return 0;
     }
+    case "engine-day":
+    {
+        // R9: run the day-stepping engine for one date (no paper-go / settle).
+        // usage: engine-day [yyyymmdd] [strategyId] [db]
+        var root = FindRepoRoot();
+        var day = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var strategyId = "V0";
+        var warehouse = Path.Combine(root, "possiblymaybe.db");
+        for (var i = 1; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a.Length == 8 && a.All(char.IsDigit)) day = a;
+            else if (a.EndsWith(".db", StringComparison.OrdinalIgnoreCase)) warehouse = a;
+            else strategyId = a;
+        }
+        if (!File.Exists(warehouse))
+        {
+            Console.Error.WriteLine($"DB not found: {warehouse}");
+            return 2;
+        }
+        var result = await DayEngine.RunDayAsync(day, strategyId, warehouse);
+        DayEngine.Print(result);
+        return 0;
+    }
     case "ensure-db":
     {
         var dbPath = args.Length > 1 ? args[1] : "possiblymaybe.db";
@@ -1085,6 +1111,7 @@ static void PrintUsage()
           variants-backfill-spreadml [db]  C7: store SPREAD+ML candidates (NBA/NFL/NCAA)
           seasonality-scan [vdb]     A5 phase × CLV table (BH q=0.10, prints N_trials)
           variants-radar [variants.db] [radar.db]  Wave CUSUM + BH table → data/radar.db + Waves UI
+          engine-day [yyyymmdd] [strategy] [db]  R9 day engine (AsOfView→Learn→slate→Decide; no paper)
           ensure-db [path]           Create SQLite schema only
           help                       Show this help
         """);
