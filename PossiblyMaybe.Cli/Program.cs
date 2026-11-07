@@ -493,6 +493,27 @@ switch (command)
         await HigherRiskTierA.RunAsync(dbPath);
         return 0;
     }
+    case "tier-a-t4b":
+    {
+        // tier-a-t4b [db] — Round 5 T4b: refs-nba + fitted/strict/EV-band vs V0 (once)
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        var vaultPath = VaultDb.DefaultPath(repoRoot);
+        await NbaCalibrationTierA.RunAsync(dbPath, vaultPath);
+        return 0;
+    }
     case "tier-a-shutoff":
     {
         // tier-a-shutoff [db] — V3 vs V4 rolling-CLV pause: flat PnL + max drawdown
@@ -1155,6 +1176,7 @@ static void PrintUsage()
           tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
           tier-a-nba-volume [db]         B3 nba-volume / efg vs V0 (CLV/bet)
           tier-a-b8 [db]                 B8 +conformal / kalman vs V0
+          tier-a-t4b [db]                T4b NBA refs + fitted/strict/EV-band vs V0 (once)
           tier-a-shutoff [db]            V3 vs V4 rolling-CLV shutoff PnL / max DD
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
