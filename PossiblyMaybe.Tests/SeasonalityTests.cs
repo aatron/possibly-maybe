@@ -132,7 +132,9 @@ public class SeasonalityTests
             }
 
             using var sw = new StringWriter();
-            var cells = await SeasonalityScan.RunAsync(path, writeBackPhase: true, output: sw);
+            var calPath = Path.Combine(Path.GetTempPath(), $"pm-a5-cal-{Guid.NewGuid():N}.json");
+            var cells = await SeasonalityScan.RunAsync(
+                path, writeBackPhase: true, output: sw, calendarPath: calPath);
             await Assert.That(cells.Count).IsEqualTo(1);
             await Assert.That(cells[0].PhaseId).IsEqualTo("opening-weeks");
             await Assert.That(sw.ToString()).Contains("N_trials=1");
@@ -143,6 +145,10 @@ public class SeasonalityTests
                 var cand = await db2.CandidateEntries.SingleAsync();
                 await Assert.That(cand.SeasonPhase).IsEqualTo("opening-weeks");
             }
+
+            var keys = await SeasonalityCalendarStore.LoadSignificantKeysAsync(calPath);
+            await Assert.That(keys.Contains(WaveRadar.SeasonPhaseKey("NBA", "opening-weeks"))).IsTrue();
+            if (File.Exists(calPath)) File.Delete(calPath);
         }
         finally
         {

@@ -117,6 +117,59 @@ public class WaveRadarTests
         await Assert.That(r.Stage).IsEqualTo(LadderStage.Paper); // not RealCandidate
     }
 
+    /// <summary>
+    /// T5: mild +1.2 CLV (ΔS=+0.2/bet). After 40 bets S=8 — below h=10, above relaxed h=7.
+    /// Seasonality BH prior lowers CUSUM h; cannot promote alone (no BH + persistence → Shadow).
+    /// </summary>
+    [Test]
+    public async Task Seasonality_Prior_Lowers_Cusum_H_On_Synthetic_Wave()
+    {
+        var t0 = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero); // NBA opening-weeks
+        const string phase = "opening-weeks";
+        var obs = Enumerable.Range(0, 40)
+            .Select(i => new ClvObservation("NBA", "TOTAL", "V3", t0.AddDays(i), 1.2, phase))
+            .ToList();
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            WaveRadar.SeasonPhaseKey("NBA", phase),
+        };
+
+        var without = WaveRadar.Scan(obs, asOf: t0.AddDays(39)).Single();
+        await Assert.That(without.SeasonalityPriorApplied).IsFalse();
+        await Assert.That(without.Wave).IsEqualTo(WaveState.Off);
+        await Assert.That(without.Cusum).IsLessThanOrEqualTo(WaveRadar.CusumH);
+        await Assert.That(without.CusumFirstAlarmIndex).IsNull();
+
+        var with = WaveRadar.Scan(obs, asOf: t0.AddDays(39), seasonalityBhKeys: keys).Single();
+        await Assert.That(with.SeasonalityPriorApplied).IsTrue();
+        await Assert.That(with.Wave).IsEqualTo(WaveState.On);
+        await Assert.That(with.CusumFirstAlarmIndex).IsNotNull();
+        await Assert.That(with.CusumFirstAlarmIndex!.Value).IsLessThan(40);
+        // Prior alone does not promote — still needs BH + ≥3 weeks (asOf is day 39 from tip 0 → ~5 weeks if alarm early).
+        // Alarm at S>7 with Δ0.2 → index 35; weeks from alarm to asOf ≈ 0 → Shadow.
+        await Assert.That(with.Stage).IsEqualTo(LadderStage.Shadow);
+    }
+
+    [Test]
+    public async Task Seasonality_Prior_Alone_Cannot_Promote_Null_Clv()
+    {
+        var t0 = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
+        // Deterministic mean-0 series: prior applies, CUSUM never climbs, ladder stays Shadow.
+        var obs = Enumerable.Range(0, 50)
+            .Select(i => new ClvObservation("NBA", "TOTAL", "V3", t0.AddDays(i), 0.0, "opening-weeks"))
+            .ToList();
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            WaveRadar.SeasonPhaseKey("NBA", "opening-weeks"),
+        };
+
+        var r = WaveRadar.Scan(obs, asOf: t0.AddDays(80), seasonalityBhKeys: keys).Single();
+        await Assert.That(r.SeasonalityPriorApplied).IsTrue();
+        await Assert.That(r.Wave).IsEqualTo(WaveState.Off);
+        await Assert.That(r.Stage).IsEqualTo(LadderStage.Shadow);
+        await Assert.That(r.PromoteToPaperEligible).IsFalse();
+    }
+
     static double NextGaussian(Random rng)
     {
         // Box–Muller

@@ -9,7 +9,9 @@ public readonly record struct ClvObservation(
     string Market,
     string VariantId,
     DateTimeOffset At,
-    double ClvPts);
+    double ClvPts,
+    /// <summary>Optional A5 season-phase id (tip calendar). Used only as a CUSUM prior.</summary>
+    string? SeasonPhase = null);
 
 public enum WaveState
 {
@@ -46,10 +48,13 @@ public sealed record WaveCellResult(
     int WeeksOn,
     int NTrials,
     bool PromoteToPaperEligible,
-    bool Demote);
+    bool Demote,
+    /// <summary>True when A5 BH-significant phase lowered CUSUM h for this cell. Never promotes alone.</summary>
+    bool SeasonalityPriorApplied = false);
 
 /// <summary>
 /// Wave radar: CUSUM on CLV residuals + Benjamini–Hochberg across cells + promotion ladder.
+/// Seasonality (A5/T5) may lower CUSUM h in a BH-significant phase — prior only; never promotes alone.
 /// shortcut: normal-approx one-sided p (n≥MinN); swap to Student-t CDF if small-n cells matter.
 /// </summary>
 public static class WaveRadar
@@ -62,15 +67,20 @@ public static class WaveRadar
     public const double CusumK = 1.0;
     /// <summary>CUSUM decision threshold (tuned for null FA ≤ 10% at σ≈3, n=80).</summary>
     public const double CusumH = 10.0;
+    /// <summary>Relaxed CUSUM h when observations sit in an A5 BH-significant season phase (T5 prior).</summary>
+    public const double CusumHSeasonPrior = 7.0;
     public const int PersistenceWeeks = 3;
 
     public static IReadOnlyList<WaveCellResult> Scan(
         IEnumerable<ClvObservation> observations,
         IReadOnlyDictionary<string, LadderStage>? priorStages = null,
         DateTimeOffset? asOf = null,
-        double bhQ = BhQ)
+        double bhQ = BhQ,
+        IReadOnlySet<string>? seasonalityBhKeys = null,
+        double? cusumHSeasonPrior = null)
     {
         var now = asOf ?? DateTimeOffset.UtcNow;
+        var priorH = cusumHSeasonPrior ?? CusumHSeasonPrior;
         var groups = observations
             .GroupBy(o => CellKey(o.League, o.Market, o.VariantId), StringComparer.OrdinalIgnoreCase)
             .Select(g =>
@@ -87,7 +97,7 @@ public static class WaveRadar
         var nTrials = groups.Count;
         var raw = new List<(string League, string Market, string VariantId, int N, double Mean,
             double Se, double Rolling, double Cusum, int? AlarmIdx, double P, WaveState Wave, int WeeksOn,
-            IReadOnlyList<ClvObservation> Series)>(groups.Count);
+            bool SeasonPrior, IReadOnlyList<ClvObservation> Series)>(groups.Count);
 
         foreach (var g in groups)
         {
@@ -96,11 +106,14 @@ public static class WaveRadar
             var mean = n == 0 ? 0 : clvs.Average();
             var se = Checkpoints.StandardError(clvs);
             var rolling = RollingMean(clvs, RollingWindow);
-            var (cusum, alarmIdx, alarmed) = RunCusum(clvs, CusumK, CusumH);
+            var seasonPrior = AppliesSeasonalityPrior(g.League, g.Series, seasonalityBhKeys);
+            var h = seasonPrior ? priorH : CusumH;
+            var (cusum, alarmIdx, alarmed) = RunCusum(clvs, CusumK, h);
             var p = n < MinN ? 1.0 : OneSidedMeanPositiveP(clvs);
             var wave = ResolveWave(alarmed, rolling, mean);
             var weeksOn = wave == WaveState.On ? WeeksSinceFirstAlarm(g.Series, alarmIdx, now) : 0;
-            raw.Add((g.League, g.Market, g.VariantId, n, mean, se, rolling, cusum, alarmIdx, p, wave, weeksOn, g.Series));
+            raw.Add((g.League, g.Market, g.VariantId, n, mean, se, rolling, cusum, alarmIdx, p, wave, weeksOn,
+                seasonPrior, g.Series));
         }
 
         var pValues = raw.Select(r => r.P).ToList();
@@ -114,6 +127,7 @@ public static class WaveRadar
             var prior = LadderStage.Shadow;
             priorStages?.TryGetValue(key, out prior);
             // RealCandidate is sticky until user clears; never auto-grant.
+            // Seasonality prior never grants Paper / RealCandidate on its own — ladder unchanged.
             var stage = prior == LadderStage.RealCandidate
                 ? LadderStage.RealCandidate
                 : ApplyLadder(prior, r.Wave, reject[i], r.WeeksOn, r.Rolling);
@@ -125,7 +139,7 @@ public static class WaveRadar
             results.Add(new WaveCellResult(
                 r.League, r.Market, r.VariantId, r.N, r.Mean, r.Se, r.Rolling, r.Cusum, r.AlarmIdx, r.P,
                 reject[i], r.Wave, stage, cp.Stage, cp.Verdict, cp.AllowsWideStake,
-                r.WeeksOn, nTrials, promoteEligible, demote));
+                r.WeeksOn, nTrials, promoteEligible, demote, r.SeasonPrior));
         }
 
         return results;
@@ -133,6 +147,25 @@ public static class WaveRadar
 
     public static string CellKey(string league, string market, string variantId)
         => $"{league}|{(string.IsNullOrEmpty(market) ? DefaultMarket : market)}|{variantId}";
+
+    /// <summary>Stable key for A5 BH-significant (sport × phase) prior lookup.</summary>
+    public static string SeasonPhaseKey(string sport, string phaseId)
+        => $"{sport.Trim().ToUpperInvariant()}|{phaseId.Trim()}";
+
+    static bool AppliesSeasonalityPrior(
+        string league, IReadOnlyList<ClvObservation> series, IReadOnlySet<string>? seasonalityBhKeys)
+    {
+        if (seasonalityBhKeys is null || seasonalityBhKeys.Count == 0)
+            return false;
+        foreach (var o in series)
+        {
+            if (o.SeasonPhase is not { Length: > 0 } phase)
+                continue;
+            if (seasonalityBhKeys.Contains(SeasonPhaseKey(league, phase)))
+                return true;
+        }
+        return false;
+    }
 
     /// <summary>One-sided CUSUM on residuals vs 0 with allowance k; alarm when S &gt; h.</summary>
     public static (double FinalS, int? FirstAlarmIndex, bool AlarmedNow) RunCusum(

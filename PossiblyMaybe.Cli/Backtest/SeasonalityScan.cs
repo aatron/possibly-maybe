@@ -28,6 +28,7 @@ public static class SeasonalityScan
         string variantsDbPath,
         bool writeBackPhase = true,
         TextWriter? output = null,
+        string? calendarPath = null,
         CancellationToken ct = default)
     {
         var (db, _) = await VariantLedger.OpenAsync(variantsDbPath, ct);
@@ -68,7 +69,17 @@ public static class SeasonalityScan
                 await WriteBackPhasesAsync(db, phaseBySportKey, ct);
 
             var cells = Score(tagged);
-            Print(cells, output ?? Console.Out);
+            var w = output ?? Console.Out;
+            Print(cells, w);
+            if (shadows.Count == 0)
+            {
+                w.WriteLine(
+                    "seasonality-scan: no settled V3 ClvPts in variants.db — N_trials=0; calendar still written for radar prior wiring.");
+            }
+
+            var calPath = calendarPath ?? SeasonalityCalendarStore.PathBesideVariants(variantsDbPath);
+            await SeasonalityCalendarStore.SaveAsync(calPath, cells, ct);
+            w.WriteLine($"seasonality-scan: wrote {calPath}  BH_sig={cells.Count(c => c.BhSignificant)}");
             return cells;
         }
     }

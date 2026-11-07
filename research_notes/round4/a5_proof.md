@@ -68,13 +68,14 @@ Writes phase tags onto matching `CandidateEntries` when present; always prints t
 
 ## Results (filled after first run — do not edit phase windows)
 
-_Pending first `seasonality-scan` on a backfilled `data/variants.db`._
+**First scan:** Round 5 T5 (2026-11-07) on `data/variants.db` (copied from main / backfilled candidates).  
+**Finding:** **0** settled V3 rows with non-null `ClvPts` (3264 shadow rows are unevaluated live slate: `Result=null`, `CloseLine=null`). BH family empty — no phase cells scored. Phase windows **unchanged**. Calendar written to `data/seasonality_bh.json` for radar prior wiring (`t5_proof.md`).
 
 | Sport | Phase | N | MeanClv | P | P_BH | BH@0.10 |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| _(none)_ | | | | | | |
 
-`N_trials=` _(pending)_
+`N_trials=0` · `BH_sig=0`
 
 ---
 
