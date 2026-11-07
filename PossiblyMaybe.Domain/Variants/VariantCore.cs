@@ -15,7 +15,9 @@ public sealed record Variant(
     bool LeagueShutoff,
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
-    IReadOnlySet<string>? Leagues);
+    IReadOnlySet<string>? Leagues,
+    /// <summary>When true, add <see cref="SlateCandidate.RefTotalsResidual"/> to model exp (refs-nba).</summary>
+    bool UseRefTotals = false);
 
 public enum NbaOverProbKind
 {
@@ -43,7 +45,9 @@ public sealed record SlateCandidate(
     bool Stale,
     bool? InjuryFlag = null,
     bool? RosterFlag = null,
-    string? SeasonPhase = null);
+    string? SeasonPhase = null,
+    /// <summary>Crew foul/pace residual pts from <see cref="RefEffects"/>; used when variant has UseRefTotals.</summary>
+    double RefTotalsResidual = 0);
 
 public sealed record VariantDecision(
     bool Pick,
@@ -155,8 +159,11 @@ public static class VariantRegistry
         return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
     }
 
-    private static double MarketBlend(this Variant _, SlateCandidate c, double line)
-        => c.MarketWeight * line + (1 - c.MarketWeight) * c.ModelExp;
+    private static double MarketBlend(this Variant v, SlateCandidate c, double line)
+    {
+        var model = c.ModelExp + (v.UseRefTotals ? c.RefTotalsResidual : 0);
+        return c.MarketWeight * line + (1 - c.MarketWeight) * model;
+    }
 
     private static double OverProb(Variant v, SlateCandidate c, double blendedExp, double line)
     {

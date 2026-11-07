@@ -9,7 +9,8 @@ public class VariantsTests
     public async Task Registry_LaunchSet_ImmutableIds()
     {
         var ids = VariantRegistry.All.Select(v => v.Id).ToList();
-        await Assert.That(ids).IsEquivalentTo(["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0"]);
+        await Assert.That(ids).IsEquivalentTo(
+            ["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0", "refs-nba"]);
         await Assert.That(VariantRegistry.V0.Label).IsEqualTo("champ-2026-11-07");
         await Assert.That(VariantRegistry.V0.NbaOverProb).IsEqualTo(NbaOverProbKind.NormalSigma);
         await Assert.That(VariantRegistry.Require("V0L").NbaOverProb).IsEqualTo(NbaOverProbKind.Logistic);
@@ -17,6 +18,33 @@ public class VariantsTests
         await Assert.That(VariantRegistry.Require("V2").LineMove).IsTrue();
         await Assert.That(VariantRegistry.Require("V5").UseRealJuice).IsTrue();
         await Assert.That(VariantRegistry.Require("V-SA0").Leagues!.Contains("SERIEA")).IsFalse();
+        await Assert.That(VariantRegistry.Require("refs-nba").UseRefTotals).IsTrue();
+        await Assert.That(VariantRegistry.Require("refs-nba").Leagues!.Contains("NBA")).IsTrue();
+    }
+
+    [Test]
+    public async Task Filter_RefsNba_AddsCrewResidual()
+    {
+        var baseCand = NbaCand(home: "BOS", away: "MIA", line: 220, model: 220, sigma: 12);
+        var withRes = baseCand with { RefTotalsResidual = 12 };
+        var v0 = VariantRegistry.Evaluate(VariantRegistry.V0, withRes);
+        var refs = VariantRegistry.Evaluate(VariantRegistry.Require("refs-nba"), withRes);
+        await Assert.That(v0.Pick).IsFalse(); // |edge| 0 under market blend
+        await Assert.That(refs.Pick).IsTrue();
+        await Assert.That(refs.Side).IsEqualTo("OVER");
+    }
+
+    [Test]
+    public async Task Filter_RefsNba_SkipsNonNba()
+    {
+        var c = new SlateCandidate(
+            "MLS", "20261107", "LAFC", "SEA", 2.8, 1.4, 1.4,
+            2.5, 2.5, -110, -110, 19,
+            ChampConfig.MarketWeight, 0.25, ChampConfig.MinEv, false,
+            RefTotalsResidual: 1.0);
+        var d = VariantRegistry.Evaluate(VariantRegistry.Require("refs-nba"), c);
+        await Assert.That(d.Pick).IsFalse();
+        await Assert.That(d.SkipReason).IsEqualTo(VariantSkip.LeagueOff);
     }
 
     [Test]
