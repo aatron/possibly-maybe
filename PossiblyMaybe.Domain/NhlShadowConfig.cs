@@ -1,9 +1,9 @@
 namespace PossiblyMaybe.Domain;
 
 /// <summary>
-/// NHL totals — shadow only until free multi-season O→C exists (A4 census).
-/// Goals EMA α=0.18, same gate shape as FAIL soccer shadows (w=0.40, |exp−line|≥0.25, EV≥4%).
-/// Not a money path; live candidates feed the shadow ledger / wave radar via line_tracker.
+/// NHL totals — goals EMA α=0.18, same gate shape as FAIL soccer shadows
+/// (w=0.40, |exp−line|≥0.25, EV≥4%). Tier A runnable after T2a O→C; verdicts stay
+/// shadow / radar only (no paper from sim). Live candidates feed the shadow ledger.
 /// </summary>
 public static class NhlShadowConfig
 {

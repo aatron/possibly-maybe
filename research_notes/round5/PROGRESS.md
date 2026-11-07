@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** merge T6; then launch T7 (engine-walk + two-week replay).
+**Next action:** wait for T7 Composer agent; `--no-ff` merge, then T8 close-out.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
@@ -15,8 +15,8 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T4b | Tier A once: refs-nba, fitted / strict / EV-band | Composer | `../pm-r5-t4b` `r5/t4b` | `t4b_proof.md` — refs+FC PASS Shadow; strict/EV FAIL | done | acf5e64 |
 | T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | `t4c_proof.md` — kalman PASS; conformal+strict FAIL | done | fe3bfa8 |
 | T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | `t5_proof.md` — N_trials=0; CUSUM prior wired | done | 55a2a18 |
-| T6 | NHL + NFL re-test | Composer | `../pm-r5-t6` `r5/t6` | Tier A / C once | running | |
-| T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | no-peek walk test; report | planned | |
+| T6 | NHL + NFL re-test | Composer | `../pm-r5-t6` `r5/t6` | `t6_proof.md` — NHL FAIL/TierC PASS; NFL FAIL; wind PASS | done | c5da041 |
+| T7 | `engine-walk` + two-week replay before vs after | Composer | `../pm-r5-t7` `r5/t7` | no-peek walk test; report | running | |
 | T8 | Green tests, clean run, push | parent | main | tests + push | planned | |
 
 ## Log
@@ -24,12 +24,10 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 |---|---|
 | 2026-11-07 | Round 5 plan written (plan only, per user). |
 | 2026-11-07 | User: implement. Wave 1 launched (Composer): worktrees `pm-r5-t1/t2a/t2b/t3` on `r5/*`. |
-| 2026-11-07 | T1 merged `--no-ff`: durable vault + trial ledger (`data/vault.db`); 282 tests. |
-| 2026-11-07 | T2a merged `--no-ff`: `import-nhl-sbro`, 15 seasons × 18943 O+C (100%); Anaheim≠Oregon. |
-| 2026-11-07 | T2b merged `--no-ff`: `import-nfl-aus`, 2022 filled, 88.4% real prices. |
-| 2026-11-07 | T3 merged `--no-ff`: ESPN lines 2026-10-24→11-06 (406/409 O+C); AsOfView no-peek. |
+| 2026-11-07 | T1–T3 merged (vault, NHL SBRO, AUS NFL, ESPN two-week lines). |
 | 2026-11-07 | Wave 2 launched (Composer): T4a/b/c, T5, T6. |
-| 2026-11-07 | T5 merged `--no-ff`: seasonality BH prior into radar (CUSUM h 10→7); N_trials=0 settled CLV. |
-| 2026-11-07 | T4b merged `--no-ff`: refs-nba + V-FC-NBA PASS→Shadow; nba-strict + EV-bands FAIL. |
-| 2026-11-07 | T4a merged `--no-ff`: soccer dists mostly PASS→Shadow; +pooling FAIL; N_trials=17. |
-| 2026-11-07 | T4c merged `--no-ff`: kalman PASS→Shadow; +conformal + soccer-strict FAIL; N_trials=3. |
+| 2026-11-07 | T5 merged: seasonality BH prior (CUSUM h 10→7); N_trials=0 settled CLV. |
+| 2026-11-07 | T4b merged: refs-nba + V-FC-NBA PASS→Shadow; strict/EV FAIL. |
+| 2026-11-07 | T4a merged: soccer dists mostly PASS→Shadow; +pooling FAIL; N_trials=17. |
+| 2026-11-07 | T4c merged: kalman PASS→Shadow; +conformal + soccer-strict FAIL; N_trials=3. |
+| 2026-11-07 | T6 merged: NHL Tier A FAIL / Tier C look-once PASS (vault burned); NFL FAIL; nfl-wind PASS. Wave 2 complete; T7 launched. |

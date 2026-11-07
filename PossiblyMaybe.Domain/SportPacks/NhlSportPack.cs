@@ -2,7 +2,7 @@ namespace PossiblyMaybe.Domain.SportPacks;
 
 /// <summary>
 /// NHL through the sport-pack template. Shadow gates = <see cref="NhlShadowConfig"/>.
-/// Tier A gated on O→C fill (tracker age / Odds API); until then shadow + line_tracker only.
+/// T6: Tier A unlocked after T2a SBRO O→C (≥80%). Newest full season = look-once Tier C.
 /// Oregon: no NHL franchise — keep Winterhawks WHL names so alias bugs never map wrong.
 /// </summary>
 public static class NhlSportPack
@@ -12,9 +12,8 @@ public static class NhlSportPack
         ResultsSource: "ESPN hockey/nhl scoreboard (refresh-results)",
         OddsSources:
         [
+            "SBRO Wayback OpenOU/CloseOU (import-nhl-sbro; T2a — unlocks Tier A)",
             "line_tracker / OddsSnapshots (Kalshi KXNHLTOTAL + Crypto.com kind=NHL + ESPN open)",
-            "Odds API / paid backfill (planned — unlocks Tier A)",
-            "SBRO / archive.org (none found free multi-season O→C)",
         ],
         RatingBookKind: "ScoringBook-goals-EMA",
         OregonNames:
@@ -33,11 +32,14 @@ public static class NhlSportPack
             "trade-deadline",
             "playoffs",
         ],
-        // shortcut: empty until O→C exists; do not invent folds
-        TierAFolds: [],
-        TrainMaxSeason: "none",
-        TierCHoldoutSeason: "none",
-        SkipSeason: "none",
+        // Pre-holdout folds with filled O→C (T2a). Newest full season = Tier C.
+        TierAFolds:
+        [
+            "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020-2021",
+        ],
+        TrainMaxSeason: "2020-2021",
+        TierCHoldoutSeason: "2021-2022",
+        SkipSeason: "2022-2023",
         Market: NhlShadowConfig.Market,
         Model: NhlShadowConfig.Model,
         MarketWeight: NhlShadowConfig.MarketWeight,
