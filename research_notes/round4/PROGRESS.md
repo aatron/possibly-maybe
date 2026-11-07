@@ -20,7 +20,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | B6 | consensus-outlier, line-move-follow | Composer | `../pm-r4-b6` `r4/b6` | live | running | |
 | B7 | +fitted-curve, strict / EV-band | Composer | `../pm-r4-b7` `r4/b7` | Tier A | running | |
 | B8 | +conformal, kalman | Composer | `../pm-r4-b8` `r4/b8` | Tier A | running | |
-| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A | running | |
+| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A FAIL (shadow only) | done (unmerged) | |
 | C0 | Sport-pack template | Composer | `../pm-r4-c0` `r4/c0` | MLS identical | done | eb3ad96 |
 | C1 | NCAAB totals | Composer | `../pm-r4-c1` `r4/c1` | Tier A / C | running | |
 | C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C | running | |
@@ -44,3 +44,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | Plan: no Opus — Auto/Composer only. A4 Opus could not be interrupted mid-run; fresh Auto/Composer A4 launched (overwrite any Opus census). r3-W16 still on external Claude Code — reassign off Opus when that session can stop. |
 | 2026-11-07 | C0 merged `--no-ff` → main @ eb3ad96 (162 tests). Launched C1–C5 worktrees. |
 | 2026-11-07 | A2 merged @ 597cd2a; A1 merged @ a537a6c (167 tests, 11 py). Launched A5 + B1–B9 + C7. |
+| 2026-11-07 | B9 `inv-var-blend` on `r4/b9`: BlendFamily + MarketBlend; Tier A FAIL carried from r2 (7/14 NBA); shadow-only, unmerged. |
