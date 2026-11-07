@@ -22,6 +22,10 @@ Daily paper ritual: what is at risk, ESPN score probe / settle hints, NBA + HOLD
 
 Kalshi odds come from the public Trade API (`scripts/kalshi_compare.py`, series `KXNBATOTAL` / `KXMLSTOTAL`). **Robinhood** sports event contracts use the same Kalshi asks (separate bankroll). **Crypto.com** Predict totals come from `data-api.crypto.com` (`CryptoComQuotes`). Compare buy prices across venues; prefer the better EV venue for the pick.
 
+## Cardinal rule
+
+**Never bet on an Oregon-based team** — Oregon Ducks, Oregon State Beavers, Portland Timbers, Portland Trail Blazers (any Oregon team, either side, every sport/venue). Enforced in code; never lift or "test" it.
+
 ## Trial rules (stake lanes)
 
 - Four venues × six lanes × $1000 through **2026-12-31**: **DraftKings**, **Kalshi**, **Robinhood**, **Crypto.com** (independent books)
