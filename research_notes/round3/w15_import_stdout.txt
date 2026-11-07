@@ -1,0 +1,30 @@
+=== O→C season coverage BEFORE ===
+  NFL: 14 seasons [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2023, 2024, 2026]
+  NBA: 16 seasons [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2025]
+  MLB: 12 seasons [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2025]
+  NCAAB: (none)
+  NCAAF: (none)
+NFL SBRO: wrote 1115 O→C (skip have=2888 map=18; files=15; unmappedNames=3)
+  unmapped sample: Kansas, LosAngeles, NewYork
+NBA SBRO: wrote 1695 O→C (skip have=3917 map=0; files=5; unmappedNames=0)
+MLB Arnav: wrote 10926 O→C (skipped 2195)
+NCAAB SBRO: wrote 53232 O→C (skip have=0 map=0; files=15; unmappedNames=0)
+NCAAF SBRO: wrote 14531 O→C (skip have=3 map=0; files=16; unmappedNames=0)
+=== O→C season coverage AFTER ===
+  NFL: 18 seasons [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2023, 2024, 2026]
+  NBA: 17 seasons [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025]
+  MLB: 15 seasons [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+  NCAAB: 15 seasons [2007-08 … 2021-22]
+  NCAAF: 16 seasons [2007-08 … 2022-23]
+=== O→C seasons gained ===
+  NFL: 14 → 18  (+ 2007, 2008, 2009, 2010)
+  NBA: 16 → 17  (+ 2023)
+  MLB: 12 → 15  (+ 2022, 2023, 2024)
+  NCAAB: 0 → 15
+  NCAAF: 0 → 16
+
+Idempotency: skip game if TOTAL Open+Close ClvQuality=OpenClose already present; else delete+replace TOTAL snaps.
+Oregon NCAA games imported for history; exclusion unchanged (bet-time).
+CLI: dotnet run --project PossiblyMaybe.Cli -- import-disk-odds [db]
+Raw odds: symlink or copy data/raw/round2_odds + round3_odds (gitignored).
+Blockers: NFL SBRO bare "LosAngeles"/"NewYork" unmapped (ambiguous LA/NY); ~18 rows skipped.
