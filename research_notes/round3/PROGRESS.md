@@ -19,6 +19,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` | rule visible | pending | |
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
+| W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | running | |
 | W11 | Write-ups (book review, training review, round3 value) | Opus | main | — | pending | |
 | W12 | Green tests, clean run, push | parent | main | — | pending | |
 
@@ -26,3 +27,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | When | Event |
 |---|---|
 | 2026-11-07 | Line-tracker cron installed (`*/20`), first run 930 rows. Plan written. |
+| 2026-11-07 | User: research OddsShark / getstam / Covers + free odds APIs → W13 launched (Opus). |
