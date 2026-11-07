@@ -112,6 +112,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                      "ALTER TABLE LedgerEntries ADD COLUMN Sport TEXT NOT NULL DEFAULT ''",
                      "ALTER TABLE LedgerEntries ADD COLUMN Venue TEXT NOT NULL DEFAULT 'DK'",
                      "ALTER TABLE LedgerEntries ADD COLUMN FinalTotal REAL",
+                     "ALTER TABLE LedgerEntries ADD COLUMN CloseBook TEXT",
+                     "ALTER TABLE LedgerEntries ADD COLUMN CloseCapturedAt TEXT",
+                     "ALTER TABLE LedgerEntries ADD COLUMN MinutesBeforeStart REAL",
+                     "ALTER TABLE LedgerEntries ADD COLUMN CrossBookClose INTEGER NOT NULL DEFAULT 0",
                  })
         {
             try { await db.Database.ExecuteSqlRawAsync(sql, ct); }
