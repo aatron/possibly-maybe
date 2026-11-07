@@ -19,6 +19,12 @@ public static class OregonExclusion
         "portland state", "portland state vikings", "portland st",
         // University of Portland Pilots (SBRO: PortlandU / Portland U)
         "university of portland", "portland pilots", "portland u", "pilots",
+        "u of portland", "portland university", "portland univ",
+        // Formal university names
+        "university of oregon", "oregon state university", "oregon st beavers", "portland state university",
+        // Other Oregon pro / minor-league teams. No bare "fire" (Chicago Fire) or "vikings" (Minnesota Vikings).
+        "portland fire", "portland winterhawks", "winterhawks", "hillsboro hops", "eugene emeralds",
+        "portland pickles",
     };
 
     // NCAA: ore=Oregon, orst=Oregon State, port=Portland State, up/portlandu=Univ. of Portland.
@@ -28,6 +34,7 @@ public static class OregonExclusion
         ["NBA"] = ["por"],
         ["MLS"] = ["por"],
         ["NWSL"] = ["por"],
+        ["WNBA"] = ["por"],
         ["NCAAB"] = ["ore", "orst", "port", "up", "portlandu"],
         ["NCAAF"] = ["ore", "orst", "port", "up", "portlandu"],
         ["NCAA"] = ["ore", "orst", "port", "up", "portlandu"],

@@ -26,7 +26,7 @@ Kalshi odds come from the public Trade API (`scripts/kalshi_compare.py`, series 
 
 ## Cardinal rule
 
-**Never bet on an Oregon-based team** — Oregon Ducks, Oregon State Beavers, Portland Timbers, Portland Trail Blazers (any Oregon team, either side, every sport/venue). Enforced in code; never lift or "test" it.
+**Never bet on an Oregon-based team** — Oregon Ducks, Oregon State Beavers, Portland State Vikings, Portland Pilots, Portland Trail Blazers, Portland Timbers, Portland Thorns, Portland Fire, plus Oregon minor-league teams (any Oregon team, either side, every sport/venue). Name list: `PossiblyMaybe.Domain/OregonExclusion.cs`. Enforced in code; never lift or "test" it.
 
 ## Trial rules (stake lanes)
 
