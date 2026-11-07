@@ -14,7 +14,8 @@ public static class OregonExclusion
     private static readonly HashSet<string> Names = new()
     {
         "portland", "portland trail blazers", "trail blazers", "blazers",
-        "portland timbers", "timbers", "portland thorns", "portland thorns fc", "thorns",
+        "portland timbers", "portland timbers fc", "timbers",
+        "portland thorns", "portland thorns fc", "thorns",
         "oregon", "oregon ducks", "ducks", "oregon state", "oregon st", "oregon state beavers", "beavers",
         "portland state", "portland state vikings", "portland st",
         // University of Portland Pilots (SBRO: PortlandU / Portland U)
