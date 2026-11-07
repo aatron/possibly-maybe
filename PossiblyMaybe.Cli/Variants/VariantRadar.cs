@@ -35,11 +35,12 @@ public static class VariantRadar
         var nTrials = results.Count == 0 ? 0 : results[0].NTrials;
         Console.WriteLine($"variants-radar: {results.Count} cells  N_trials={nTrials}  BH q={WaveRadar.BhQ:0.00}");
         Console.WriteLine(
-            $"{"League",-10} {"Mkt",-6} {"Var",-8} {"n",4} {"mean",6} {"roll",6} {"CUSUM",6} {"p",8} {"BH",3} {"Wave",5} {"Stage",14} {"wk",3} {"N_tr",4}");
+            $"{"League",-10} {"Mkt",-6} {"Var",-8} {"n",4} {"CLV±SE",14} {"roll",6} {"CUSUM",6} {"p",8} {"BH",3} {"Wave",5} {"Ladder",14} {"Ckpt",12} {"verdict",9} {"wk",3}");
         foreach (var r in results.OrderByDescending(x => x.Wave).ThenBy(x => x.PValue))
         {
+            var clv = $"{r.MeanClv:0.00}±{r.ClvSe:0.00}";
             Console.WriteLine(
-                $"{r.League,-10} {r.Market,-6} {r.VariantId,-8} {r.N,4} {r.MeanClv,6:0.00} {r.RollingClv,6:0.00} {r.Cusum,6:0.0} {r.PValue,8:0.0000} {(r.BhSignificant ? "Y" : "."),3} {r.Wave,5} {r.Stage,14} {r.WeeksOn,3} {r.NTrials,4}");
+                $"{r.League,-10} {r.Market,-6} {r.VariantId,-8} {r.N,4} {clv,14} {r.RollingClv,6:0.00} {r.Cusum,6:0.0} {r.PValue,8:0.0000} {(r.BhSignificant ? "Y" : "."),3} {r.Wave,5} {r.Stage,14} {r.Checkpoint,12} {r.CheckpointVerdict,9} {r.WeeksOn,3}");
         }
 
         var on = results.Count(r => r.Wave == WaveState.On);
@@ -47,8 +48,9 @@ public static class VariantRadar
         var paper = results.Count(r => r.Stage == LadderStage.Paper);
         var promo = results.Count(r => r.PromoteToPaperEligible);
         var demote = results.Count(r => r.Demote);
+        var wide = results.Count(r => r.AllowsWideStake);
         Console.WriteLine(
-            $"waves: ON={on} BH_sig={bh} paper={paper} promote_eligible={promo} demote={demote} N_trials={nTrials}");
+            $"waves: ON={on} BH_sig={bh} paper={paper} promote_eligible={promo} demote={demote} wide_stake={wide} N_trials={nTrials}");
     }
 
     /// <summary>One-liner for pm-calculate / logs.</summary>
@@ -60,14 +62,15 @@ public static class VariantRadar
         var on = results.Count(r => r.Wave == WaveState.On);
         var bh = results.Count(r => r.BhSignificant);
         var paper = results.Count(r => r.Stage is LadderStage.Paper or LadderStage.RealCandidate);
+        var wide = results.Count(r => r.AllowsWideStake);
         var top = results
             .Where(r => r.Wave == WaveState.On || r.BhSignificant)
             .OrderBy(r => r.PValue)
             .Take(3)
-            .Select(r => $"{r.League}/{r.VariantId}")
+            .Select(r => $"{r.League}/{r.VariantId}:{r.Checkpoint}/{r.CheckpointVerdict}")
             .ToList();
         var tops = top.Count == 0 ? "—" : string.Join(", ", top);
-        return $"waves: ON={on} BH_sig={bh} paper/real={paper} N_trials={nTrials} top=[{tops}]";
+        return $"waves: ON={on} BH_sig={bh} paper/real={paper} wide_stake={wide} N_trials={nTrials} top=[{tops}]";
     }
 
     static void WriteSummaryLine(IReadOnlyList<WaveCellResult> results)

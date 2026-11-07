@@ -21,6 +21,8 @@ public static class VariantBackfill
 
     /// <summary>Paper + shadow leagues — backfill every season present in the warehouse for these.</summary>
     public static readonly string[] R3Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "BUNDESLIGA"];
+    /// <summary>r3 path + C6 shadow leagues — backfill every season present in the warehouse for these.</summary>
+    public static readonly string[] R3Leagues = ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "EPL"];
 
     public static async Task RunAsync(
         string warehouseDbPath,
@@ -131,6 +133,8 @@ public static class VariantBackfill
                 SerieAChampConfig.DcAlpha, true),
             "BUNDESLIGA" => (BundesligaShadowConfig.MarketWeight, BundesligaShadowConfig.MinAbsTotalEdge,
                 BundesligaShadowConfig.MinEv, BundesligaShadowConfig.EmaAlpha, false),
+            "EPL" => (EplChampConfig.MarketWeight, EplChampConfig.MinAbsTotalEdge, EplChampConfig.MinEv,
+                EplChampConfig.EmaAlpha, false),
             _ => throw new ArgumentException(sport),
         };
 

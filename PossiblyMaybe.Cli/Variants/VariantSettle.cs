@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PossiblyMaybe.Cli.Paper;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
 
@@ -6,7 +7,7 @@ namespace PossiblyMaybe.Cli.Variants;
 
 /// <summary>
 /// Auto-settle shadow picks from warehouse finals. No user confirmation (hypothetical ledger).
-/// Closing line from OddsSnapshots Close when present; else null CLV.
+/// Closing line prefers DraftKings same-book (R3); cross-book closes flagged, CLV null.
 /// </summary>
 public static class VariantSettle
 {
@@ -38,12 +39,23 @@ public static class VariantSettle
                 if (game?.HomeScore is not { } hs || game.AwayScore is not { } as_)
                     continue;
 
-                double? closeLine = null;
                 var snaps = await wdb.OddsSnapshots.AsNoTracking()
-                    .Where(o => o.GameId == game.Id && o.Market == "TOTAL")
+                    .Where(o => o.GameId == game.Id && o.Market == "TOTAL" && o.Line != null)
                     .ToListAsync(ct);
-                closeLine = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close)?.Line
-                    ?? snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open)?.Line;
+                var same = PickClose(snaps, Book.DraftKings, game.TipoffUtc);
+                var other = same is null
+                    ? snaps
+                        .Where(s => s.PriceKind == PriceKind.Close || s.CapturedAt <= game.TipoffUtc)
+                        .OrderByDescending(s => s.PriceKind == PriceKind.Close)
+                        .ThenByDescending(s => s.CapturedAt)
+                        .FirstOrDefault()
+                    : null;
+                var pick = same ?? other;
+                var sameBook = same is not null;
+                double? closeLine = pick?.Line;
+                var closeBook = pick is null ? null : SameBookClose.BookLabel(pick.Book);
+                DateTimeOffset? captured = pick?.CapturedAt;
+                double? mins = pick is null ? null : (game.TipoffUtc - pick.CapturedAt).TotalMinutes;
 
                 foreach (var row in group)
                 {
@@ -70,7 +82,12 @@ public static class VariantSettle
                     row.Result = result;
                     row.PnL = pnl;
                     row.CloseLine = closeLine;
-                    if (closeLine is { } cl)
+                    row.CloseBook = closeBook;
+                    row.CloseCapturedAt = captured;
+                    row.MinutesBeforeStart = mins;
+                    row.CrossBookClose = closeLine is not null && !sameBook;
+                    row.ClvPts = null;
+                    if (sameBook && closeLine is { } cl)
                     {
                         var overClv = TotalsMath.OverClvPoints(row.Line.Value, cl);
                         row.ClvPts = sideOver ? overClv : -overClv;
@@ -84,6 +101,22 @@ public static class VariantSettle
                 await vdb.SaveChangesAsync(ct);
             return settled;
         }
+    }
+
+    static OddsSnapshot? PickClose(
+        IReadOnlyList<OddsSnapshot> snaps, Book want, DateTimeOffset tipoff)
+    {
+        var bookSnaps = snaps.Where(s => s.Book == want).ToList();
+        if (bookSnaps.Count == 0) return null;
+        var labelled = bookSnaps
+            .Where(s => s.PriceKind == PriceKind.Close)
+            .OrderByDescending(s => s.CapturedAt)
+            .FirstOrDefault();
+        if (labelled is not null) return labelled;
+        return bookSnaps
+            .Where(s => s.CapturedAt <= tipoff)
+            .OrderByDescending(s => s.CapturedAt)
+            .FirstOrDefault();
     }
 
     private static async Task<Game?> FindGameAsync(

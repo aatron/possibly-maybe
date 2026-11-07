@@ -32,6 +32,7 @@ public sealed record WaveCellResult(
     string VariantId,
     int N,
     double MeanClv,
+    double ClvSe,
     double RollingClv,
     double Cusum,
     int? CusumFirstAlarmIndex,
@@ -39,6 +40,9 @@ public sealed record WaveCellResult(
     bool BhSignificant,
     WaveState Wave,
     LadderStage Stage,
+    CheckpointStage Checkpoint,
+    string CheckpointVerdict,
+    bool AllowsWideStake,
     int WeeksOn,
     int NTrials,
     bool PromoteToPaperEligible,
@@ -82,7 +86,7 @@ public static class WaveRadar
 
         var nTrials = groups.Count;
         var raw = new List<(string League, string Market, string VariantId, int N, double Mean,
-            double Rolling, double Cusum, int? AlarmIdx, double P, WaveState Wave, int WeeksOn,
+            double Se, double Rolling, double Cusum, int? AlarmIdx, double P, WaveState Wave, int WeeksOn,
             IReadOnlyList<ClvObservation> Series)>(groups.Count);
 
         foreach (var g in groups)
@@ -90,12 +94,13 @@ public static class WaveRadar
             var clvs = g.Series.Select(s => s.ClvPts).ToList();
             var n = clvs.Count;
             var mean = n == 0 ? 0 : clvs.Average();
+            var se = Checkpoints.StandardError(clvs);
             var rolling = RollingMean(clvs, RollingWindow);
             var (cusum, alarmIdx, alarmed) = RunCusum(clvs, CusumK, CusumH);
             var p = n < MinN ? 1.0 : OneSidedMeanPositiveP(clvs);
             var wave = ResolveWave(alarmed, rolling, mean);
             var weeksOn = wave == WaveState.On ? WeeksSinceFirstAlarm(g.Series, alarmIdx, now) : 0;
-            raw.Add((g.League, g.Market, g.VariantId, n, mean, rolling, cusum, alarmIdx, p, wave, weeksOn, g.Series));
+            raw.Add((g.League, g.Market, g.VariantId, n, mean, se, rolling, cusum, alarmIdx, p, wave, weeksOn, g.Series));
         }
 
         var pValues = raw.Select(r => r.P).ToList();
@@ -116,9 +121,11 @@ public static class WaveRadar
                          && (r.Wave == WaveState.Off || r.Rolling < 0);
             var promoteEligible = r.Wave == WaveState.On && reject[i] && r.WeeksOn >= PersistenceWeeks
                                   && prior == LadderStage.Shadow;
+            var cp = Checkpoints.Evaluate(r.N, r.Mean, r.Se);
             results.Add(new WaveCellResult(
-                r.League, r.Market, r.VariantId, r.N, r.Mean, r.Rolling, r.Cusum, r.AlarmIdx, r.P,
-                reject[i], r.Wave, stage, r.WeeksOn, nTrials, promoteEligible, demote));
+                r.League, r.Market, r.VariantId, r.N, r.Mean, r.Se, r.Rolling, r.Cusum, r.AlarmIdx, r.P,
+                reject[i], r.Wave, stage, cp.Stage, cp.Verdict, cp.AllowsWideStake,
+                r.WeeksOn, nTrials, promoteEligible, demote));
         }
 
         return results;

@@ -89,23 +89,33 @@ public static class VariantDashboard
             };
         }).ToList();
 
-        var waves = waveRows.Select(w => new
+        var waves = waveRows.Select(w =>
         {
-            league = w.League,
-            market = w.Market,
-            variantId = w.VariantId,
-            n = w.N,
-            meanClv = w.MeanClv,
-            rollingClv = w.RollingClv,
-            cusum = w.Cusum,
-            pValue = w.PValue,
-            bhSignificant = w.BhSignificant,
-            wave = w.Wave,
-            stage = w.Stage,
-            weeksOn = w.WeeksOn,
-            nTrials = w.NTrials,
-            promoteEligible = w.PromoteEligible,
-            demote = w.Demote,
+            var cp = string.IsNullOrEmpty(w.Checkpoint)
+                ? Checkpoints.Evaluate(w.N, w.MeanClv, w.ClvSe)
+                : null;
+            return new
+            {
+                league = w.League,
+                market = w.Market,
+                variantId = w.VariantId,
+                n = w.N,
+                meanClv = w.MeanClv,
+                clvSe = w.ClvSe,
+                rollingClv = w.RollingClv,
+                cusum = w.Cusum,
+                pValue = w.PValue,
+                bhSignificant = w.BhSignificant,
+                wave = w.Wave,
+                stage = w.Stage,
+                checkpoint = cp?.Stage.ToString() ?? w.Checkpoint,
+                checkpointVerdict = cp?.Verdict ?? w.CheckpointVerdict,
+                allowsWideStake = cp?.AllowsWideStake ?? w.AllowsWideStake,
+                weeksOn = w.WeeksOn,
+                nTrials = w.NTrials,
+                promoteEligible = w.PromoteEligible,
+                demote = w.Demote,
+            };
         }).ToList();
         var nTrials = waveRows.Count == 0 ? 0 : waveRows.Max(w => w.NTrials);
 
@@ -187,9 +197,9 @@ public static class VariantDashboard
     <table>
       <thead>
         <tr>
-          <th>League</th><th>Mkt</th><th>Variant</th><th>n</th><th>Mean CLV</th>
+          <th>League</th><th>Mkt</th><th>Variant</th><th>n</th><th>CLV ± SE</th>
           <th>Rolling</th><th>CUSUM</th><th>p</th><th>BH</th><th>Wave</th>
-          <th>Stage</th><th>Wks</th><th>N_trials</th>
+          <th>Ladder</th><th>Checkpoint</th><th>Verdict</th><th>Wks</th><th>N_trials</th>
         </tr>
       </thead>
       <tbody id="waveRows"></tbody>
@@ -229,20 +239,23 @@ function cls(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : ''; }
   }
   const on = waves.filter(w => w.wave === 'On').length;
   const bh = waves.filter(w => w.bhSignificant).length;
-  waveSub.textContent = `ON=${on} · BH_sig=${bh} · N_trials=${nTrials} · BH q=${bhQ}`;
+  const wide = waves.filter(w => w.allowsWideStake).length;
+  waveSub.textContent = `ON=${on} · BH_sig=${bh} · wide_stake=${wide} · N_trials=${nTrials} · BH q=${bhQ} · ckpt 50/100–200/500/1500`;
   const tb = document.getElementById('waveRows');
   tb.innerHTML = '';
   for (const w of waves) {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${w.league}</td><td>${w.market}</td><td><strong>${w.variantId}</strong></td>
       <td>${w.n}</td>
-      <td class="${cls(w.meanClv)}">${fmt(w.meanClv,2)}</td>
+      <td class="${cls(w.meanClv)}">${fmt(w.meanClv,2)}±${fmt(w.clvSe,2)}</td>
       <td class="${cls(w.rollingClv)}">${fmt(w.rollingClv,2)}</td>
       <td>${fmt(w.cusum,1)}</td>
       <td>${fmt(w.pValue,4)}</td>
       <td>${w.bhSignificant ? 'Y' : '—'}</td>
       <td class="${w.wave==='On'?'pos':'muted'}">${w.wave}</td>
       <td>${w.stage}</td>
+      <td>${w.checkpoint}</td>
+      <td>${w.checkpointVerdict}</td>
       <td>${w.weeksOn}</td>
       <td>${w.nTrials}</td>`;
     tb.appendChild(tr);

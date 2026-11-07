@@ -94,7 +94,7 @@ switch (command)
     }
     case "refresh-results":
     {
-        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA finals from ESPN (+NBA box, MLS xG)
+        // refresh-results [yyyymmdd through, default yesterday UTC] [db] — NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL finals from ESPN (+NBA box, MLS xG)
         var repoRoot = FindRepoRoot();
         var through = args.Length > 1 && args[1].Length == 8
             ? DateOnly.ParseExact(args[1], "yyyyMMdd")
@@ -216,6 +216,32 @@ switch (command)
         await MlbTotalsBacktest.SweepAsync(dbPath, pf);
         return 0;
     }
+    case "tier-a-mlb":
+    {
+        // tier-a-mlb [db] — C4 Tier A 2011–2019 + look-once 2021
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        var pf = Path.Combine(ResolveRawRoot(), "mlb", "park_factors.csv");
+        if (!File.Exists(pf))
+        {
+            var altPf = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "data", "raw", "mlb", "park_factors.csv"));
+            if (File.Exists(altPf)) pf = altPf;
+        }
+        await MlbTotalsTierA.RunAsync(dbPath, File.Exists(pf) ? pf : null);
+        return 0;
+    }
     case "sweep-nfl":
     {
         var repoRoot = FindRepoRoot();
@@ -223,11 +249,45 @@ switch (command)
         await NflTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
+    case "sweep-ncaaf":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}. Run import-disk-odds (SBRO sbro_ncaaf) first.");
+            return 2;
+        }
+        await NcaafTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
     case "sweep-mls":
     {
         var repoRoot = FindRepoRoot();
         var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
         await MlsTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
+    case "sweep-ncaab":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}. Run import-disk-odds first.");
+            return 2;
+        }
+        await NcaabTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
     case "sweep-soccer":
@@ -303,6 +363,26 @@ switch (command)
             return 2;
         }
         await GuardSweepTierA.RunAsync(dbPath);
+        return 0;
+    }
+    case "tier-a-nfl-wind":
+    {
+        // tier-a-nfl-wind [db] — nfl-wind alone vs EPA+roof on filled O→C folds
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await NflWindTierA.RunAsync(dbPath);
         return 0;
     }
     case "tier-a-shutoff":
@@ -410,6 +490,28 @@ switch (command)
         await DailySlate.RunNbaAsync(dbPath, date, bank);
         return 0;
     }
+    case "slate-ncaab":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        var date = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 2 && double.TryParse(args[^1], out var b) ? b : NcaabChampConfig.BankrollSeed;
+        if (args.Length > 1 && args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            dbPath = args[1];
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunNcaabAsync(dbPath, date, bank);
+        return 0;
+    }
     case "slate-mls":
     {
         var repoRoot = FindRepoRoot();
@@ -431,6 +533,10 @@ switch (command)
         if (args.Length < 2)
         {
             Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|BUNDESLIGA> [yyyymmdd] [bank]");
+        // slate-soccer <SPORT> [yyyymmdd] [bank]  — MLS|LIGUE1|LIGAMX|SERIEA|EPL
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("usage: slate-soccer <MLS|LIGUE1|LIGAMX|SERIEA|EPL> [yyyymmdd] [bank]");
             return 1;
         }
         var repoRoot = FindRepoRoot();
@@ -591,28 +697,16 @@ switch (command)
         var (db, _) = await PaperLedger.OpenAsync(paperPath);
         await using (db)
         {
-            var probe = await db.LedgerEntries.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Result == null
-                    && (r.TicketGroup == args[1] || r.GameKey == args[1]));
-            if (probe is not null && (finalTotal is null || closeLine is null))
-            {
-                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
-                    warehouse, snaps, probe.GameKey, probe.Sport);
-                finalTotal ??= autoFinal;
-                if (closeLine is null)
-                {
-                    closeLine = autoClose;
-                    closeOdds ??= autoAm;
-                }
-            }
-
+            // Per-venue same-book close when closeLine omitted (R3).
             var rows = await PaperLedger.SettleGroupAsync(
-                db, args[1], args[2], finalTotal, closeLine, closeOdds);
+                db, args[1], args[2], finalTotal, closeLine, closeOdds,
+                (finalTotal is null || closeLine is null) ? warehouse : null,
+                closeLine is null ? snaps : null);
             Console.WriteLine(
-                $"SETTLED-GO n={rows.Count} {args[1]} → {args[2]} final={finalTotal} close={closeLine}");
+                $"SETTLED-GO n={rows.Count} {args[1]} → {args[2]} final={finalTotal ?? rows.FirstOrDefault()?.FinalTotal} close={(closeLine is null ? "auto-same-book" : closeLine.ToString())}");
             foreach (var row in rows)
                 Console.WriteLine(
-                    $"  #{row.Id} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00} clvPts={row.ClvPts:+0.0;-0.0}");
+                    $"  #{row.Id} {row.Venue,-8} {row.Scheme,-10} pnl={row.PnL:+0.00;-0.00} close={row.CloseLine} book={row.CloseBook} cross={row.CrossBookClose} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
@@ -635,21 +729,24 @@ switch (command)
         await using (db)
         {
             var existing = await db.LedgerEntries.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            ResolvedSettleClose? meta = null;
             if (existing is not null && (finalTotal is null || closeLine is null))
             {
-                var (autoClose, autoAm, autoFinal) = await PaperLedger.ResolveSettleLinesAsync(
-                    warehouse, snaps, existing.GameKey, existing.Sport);
-                finalTotal ??= autoFinal;
+                meta = await PaperLedger.ResolveSettleLinesAsync(
+                    warehouse, snaps, existing.GameKey, existing.Sport, existing.Venue);
+                finalTotal ??= meta.Value.FinalTotal;
                 if (closeLine is null)
                 {
-                    closeLine = autoClose;
-                    closeOdds ??= autoAm;
+                    closeLine = meta.Value.CloseLine;
+                    closeOdds ??= meta.Value.CloseAmerican;
                 }
+                else
+                    meta = null; // explicit close → ApplySettle treats as same-book
             }
 
-            var row = await PaperLedger.SettleAsync(db, id, args[2], finalTotal, closeLine, closeOdds);
+            var row = await PaperLedger.SettleAsync(db, id, args[2], finalTotal, closeLine, closeOdds, meta);
             Console.WriteLine(
-                $"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} final={row.FinalTotal} close={row.CloseLine} clvPts={row.ClvPts:+0.0;-0.0}");
+                $"SETTLED #{row.Id} {row.Scheme} {row.Result} pnl={row.PnL:+0.00;-0.00} final={row.FinalTotal} close={row.CloseLine} book={row.CloseBook} cross={row.CrossBookClose} clvPts={row.ClvPts:+0.0;-0.0}");
         }
         return 0;
     }
@@ -815,21 +912,27 @@ static void PrintUsage()
           sweep [dbPath]             Train-only ATS sweep; holdout scored once for champ
           import-totals [db]         Load TOTAL open/close (B + E) into warehouse
           import-box [db]            Load pace box (nba_box/box_games.csv)
-          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA (ESPN; NBA box, MLS xG)
+          refresh-results [yyyymmdd] [db]  Incremental finals for NBA/MLS/LIGUE1/LIGAMX/SERIEA/EPL (ESPN; NBA box, MLS xG)
           import-mlb / import-nfl / import-mls   Append MLB / NFL / MLS totals
           sweep-totals [db] [--normal-sigma]  NBA O/U; --normal-sigma = Tier A Normal σ
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
+          sweep-mlb / sweep-nfl / sweep-mls / sweep-ncaab  Soft-spot sweeps
+          slate-ncaab [yyyymmdd] [bank]  NCAAB totals shadow slate (PaceEff/Scoring)
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          tier-a-mlb [db]                    C4 MLB Tier A 2011–2019 + look-once 2021
+          sweep-mlb / sweep-nfl / sweep-ncaaf / sweep-mls  Soft-spot sweeps (MLB / NFL / NCAAF / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
+          tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
           tier-a-shutoff [db]            V3 vs V4 rolling-CLV shutoff PnL / max DD
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
           slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; BUNDESLIGA shadow
+          slate-soccer <SPORT> [day] [bank]  MLS|LIGUE1|LIGAMX|SERIEA paper; EPL shadow
           advise-ou <expTotal> <openTotal> [juice] [bank]  Champ TOTALS go/no-go
           advise-mls <expGoals> <openTotal> [juice] [bank] MLS paper TOTALS go/no-go
           advise-ats <p> <homeLine> [juice] [bank]           Legacy ATS go/no-go

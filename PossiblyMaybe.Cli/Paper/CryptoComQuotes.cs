@@ -52,6 +52,7 @@ public static class CryptoComQuotes
         {
             "NBA" => "NBA",
             "MLS" => "MLS",
+            "EPL" => "EPL",
             _ => null,
         };
         if (kind is null) return null;
