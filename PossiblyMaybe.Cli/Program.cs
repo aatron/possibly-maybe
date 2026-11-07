@@ -223,6 +223,23 @@ switch (command)
         await NflTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
+    case "sweep-ncaaf":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}. Run import-disk-odds (SBRO sbro_ncaaf) first.");
+            return 2;
+        }
+        await NcaafTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
     case "sweep-mls":
     {
         var repoRoot = FindRepoRoot();
@@ -821,7 +838,7 @@ static void PrintUsage()
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
-          sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          sweep-mlb / sweep-nfl / sweep-ncaaf / sweep-mls  Soft-spot sweeps (MLB / NFL / NCAAF / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
