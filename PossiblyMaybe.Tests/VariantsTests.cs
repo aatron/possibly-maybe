@@ -10,7 +10,7 @@ public class VariantsTests
     {
         var ids = VariantRegistry.All.Select(v => v.Id).ToList();
         await Assert.That(ids).IsEquivalentTo(
-            ["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0", "V-POOL", "V-ROSTER"]);
+            ["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0", "V-POOL", "V-ROSTER", BlendFamily.InvVarId]);
         await Assert.That(VariantRegistry.V0.Label).IsEqualTo("champ-2026-11-07");
         await Assert.That(VariantRegistry.V0.NbaOverProb).IsEqualTo(NbaOverProbKind.NormalSigma);
         await Assert.That(VariantRegistry.Require("V0L").NbaOverProb).IsEqualTo(NbaOverProbKind.Logistic);
@@ -20,6 +20,7 @@ public class VariantsTests
         await Assert.That(VariantRegistry.Require("V-SA0").Leagues!.Contains("SERIEA")).IsFalse();
         await Assert.That(VariantRegistry.Require("V-POOL").Pooling).IsTrue();
         await Assert.That(VariantRegistry.Require("V-ROSTER").RosterReset).IsTrue();
+        await Assert.That(VariantRegistry.Require(BlendFamily.InvVarId).InvVarBlend).IsTrue();
     }
 
     [Test]
@@ -67,6 +68,21 @@ public class VariantsTests
         var dV0Clear = VariantRegistry.Evaluate(VariantRegistry.V0, clear);
         await Assert.That(dClear.AbsEdge).IsEqualTo(dV0Clear.AbsEdge);
         await Assert.That(dClear.ModelProb).IsEqualTo(dV0Clear.ModelProb);
+    }
+
+    [Test]
+    public async Task Evaluate_InvVarBlend_UsesLockedSigmas()
+    {
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 19);
+        var v0 = VariantRegistry.Evaluate(VariantRegistry.V0, c);
+        var inv = VariantRegistry.Evaluate(VariantRegistry.Require(BlendFamily.InvVarId), c);
+        var w = MarketBlend.MarketWeightFromSigmas(BlendFamily.NbaSigmaModel, BlendFamily.NbaSigmaLine);
+        var expectedEdge = Math.Abs(w * 220 + (1 - w) * 232 - 220);
+
+        await Assert.That(v0.AbsEdge).IsEqualTo(6.0);
+        await Assert.That(inv.AbsEdge).IsEqualTo(expectedEdge).Within(1e-9);
+        await Assert.That(inv.AbsEdge).IsNotEqualTo(v0.AbsEdge);
+        await Assert.That(inv.Side).IsEqualTo("OVER");
     }
 
     [Test]
