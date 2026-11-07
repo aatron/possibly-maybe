@@ -1,7 +1,7 @@
 # Round 5: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for wave-2 Composer agents (T4a/b/c, T5, T6); `--no-ff` merge, then T7.
+**Next action:** wait for remaining wave-2 Composer agents (T4b/c, T5, T6); `--no-ff` merge T4a+, then T7.
 Never redo a `done` row. Specs = `PLAN.md` § per item.
 
 ## Ledger
@@ -11,7 +11,7 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | T2a | Import NHL SBRO | Composer | `../pm-r5-t2a` `r5/t2a` | `t2a_proof.md` — 15 szn, 18943 O+C, Anaheim≠Oregon | done | 809b525 |
 | T2b | Import AUS NFL totals | Composer | `../pm-r5-t2b` `r5/t2b` | `t2b_proof.md` — 2022 filled; 88.4% real prices | done | abfa5f4 |
 | T3 | Two-week ESPN line backfill | Composer | `../pm-r5-t3` `r5/t3` | `t3_proof.md` — AsOfView can't see close | done | 2f63518 |
-| T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | fold table vs V0 | running | |
+| T4a | Tier A once: soccer dists + pooling | Composer | `../pm-r5-t4a` `r5/t4a` | `t4a_proof.md` — N_trials=17; pooling FAIL | done | |
 | T4b | Tier A once: refs-nba, fitted / strict / EV-band | Composer | `../pm-r5-t4b` `r5/t4b` | fold table vs V0 | running | |
 | T4c | Tier A once: conformal, kalman, soccer-strict | Composer | `../pm-r5-t4c` `r5/t4c` | fold table vs V0 | running | |
 | T5 | Seasonality scan + radar prior | Composer | `../pm-r5-t5` `r5/t5` | BH phase table; synthetic wave | running | |
@@ -29,3 +29,4 @@ Never redo a `done` row. Specs = `PLAN.md` § per item.
 | 2026-11-07 | T2b merged `--no-ff`: `import-nfl-aus`, 2022 filled, 88.4% real prices. |
 | 2026-11-07 | T3 merged `--no-ff`: ESPN lines 2026-10-24→11-06 (406/409 O+C); AsOfView no-peek. |
 | 2026-11-07 | Wave 2 launched (Composer): T4a/b/c, T5, T6. |
+| 2026-11-07 | T4a done on `r5/t4a`: `tier-a-r5-soccer` once; B4 PASS→Shadow (MLS dists, Liga MX dists, Serie A negbin, Poisson/ρ ties); B2 `+pooling` FAIL all four leagues; N_trials=17. No paper. |

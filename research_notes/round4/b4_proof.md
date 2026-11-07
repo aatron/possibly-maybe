@@ -30,6 +30,10 @@ Expects: four new ids registered; `mls-dc` LeagueOff on Ligue 1; MLS logistic V0
 
 Per league (MLS, LIGUE1, LIGAMX, SERIEA): walk-forward folds; for each fold fit φ / ρ on train only (`FitNegBinPhi`, ρ MoM or lock), score **log-loss + Kelly + CLV** on the identical open-line ticket set as V0. Pass gate: majority-fold Kelly uplift and mean CLV ≥ V0. Full fold table deferred to D2 / radar once candidates are dual-λ ready for true `mls-dc` means.
 
+| Round 5 | Status |
+|---|---|
+| **T4a fold table (once)** | Done 2026-11-07 — `research_notes/round5/t4a_proof.md` (`tier-a-r5-soccer`). PASS → Shadow only; FAIL stays Shadow-FAIL. No paper promotion. |
+
 ## Not in B4
 
 Alt ModelExp for Dixon–Coles MLS means; batch MLE ξ/ρ; changing other family files.

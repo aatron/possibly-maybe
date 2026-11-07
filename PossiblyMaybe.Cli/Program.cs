@@ -389,6 +389,30 @@ switch (command)
         await PoissonCdfTierA.RunAsync(dbPath, filter);
         return 0;
     }
+    case "tier-a-r5-soccer":
+    {
+        // tier-a-r5-soccer [SPORT|all] [db] [vault.db] — T4a B4 dists + B2 pooling once vs V0
+        var repoRoot = FindRepoRoot();
+        var filter = args.Length > 1 && !args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            && !args[1].Equals("all", StringComparison.OrdinalIgnoreCase)
+            ? args[1]
+            : null;
+        var dbArgs = args.Skip(1).Where(a => a.EndsWith(".db", StringComparison.OrdinalIgnoreCase)).ToList();
+        var dbPath = dbArgs.Count > 0 ? dbArgs[0] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        var vaultPath = dbArgs.Count > 1 ? dbArgs[1] : VaultDb.DefaultPath(repoRoot);
+        await SoccerR5TierA.RunAsync(dbPath, vaultPath, filter);
+        return 0;
+    }
     case "tier-a-shadow-soccer":
     {
         // tier-a-shadow-soccer [SPORT|all] [db] — Tier A folds for LALIGA/EFL shadow packs
@@ -1150,6 +1174,7 @@ static void PrintUsage()
           sweep-mlb / sweep-nfl / sweep-ncaaf / sweep-mls  Soft-spot sweeps (MLB / NFL / NCAAF / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
+          tier-a-r5-soccer [SPORT|all] [db] [vault.db]  T4a B4 dists + B2 pooling vs V0 (TrialLedger)
           tier-a-shadow-soccer [SPORT|all] [db]  Tier A folds for LALIGA/EFL shadow packs
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
           tier-a-nfl-wind [db]           NFL nfl-wind alone Tier A (filled O→C)
