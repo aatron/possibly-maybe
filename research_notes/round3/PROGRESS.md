@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for W5 / W16. W1–W3 / W6–W8 / W13–W15 done. W4 deferred.
+**Next action:** wait for W16 (archive.org research). Wave 1–2 build items done except W4 deferred. Then W9/W10/W11/W12.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -13,7 +13,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` `r3/guards` | line-move PASS; edge-cap 25% soccer PASS / NBA FAIL (see w2_guard_proof.md) | done | 1ae2f73 |
 | W3 | Tracker importer + doubleheader key | Composer | `../pm-r3-tracker-import` `r3/tracker-import` | smoke 15/15 O+C; key `yyyymmdd AWAY@HOME HHMM` | done | ca7c064 |
 | W4 | Always-on tracker (GH Actions) | Composer | `../pm-r3-always-on` | sleep-night coverage | **deferred (user: not yet)** | |
-| W5 | Live CLV fix | Composer | `../pm-r3-live-clv` `r3/live-clv` | % true close | **running** | |
+| W5 | Live CLV fix | Composer | `../pm-r3-live-clv` `r3/live-clv` | FinalTotal separate; fake closes nulled (0/90 true-close until tracker covers soccer) | done | 753f507 |
 | W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` `r3/venues` | Ligue1/SerieA/LigaMX series + RH fee skip test | done | 4f62fab |
 | W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` `r3/shutoff` | all 5 leagues DD≤V3 and PnL≥V3 (w7_shutoff_proof.md) | done | 6fd030e |
 | W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible (STAKE GATE in `paper`) | done | b3e6ca2 |
@@ -47,4 +47,5 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | W6 merged (4f62fab, 151 tests). KXLIGUE1TOTAL / KXSERIEATOTAL / KXLIGAMXTOTAL; RH fee already on place path. |
 | 2026-11-07 | W15 merged (a830d85, 155 tests) + live `import-disk-odds` (backup possiblymaybe.db.bak-pre-w15-*). NFL 14→18, NBA 16→17, MLB 12→15, NCAAB 0→15, NCAAF 0→16. ~17 NFL rows still unmapped (LosAngeles/NewYork). |
 | 2026-11-07 | W7 merged (6fd030e, 158 tests). V4 pauses on V3 rolling-40 CLV&lt;0; NBA/Ligue1 DD cut. |
+| 2026-11-07 | W5 merged (753f507, 161 tests) + `backfill-clv` on paper.db (backup paper.db.bak-pre-w5-*). True-close 0/90; STAKE GATE clv_n=0 until real market closes exist. |
 | 2026-11-07 | Wrote revisit_candidates.md (2-month signal math; past approaches by closeness; injury/trade live-only variants). Spec input for Composer. |
