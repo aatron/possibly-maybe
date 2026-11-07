@@ -1,17 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
+using PossiblyMaybe.Domain.SportPacks;
 
 namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
 /// MLS totals soft spot: ASA xG EMA when joinable, else goals EMA.
-/// Holdout locked in NOTES_MLS.md: train season ≤2024, holdout season=2025; skip 2026.
+/// Holdout from <see cref="MlsSportPack"/> (train ≤2024, holdout 2025, skip 2026).
 /// Optional Dixon–Coles via useDixonColes (research; champ is xG EMA α=0.206).
 /// </summary>
 public static class MlsTotalsBacktest
 {
-    public const string HoldoutSeason = "2025";
+    public static string HoldoutSeason => MlsSportPack.Instance.TierCHoldoutSeason;
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, double marketWeight, double minEv, double minAbsEdge,
