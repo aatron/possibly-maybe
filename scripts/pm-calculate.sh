@@ -259,6 +259,10 @@ echo ">>> shadow variants (settle + eval $DAY → data/variants.db + ui/variants
 "${CLI[@]}" variants-shadow "$DAY" || true
 
 echo
+echo ">>> wave radar (CUSUM + BH → data/radar.db + Waves in ui/variants.html)"
+"${CLI[@]}" variants-radar || true
+
+echo
 echo "========================================"
 echo " Next actions"
 echo "========================================"

@@ -10,7 +10,7 @@ public class VariantsTests
     {
         var ids = VariantRegistry.All.Select(v => v.Id).ToList();
         await Assert.That(ids).IsEquivalentTo(
-            ["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0", "refs-nba"]);
+            ["V0", "V0L", "V1", "V2", "V3", "V4", "V5", "V-SA0", "V-POOL", "V-ROSTER", BlendFamily.InvVarId, "refs-nba"]);
         await Assert.That(VariantRegistry.V0.Label).IsEqualTo("champ-2026-11-07");
         await Assert.That(VariantRegistry.V0.NbaOverProb).IsEqualTo(NbaOverProbKind.NormalSigma);
         await Assert.That(VariantRegistry.Require("V0L").NbaOverProb).IsEqualTo(NbaOverProbKind.Logistic);
@@ -18,6 +18,9 @@ public class VariantsTests
         await Assert.That(VariantRegistry.Require("V2").LineMove).IsTrue();
         await Assert.That(VariantRegistry.Require("V5").UseRealJuice).IsTrue();
         await Assert.That(VariantRegistry.Require("V-SA0").Leagues!.Contains("SERIEA")).IsFalse();
+        await Assert.That(VariantRegistry.Require("V-POOL").Pooling).IsTrue();
+        await Assert.That(VariantRegistry.Require("V-ROSTER").RosterReset).IsTrue();
+        await Assert.That(VariantRegistry.Require(BlendFamily.InvVarId).InvVarBlend).IsTrue();
         await Assert.That(VariantRegistry.Require("refs-nba").UseRefTotals).IsTrue();
         await Assert.That(VariantRegistry.Require("refs-nba").Leagues!.Contains("NBA")).IsTrue();
     }
@@ -45,6 +48,68 @@ public class VariantsTests
         var d = VariantRegistry.Evaluate(VariantRegistry.Require("refs-nba"), c);
         await Assert.That(d.Pick).IsFalse();
         await Assert.That(d.SkipReason).IsEqualTo(VariantSkip.LeagueOff);
+    }
+
+    [Test]
+    public async Task Pooling_ShrinksOnOpeningPhase_NoopOtherwise()
+    {
+        var raw = NbaCand(home: "BOS", away: "MIA", line: 220, model: 240, sigma: 19)
+            with { SeasonPhase = "opening-weeks" };
+        var plain = NbaCand(home: "BOS", away: "MIA", line: 220, model: 240, sigma: 19)
+            with { SeasonPhase = "playoffs" };
+
+        var vPool = VariantRegistry.Require("V-POOL");
+        var adj = PoolingFamily.Apply(vPool, raw);
+        await Assert.That(adj.ModelExp).IsEqualTo(
+            PoolingFamily.Shrink(240, PoolingFamily.LeagueMeanTotal("NBA"), PoolingFamily.EarlySeasonWeight));
+
+        var dPool = VariantRegistry.Evaluate(vPool, raw);
+        var dV0 = VariantRegistry.Evaluate(VariantRegistry.V0, raw);
+        await Assert.That(dPool.AbsEdge).IsLessThan(dV0.AbsEdge!);
+
+        var dPlayoffs = VariantRegistry.Evaluate(vPool, plain);
+        var dV0Playoffs = VariantRegistry.Evaluate(VariantRegistry.V0, plain);
+        await Assert.That(dPlayoffs.AbsEdge).IsEqualTo(dV0Playoffs.AbsEdge);
+        await Assert.That(dPlayoffs.ModelProb).IsEqualTo(dV0Playoffs.ModelProb);
+    }
+
+    [Test]
+    public async Task RosterReset_ShrinksAndWidensSigma_WhenFlagged()
+    {
+        var flagged = NbaCand(home: "BOS", away: "MIA", line: 220, model: 240, sigma: 16)
+            with { RosterFlag = true };
+        var clear = NbaCand(home: "BOS", away: "MIA", line: 220, model: 240, sigma: 16)
+            with { RosterFlag = false };
+
+        var v = VariantRegistry.Require("V-ROSTER");
+        var adj = PoolingFamily.Apply(v, flagged);
+        await Assert.That(adj.ModelExp).IsEqualTo(
+            PoolingFamily.Shrink(240, PoolingFamily.LeagueMeanTotal("NBA"), PoolingFamily.RosterResetWeight));
+        await Assert.That(adj.NbaSigma).IsEqualTo(16 * PoolingFamily.RosterSigmaMul);
+
+        var dFlag = VariantRegistry.Evaluate(v, flagged);
+        var dV0 = VariantRegistry.Evaluate(VariantRegistry.V0, flagged);
+        await Assert.That(dFlag.AbsEdge).IsLessThan(dV0.AbsEdge!);
+
+        var dClear = VariantRegistry.Evaluate(v, clear);
+        var dV0Clear = VariantRegistry.Evaluate(VariantRegistry.V0, clear);
+        await Assert.That(dClear.AbsEdge).IsEqualTo(dV0Clear.AbsEdge);
+        await Assert.That(dClear.ModelProb).IsEqualTo(dV0Clear.ModelProb);
+    }
+
+    [Test]
+    public async Task Evaluate_InvVarBlend_UsesLockedSigmas()
+    {
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 19);
+        var v0 = VariantRegistry.Evaluate(VariantRegistry.V0, c);
+        var inv = VariantRegistry.Evaluate(VariantRegistry.Require(BlendFamily.InvVarId), c);
+        var w = MarketBlend.MarketWeightFromSigmas(BlendFamily.NbaSigmaModel, BlendFamily.NbaSigmaLine);
+        var expectedEdge = Math.Abs(w * 220 + (1 - w) * 232 - 220);
+
+        await Assert.That(v0.AbsEdge).IsEqualTo(6.0);
+        await Assert.That(inv.AbsEdge).IsEqualTo(expectedEdge).Within(1e-9);
+        await Assert.That(inv.AbsEdge).IsNotEqualTo(v0.AbsEdge);
+        await Assert.That(inv.Side).IsEqualTo("OVER");
     }
 
     [Test]

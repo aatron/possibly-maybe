@@ -16,6 +16,12 @@ public sealed record Variant(
     bool UseRealJuice,
     /// <summary>null = all paper leagues; otherwise only these sports.</summary>
     IReadOnlySet<string>? Leagues,
+    /// <summary>B2: shrink model toward league mean on early-season / promoted phases.</summary>
+    bool Pooling = false,
+    /// <summary>B2: shrink + widen σ when <see cref="SlateCandidate.RosterFlag"/> is set.</summary>
+    bool RosterReset = false,
+    /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
+    bool InvVarBlend = false,
     /// <summary>When true, add <see cref="SlateCandidate.RefTotalsResidual"/> to model exp (refs-nba).</summary>
     bool UseRefTotals = false);
 
@@ -137,7 +143,8 @@ public static class VariantRegistry
         if (c.Line is not { } line)
             return Skip(VariantSkip.NoLine);
 
-        var exp = v.MarketBlend(c, line);
+        c = PoolingFamily.Apply(v, c);
+        var exp = v.BlendedExp(c, line);
         var edge = exp - line;
         if (Math.Abs(edge) < c.MinAbsEdge)
             return Skip(VariantSkip.NoEdge);
@@ -159,9 +166,15 @@ public static class VariantRegistry
         return new VariantDecision(true, side, line, juice, p, ev, Math.Abs(edge), null);
     }
 
-    private static double MarketBlend(this Variant v, SlateCandidate c, double line)
+    private static double BlendedExp(this Variant v, SlateCandidate c, double line)
     {
         var model = c.ModelExp + (v.UseRefTotals ? c.RefTotalsResidual : 0);
+        if (v.InvVarBlend)
+        {
+            var (sm, sl) = BlendFamily.LockedSigmas(c.Sport);
+            return MarketBlend.InverseVariance(model, line, sm, sl);
+        }
+
         return c.MarketWeight * line + (1 - c.MarketWeight) * model;
     }
 
