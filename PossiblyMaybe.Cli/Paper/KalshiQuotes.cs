@@ -5,7 +5,7 @@ using PossiblyMaybe.Domain;
 
 namespace PossiblyMaybe.Cli.Paper;
 
-/// <summary>Local Kalshi public market quotes for NBA/MLS game totals (YES = over strike).</summary>
+/// <summary>Local Kalshi public market quotes for NBA + soccer game totals (YES = over strike).</summary>
 public static class KalshiQuotes
 {
     const string Base = "https://external-api.kalshi.com/trade-api/v2";
@@ -14,7 +14,14 @@ public static class KalshiQuotes
     {
         ["NBA"] = "KXNBATOTAL",
         ["MLS"] = "KXMLSTOTAL",
+        ["LIGUE1"] = "KXLIGUE1TOTAL",
+        ["SERIEA"] = "KXSERIEATOTAL",
+        ["LIGAMX"] = "KXLIGAMXTOTAL",
     };
+
+    /// <summary>Public series ticker for a sport, or null when unwired.</summary>
+    public static string? TrySeriesTicker(string sport)
+        => Series.TryGetValue(sport, out var s) ? s : null;
 
     public readonly record struct Quote(
         string EventTicker,

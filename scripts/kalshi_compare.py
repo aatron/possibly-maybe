@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Fetch Kalshi NBA/MLS total markets and compare to DraftKings-style American odds.
+"""Fetch Kalshi NBA/soccer total markets and compare to DraftKings-style American odds.
 
 Public API (no auth): https://external-api.kalshi.com/trade-api/v2
-Series: KXNBATOTAL, KXMLSTOTAL — binary YES = over {strike}.
+Series: KXNBATOTAL, KXMLSTOTAL, KXLIGUE1TOTAL, KXSERIEATOTAL, KXLIGAMXTOTAL — binary YES = over {strike}.
 """
 from __future__ import annotations
 
@@ -19,7 +19,13 @@ from typing import Any
 
 BASE = "https://external-api.kalshi.com/trade-api/v2"
 UA = {"User-Agent": "PossiblyMaybe/pm-calculate"}
-SERIES = {"NBA": "KXNBATOTAL", "MLS": "KXMLSTOTAL"}
+SERIES = {
+    "NBA": "KXNBATOTAL",
+    "MLS": "KXMLSTOTAL",
+    "LIGUE1": "KXLIGUE1TOTAL",
+    "SERIEA": "KXSERIEATOTAL",
+    "LIGAMX": "KXLIGAMXTOTAL",
+}
 
 
 def get_json(path: str) -> dict[str, Any]:
