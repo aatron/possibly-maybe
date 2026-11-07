@@ -77,4 +77,34 @@ public class SportPackTests
         await Assert.That(MlbSportPack.TeamTotalKalshiSeries.StartsWith("KXMLB")).IsTrue();
         await Assert.That(SportPackRegistry.Mlb.TierCHoldoutSeason).IsEqualTo("2021");
     }
+
+
+    [Test]
+    public async Task Ncaaf_Pack_Locks_TierC_And_Oregon()
+    {
+        var pack = SportPackRegistry.Get("NCAAF");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("NCAAF");
+        await Assert.That(pack.Market).IsEqualTo(NcaafChampConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(NcaafChampConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(NcaafChampConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(NcaafChampConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(NcaafChampConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(NcaafChampConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(NcaafChampConfig.BankrollSeed);
+        // Locked in c2_proof.md before any train sweep / holdout look
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2021-22");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2022-23");
+        await Assert.That(pack.SkipSeason).IsEqualTo("2023-24");
+        await Assert.That(pack.RatingBookKind).IsEqualTo("ScoringBook-EMA");
+        await Assert.That(pack.OddsSources.Any(s => s.Contains("SBRO", StringComparison.Ordinal))).IsTrue();
+        await Assert.That(pack.TierAFolds.Contains("2021-22")).IsTrue();
+        await Assert.That(pack.TierAFolds.Contains("2022-23")).IsFalse();
+        await Assert.That(pack.ResolveAlias("OregonState")).IsEqualTo("orst");
+        await Assert.That(pack.ResolveAlias("Oregon")).IsEqualTo("ore");
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", "OregonState")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", "Oregon")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", "Ohio State")).IsFalse();
+    }
 }

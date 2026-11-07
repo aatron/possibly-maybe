@@ -8,10 +8,12 @@ public static class SportPackRegistry
         {
             [MlsSportPack.Instance.LeagueId] = MlsSportPack.Instance,
             [MlbSportPack.Instance.LeagueId] = MlbSportPack.Instance,
+            [NcaafSportPack.Instance.LeagueId] = NcaafSportPack.Instance,
         };
 
     public static SportPack Mls => MlsSportPack.Instance;
     public static SportPack Mlb => MlbSportPack.Instance;
+    public static SportPack Ncaaf => NcaafSportPack.Instance;
 
     public static SportPack Get(string leagueId)
         => ById.TryGetValue(leagueId, out var p)

@@ -4,6 +4,7 @@ import sys
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import line_tracker as lt  # noqa: E402
@@ -58,6 +59,58 @@ class ParseTests(unittest.TestCase):
     def test_implied_line_interpolates(self):
         rows = [{"line": 44.5, "over_ask": 0.62, "under_ask": 0.40}, {"line": 45.5, "over_ask": 0.47, "under_ask": 0.55}]
         self.assertAlmostEqual(lt.implied_line(rows), 45.23, places=2)
+
+
+class MultiSportParseTests(unittest.TestCase):
+    def test_sports_table_covers_a2_leagues(self):
+        need = {"NBA", "NCAAB", "NCAAF", "NFL", "MLB", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL"}
+        self.assertTrue(need <= set(lt.SPORTS))
+        self.assertEqual(lt.SPORTS["NFL"]["kalshi"], "KXNFLTOTAL")
+        self.assertIsNone(lt.SPORTS["LALIGA"]["kalshi"])
+        self.assertIsNone(lt.SPORTS["NCAAB"]["cdc"])
+
+    def test_nba_canon_and_skips_final(self):
+        games = lt.parse_espn(load("espn_nba.json"), "NBA")
+        self.assertEqual(len(games), 1)
+        # 01:00Z Nov 8 = 20:00 ET Nov 7; GS -> GSW
+        self.assertEqual(games[0]["key"], "20261107 GSW@BOS 2000")
+        self.assertEqual(games[0]["rows"][0]["line"], 225.5)
+
+    def test_mls_keeps_own_abbr(self):
+        games = lt.parse_espn(load("espn_mls.json"), "MLS")
+        self.assertEqual(games[0]["away"], "LAFC")
+        self.assertEqual(games[0]["home"], "SEA")
+        self.assertEqual(games[0]["rows"][0]["line"], 2.5)
+
+    def test_missing_venue_skipped_not_fatal(self):
+        """No kalshi/cdc configured → ESPN-only rows; collect does not raise."""
+        cfg = {"LALIGA": {"espn": "soccer/esp.1", "kalshi": None, "cdc": None}}
+        sb = {
+            "events": [{
+                "date": "2026-11-09T15:00Z",
+                "status": {"type": {"state": "pre"}},
+                "competitions": [{
+                    "competitors": [
+                        {"homeAway": "home", "team": {"abbreviation": "BAR", "name": "Barcelona"}},
+                        {"homeAway": "away", "team": {"abbreviation": "RMA", "name": "Real Madrid"}},
+                    ],
+                    "odds": [{"provider": {"name": "Draft Kings"}, "overUnder": 2.5, "total": {}}],
+                }],
+            }]
+        }
+        now = datetime(2026, 11, 7, 12, 0, tzinfo=timezone.utc)
+
+        def fake_fetch(url):
+            if "scoreboard" in url:
+                return sb
+            raise AssertionError(f"unexpected fetch {url}")
+
+        with mock.patch.object(lt, "fetch_retry", side_effect=lambda url, label, attempts=3: fake_fetch(url)), \
+             mock.patch.object(lt, "DAY_SLEEP_S", 0), \
+             mock.patch.object(lt, "LEAGUE_SLEEP_S", 0):
+            out = lt.collect(["LALIGA"], days=0, now=now, sports_cfg=cfg)
+        self.assertEqual(len(out), 1)
+        self.assertEqual([r["venue"] for r in out[0]["rows"]], ["espn"])
 
 
 class StoreTests(unittest.TestCase):
