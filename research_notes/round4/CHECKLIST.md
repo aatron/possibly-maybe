@@ -20,7 +20,7 @@ Compiled 2026-11-07 from `PLAN.md` (root), `book_round2/*`, `round3/*` (final le
 - [ ] Dixon–Coles ρ low-score correction (r2 deferred) → B4
 - [ ] Fitted P(over) curve per league (learned σ / sharpness, not hand-set; r2 deferred) → B7
 - [ ] `soccer-strict` (edge ≥ 0.5 goals, EV 4–20%), `nba-strict`, EV-band variants → B7
-- [ ] Referees for **totals** (NBA `RefereeAssignments` 72k rows; `RefEffects.cs` only fits home-win) → B5
+- [x] Referees for **totals** (NBA `RefereeAssignments` 72k rows; `RefEffects.cs` only fits home-win) → B5
 - [ ] NBA absence / DNP adjustment (`AbsenceBook.cs` wired to backtest, **no result recorded**) → B1
 - [ ] Conformal-interval bet filter (r2 deferred) → B8
 - [ ] Kalman / adaptive-rate team ratings (r2 deferred) → B8

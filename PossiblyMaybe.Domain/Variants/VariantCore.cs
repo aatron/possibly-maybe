@@ -21,7 +21,9 @@ public sealed record Variant(
     /// <summary>B2: shrink + widen σ when <see cref="SlateCandidate.RosterFlag"/> is set.</summary>
     bool RosterReset = false,
     /// <summary>When true, blend model+line with inverse-variance (see <see cref="BlendFamily"/>).</summary>
-    bool InvVarBlend = false);
+    bool InvVarBlend = false,
+    /// <summary>When true, add <see cref="SlateCandidate.RefTotalsResidual"/> to model exp (refs-nba).</summary>
+    bool UseRefTotals = false);
 
 public enum NbaOverProbKind
 {
@@ -49,7 +51,9 @@ public sealed record SlateCandidate(
     bool Stale,
     bool? InjuryFlag = null,
     bool? RosterFlag = null,
-    string? SeasonPhase = null);
+    string? SeasonPhase = null,
+    /// <summary>Crew foul/pace residual pts from <see cref="RefEffects"/>; used when variant has UseRefTotals.</summary>
+    double RefTotalsResidual = 0);
 
 public sealed record VariantDecision(
     bool Pick,
@@ -164,13 +168,14 @@ public static class VariantRegistry
 
     private static double BlendedExp(this Variant v, SlateCandidate c, double line)
     {
+        var model = c.ModelExp + (v.UseRefTotals ? c.RefTotalsResidual : 0);
         if (v.InvVarBlend)
         {
             var (sm, sl) = BlendFamily.LockedSigmas(c.Sport);
-            return MarketBlend.InverseVariance(c.ModelExp, line, sm, sl);
+            return MarketBlend.InverseVariance(model, line, sm, sl);
         }
 
-        return c.MarketWeight * line + (1 - c.MarketWeight) * c.ModelExp;
+        return c.MarketWeight * line + (1 - c.MarketWeight) * model;
     }
 
     private static double OverProb(Variant v, SlateCandidate c, double blendedExp, double line)
