@@ -1,0 +1,28 @@
+{
+ "events": [
+  {
+   "date": "2026-11-08T19:30Z",
+   "status": {
+    "type": {"state": "pre", "completed": false}
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {"homeAway": "home", "team": {"abbreviation": "SEA", "name": "Sounders FC"}},
+      {"homeAway": "away", "team": {"abbreviation": "LAFC", "name": "Los Angeles FC"}}
+     ],
+     "odds": [
+      {
+       "provider": {"name": "Draft Kings"},
+       "overUnder": 2.5,
+       "total": {
+        "over": {"close": {"odds": "-115"}, "open": {"line": "o2.5", "odds": "-110"}},
+        "under": {"close": {"odds": "-105"}, "open": {"line": "u2.5", "odds": "-110"}}
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
