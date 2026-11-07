@@ -23,6 +23,58 @@ public class SbroXlsxParserTests
     }
 
     [Test]
+    public async Task SeasonYearsFromPath_Nhl2021_IsCovidShortSeason()
+    {
+        var (y1, y2) = SbroXlsxParser.SeasonYearsFromPath("nhl_odds_2021.xlsx");
+        await Assert.That(y1).IsEqualTo(2020);
+        await Assert.That(y2).IsEqualTo(2021);
+        await Assert.That(SbroXlsxParser.ParseMdd("113", y1, y2)).IsEqualTo(new DateOnly(2021, 1, 13));
+    }
+
+    [Test]
+    public async Task TryPickNhlOu_AcceptsGoalTotals()
+    {
+        await Assert.That(SbroXlsxParser.TryPickNhlOu("6", "6", "5.5", "5.5", out var o, out var c)).IsTrue();
+        await Assert.That(o).IsEqualTo(6);
+        await Assert.That(c).IsEqualTo(5.5);
+        await Assert.That(SbroXlsxParser.TryPickNhlOu("NL", "NL", "6", "6", out _, out _)).IsFalse();
+        await Assert.That(SbroXlsxParser.TryPickNhlOu("-155", "135", "-123", "103", out _, out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task ParseNhlFile_ReadsOpenOuJuice_WhenPresent()
+    {
+        var file = ResolveNhlFile("nhl_odds_2007-08.xlsx");
+        if (file is null)
+            return; // raw odds are gitignored; skip when absent
+
+        var rows = SbroXlsxParser.ParseNhlFile(file).Take(3).ToList();
+        await Assert.That(rows.Count).IsEqualTo(3);
+        await Assert.That(rows[0].Away).IsEqualTo("Anaheim");
+        await Assert.That(rows[0].Home).IsEqualTo("LosAngeles");
+        await Assert.That(rows[0].OpenTotal).IsEqualTo(6);
+        await Assert.That(rows[0].CloseTotal).IsEqualTo(6);
+        await Assert.That(rows[0].OpenJuiceAssumed).IsFalse();
+        await Assert.That(rows[0].CloseJuiceAssumed).IsFalse();
+        await Assert.That(SportTeams.TryNhl(rows[0].Away)).IsEqualTo("ANA");
+        await Assert.That(OregonExclusion.IsExcluded("NHL", SportTeams.TryNhl(rows[0].Away))).IsFalse();
+    }
+
+    static string? ResolveNhlFile(string name)
+    {
+        var here = AppContext.BaseDirectory;
+        for (var dir = new DirectoryInfo(here); dir != null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "data", "raw", "round3_odds", "archive_org", "sbro_nhl", name);
+            if (File.Exists(candidate)) return candidate;
+        }
+
+        var sibling = Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "..", "possibly-maybe",
+            "data", "raw", "round3_odds", "archive_org", "sbro_nhl", name));
+        return File.Exists(sibling) ? sibling : null;
+    }
+
+    [Test]
     public async Task TryPickTotals_TakesLargerSide()
     {
         await Assert.That(SbroXlsxParser.TryPickTotals("50.5", "52.5", "5.5", "5.5", out var o, out var c)).IsTrue();
