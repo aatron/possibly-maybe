@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for parallel Composer agents W1 / W2 / W3 / W8 / W14 to finish; parent reviews and merges `--no-ff`. Then W5 / W6 / W7 / W15. W4 deferred. W13 done.
+**Next action:** wait for parallel Composer agents W1 / W2 / W3 / W14 to finish; parent reviews and merges `--no-ff`. Then W5 / W6 / W7 / W15. W4 deferred. W8 + W13 done.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -16,7 +16,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W5 | Live CLV fix | Composer | `../pm-r3-live-clv` | % true close | pending (after W1) | |
 | W6 | Kalshi soccer series + RH fee | Composer | `../pm-r3-venues` | % soccer GOs priced | pending (after W1) | |
 | W7 | Per-league auto-shutoff (V4) | Composer | `../pm-r3-shutoff` | drawdown vs V3 | pending (W1) | |
-| W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible | **running** | |
+| W8 | Stake promotion gate | Composer | `../pm-r3-stake-gate` `r3/stake-gate` | rule visible (STAKE GATE in `paper`) | done | b3e6ca2 |
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
 | W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | done — getstam/Covers/OddsShark prohibited; SBRO NCAA O→C downloaded (NCAAB 15 szn, NCAAF 16 szn) | notes |
@@ -36,3 +36,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | User: implement round 3 plan. Parent launched W1/W2/W3/W8 Composer agents in worktrees from `92348f2`. |
 | 2026-11-07 | W13 done → odds_history_sources.md. Added W14 (Oregon NCAA gap) + W15 (import on-disk odds). |
 | 2026-11-07 | W14 Composer agent launched (`r3/oregon-ncaa` @ e4c2dbc). |
+| 2026-11-07 | W8 merged (b3e6ca2, 99 tests). Kelly5 capped 2% until global live CLV n≥100 and mean>0; status via `paper`. |
