@@ -1,7 +1,7 @@
 # Round 3: progress
 
 ## ▶ RESUME HERE
-**Next action:** wait for parallel Composer agents W1 / W2 / W3 / W8 to finish; parent reviews and merges `--no-ff`. Then W5 / W6 / W7. W13 (Opus research) continues in parallel. W4 deferred.
+**Next action:** wait for parallel Composer agents W1 / W2 / W3 / W8 / W14 to finish; parent reviews and merges `--no-ff`. Then W5 / W6 / W7 / W15. W4 deferred. W13 done.
 Never redo a `done` row. Specs = `PLAN.md` § Work items.
 
 ## Ledger
@@ -20,7 +20,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | W9 | Serie A verdict | Opus + Composer | `../pm-r3-seriea` | fold table | pending (W0, W1) | |
 | W10 | NCAAB totals pack | Opus + Composer | `../pm-r3-ncaab` | Tier A/C | pending | |
 | W13 | Odds-history sources (OddsShark / getstam? / Covers / free APIs) | Opus | main (notes only) | O→C seasons gained | done — getstam/Covers/OddsShark prohibited; SBRO NCAA O→C downloaded (NCAAB 15 szn, NCAAF 16 szn) | notes |
-| W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` | 0 Oregon games in NCAA data | pending — **must precede W10/W15 NCAA** | |
+| W14 | Oregon NCAA name gap (OregonState/PortlandState/PortlandU, Pilots) | Composer | `../pm-r3-oregon-ncaa` `r3/oregon-ncaa` | 0 Oregon games in NCAA data | **running** — **must precede W10/W15 NCAA** | |
 | W15 | Import on-disk odds (round-2 NFL/MLB/NBA files, SBRO NCAA) | Composer | `../pm-r3-import-odds` | O→C seasons before→after | pending | |
 | W11 | Write-ups (book review, training review, round3 value) | Opus | main | — | pending | |
 | W12 | Green tests, clean run, push | parent | main | — | pending | |
@@ -35,3 +35,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 | 2026-11-07 | User answers: Q1 wait for W13; Q2 parent committed WIP (3ac0431) + push; Q3 no Sonnet (Composer only); Q4 paper-go all 18 GOs (DK 18 games, Kalshi 5, RH 5, Crypto 2); Q5 W4 deferred. |
 | 2026-11-07 | User: implement round 3 plan. Parent launched W1/W2/W3/W8 Composer agents in worktrees from `92348f2`. |
 | 2026-11-07 | W13 done → odds_history_sources.md. Added W14 (Oregon NCAA gap) + W15 (import on-disk odds). |
+| 2026-11-07 | W14 Composer agent launched (`r3/oregon-ncaa` @ e4c2dbc). |
