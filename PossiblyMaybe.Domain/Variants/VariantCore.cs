@@ -40,7 +40,10 @@ public sealed record SlateCandidate(
     double MarketWeight,
     double MinAbsEdge,
     double MinEv,
-    bool Stale);
+    bool Stale,
+    bool? InjuryFlag = null,
+    bool? RosterFlag = null,
+    string? SeasonPhase = null);
 
 public sealed record VariantDecision(
     bool Pick,
@@ -65,7 +68,10 @@ public static class VariantSkip
     public const string LowEv = "LOW_EV";
 }
 
-/// <summary>Launch set for round 3 shadow ledger. Ids are permanent.</summary>
+/// <summary>
+/// Launch-set registry. Families register via <see cref="Register"/> (module initializers);
+/// wave-B adds one family file — no edit to other families.
+/// </summary>
 public static class VariantRegistry
 {
     public const string V0Id = "V0";
@@ -74,51 +80,32 @@ public static class VariantRegistry
     public const double DefaultNbaLineMoveK = Guards.RecommendedNbaLineMoveK;
     public const double DefaultSoccerLineMoveK = Guards.RecommendedSoccerLineMoveK;
 
-    private static readonly HashSet<string> NoSerieA = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly object Gate = new();
+    private static readonly List<(int Order, Variant[] Variants)> Bags = [];
+    private static IReadOnlyList<Variant>? _all;
+
+    /// <summary>Family files call this from a <c>[ModuleInitializer]</c>. Lower <paramref name="order"/> first.</summary>
+    public static void Register(int order, params Variant[] variants)
     {
-        "NBA", "MLS", "LIGUE1", "LIGAMX",
-    };
+        lock (Gate)
+        {
+            Bags.Add((order, variants));
+            _all = null;
+        }
+    }
 
-    public static Variant V0 { get; } = new(
-        V0Id, "champ-2026-11-07",
-        NbaOverProbKind.NormalSigma,
-        EdgeCap: false, EdgeCapEv: DefaultEdgeCapEv,
-        LineMove: false, NbaLineMoveK: DefaultNbaLineMoveK, SoccerLineMoveK: DefaultSoccerLineMoveK,
-        LeagueShutoff: false, UseRealJuice: false, Leagues: null);
+    public static Variant V0 => ChampFamily.V0;
 
-    public static IReadOnlyList<Variant> All { get; } =
-    [
-        V0,
-        new("V0L", "legacy-logistic-nba",
-            NbaOverProbKind.Logistic,
-            false, DefaultEdgeCapEv, false, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V1", "+edgecap",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, false, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V2", "+linemove",
-            NbaOverProbKind.NormalSigma,
-            false, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        new("V3", "+edgecap+linemove",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, null),
-        // LeagueShutoff: pause sport when V3 rolling CLV (40) < 0; resume when ≥ 0.
-        new("V4", "+shutoff",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            true, false, null),
-        new("V5", "+realjuice",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, true, null),
-        new("V-SA0", "no-seriea",
-            NbaOverProbKind.NormalSigma,
-            true, DefaultEdgeCapEv, true, DefaultNbaLineMoveK, DefaultSoccerLineMoveK,
-            false, false, NoSerieA),
-    ];
+    public static IReadOnlyList<Variant> All
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _all ??= Bags.OrderBy(b => b.Order).SelectMany(b => b.Variants).ToList();
+            }
+        }
+    }
 
     public static Variant Require(string id)
         => All.FirstOrDefault(v => v.Id.Equals(id, StringComparison.OrdinalIgnoreCase))

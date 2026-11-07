@@ -78,6 +78,87 @@ public class VariantsTests
         await Assert.That(v3.SkipReason).IsNotEqualTo(VariantSkip.LeagueOff);
     }
 
+    /// <summary>A1: V0 / V3 bit-identical post-split on a fixed fixture candidate.</summary>
+    [Test]
+    public async Task Evaluate_V0_V3_Fixture_StableAfterSplit()
+    {
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, open: 220, sigma: 19);
+        var v0 = VariantRegistry.Evaluate(VariantRegistry.V0, c);
+        var v3 = VariantRegistry.Evaluate(VariantRegistry.Require("V3"), c);
+
+        await Assert.That(v0.Pick).IsTrue();
+        await Assert.That(v0.Side).IsEqualTo("OVER");
+        await Assert.That(v0.AmericanOdds).IsEqualTo(-110);
+        await Assert.That(v0.SkipReason).IsNull();
+        await Assert.That(v0.AbsEdge).IsEqualTo(6.0); // (0.5*220 + 0.5*232) - 220
+
+        await Assert.That(v3.Pick).IsTrue();
+        await Assert.That(v3.Side).IsEqualTo("OVER");
+        await Assert.That(v3.AmericanOdds).IsEqualTo(-110);
+        await Assert.That(v3.Line).IsEqualTo(220);
+        await Assert.That(v3.AbsEdge).IsEqualTo(v0.AbsEdge);
+        await Assert.That(v3.ModelProb).IsEqualTo(v0.ModelProb);
+        await Assert.That(v3.Ev).IsEqualTo(v0.Ev);
+    }
+
+    /// <summary>A1: V5 UseRealJuice reads DK american when present (not silent −110).</summary>
+    [Test]
+    public async Task Filter_V5_UsesRealDkJuice()
+    {
+        var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 19,
+            dkOver: -105, dkUnder: -115);
+        var v3 = VariantRegistry.Evaluate(VariantRegistry.Require("V3"), c);
+        var v5 = VariantRegistry.Evaluate(VariantRegistry.Require("V5"), c);
+
+        await Assert.That(v3.Pick).IsTrue();
+        await Assert.That(v3.Side).IsEqualTo("OVER");
+        await Assert.That(v3.AmericanOdds).IsEqualTo(-110);
+
+        await Assert.That(v5.Pick).IsTrue();
+        await Assert.That(v5.Side).IsEqualTo("OVER");
+        await Assert.That(v5.AmericanOdds).IsEqualTo(-105);
+        await Assert.That(v5.Ev).IsGreaterThan(v3.Ev); // better price than −110
+    }
+
+    [Test]
+    public async Task CandidateStore_RoundTrip()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"pm-cand-{Guid.NewGuid():N}.db");
+        try
+        {
+            var c = NbaCand(home: "BOS", away: "MIA", line: 220, model: 232, sigma: 15,
+                dkOver: -102, dkUnder: -118);
+            var n = await VariantEvaluate.RecordAsync(path, [c]);
+            await Assert.That(n).IsEqualTo(VariantRegistry.All.Count);
+
+            var (db, _) = await VariantLedger.OpenAsync(path);
+            await using (db)
+            {
+                var cand = db.CandidateEntries.Single();
+                await Assert.That(cand.Sport).IsEqualTo("NBA");
+                await Assert.That(cand.GameKey).IsEqualTo("20261107 MIA@BOS");
+                await Assert.That(cand.ModelExp).IsEqualTo(232);
+                await Assert.That(cand.DkOverAmerican).IsEqualTo(-102);
+                await Assert.That(cand.DkUnderAmerican).IsEqualTo(-118);
+
+                var slate = VariantLedger.ToSlate(cand);
+                var again = VariantRegistry.Evaluate(VariantRegistry.Require("V5"), slate);
+                await Assert.That(again.AmericanOdds).IsEqualTo(-102);
+
+                var shadow = db.ShadowEntries.Single(r => r.VariantId == "V5");
+                await Assert.That(shadow.AmericanOdds).IsEqualTo(-102);
+            }
+
+            // Re-eval from store alone (no new model inputs).
+            var n2 = await VariantEvaluate.ReEvalStoredAsync(path);
+            await Assert.That(n2).IsEqualTo(VariantRegistry.All.Count);
+        }
+        finally
+        {
+            try { File.Delete(path); } catch { /* */ }
+        }
+    }
+
     [Test]
     public async Task ShadowLedger_RoundTrip()
     {
@@ -97,6 +178,7 @@ public class VariantsTests
                 await Assert.That(v0.SkipReason).IsNull();
                 await Assert.That(v0.Side).IsEqualTo("OVER");
                 await Assert.That(v0.GameKey).IsEqualTo("20261107 MIA@BOS");
+                await Assert.That(db.CandidateEntries.Count()).IsEqualTo(1);
             }
         }
         finally
@@ -107,8 +189,9 @@ public class VariantsTests
 
     private static SlateCandidate NbaCand(
         string home, string away, double line, double model,
-        double? open = null, double sigma = 19.0)
+        double? open = null, double sigma = 19.0,
+        int? dkOver = -110, int? dkUnder = -110)
         => new("NBA", "20261107", home, away, model, null, null,
-            line, open ?? line, -110, -110, sigma,
+            line, open ?? line, dkOver, dkUnder, sigma,
             ChampConfig.MarketWeight, ChampConfig.MinAbsTotalEdge, ChampConfig.MinEv, false);
 }

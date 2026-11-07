@@ -4,6 +4,7 @@ namespace PossiblyMaybe.Domain;
 /// MLS totals paper champ (HOLD PASS 2025): w=0.40, |exp−line|≥0.25, EV≥4%.
 /// xG EMA when available. EmaAlpha 0.206 (hl≈3) from library time-decay:
 /// hold +15.7u/100 CLV+0.19 — beats prior α=0.18 (+12.2u) and Dixon–Coles (+13.2u).
+/// Pack form: <c>SportPacks.MlsSportPack</c> (references these consts — keep in sync).
 /// Rollback: α=0.18 / git checkout 311127f -- PossiblyMaybe.Domain/MlsChampConfig.cs
 /// </summary>
 public static class MlsChampConfig
