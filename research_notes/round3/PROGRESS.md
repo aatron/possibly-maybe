@@ -7,7 +7,7 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 ## Ledger
 | Id | Item | Agent / model | Worktree / branch | Value proof | Status | Merge |
 |---|---|---|---|---|---|---|
-| W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league | running | |
+| W0 | Daily refresh all leagues + aliases + stale guard | Sonnet | `../pm-fix-daily-refresh` `fix/daily-refresh` | latest-result date per league | built (eb33257, 74 tests; copy DB: NBA→11-07, MLS→11-02, L1→11-06, LMX→11-07, SA→11-06); resolving DailySlate conflict with main | |
 | D0 | User decision: PaperLedger.cs / ui WIP | user | — | — | **waiting on user** | |
 | W1 | Variant registry + shadow ledger + variants.html + backfill | Composer | `../pm-r3-variants` | V0 backfill = champ | pending | |
 | W2 | Edge-cap + line-move guards + historical proof | Composer | `../pm-r3-guards` | removed bets lose | pending | |
@@ -28,3 +28,4 @@ Never redo a `done` row. Specs = `PLAN.md` § Work items.
 |---|---|
 | 2026-11-07 | Line-tracker cron installed (`*/20`), first run 930 rows. Plan written. |
 | 2026-11-07 | User: research OddsShark / getstam / Covers + free odds APIs → W13 launched (Opus). |
+| 2026-11-07 | W0 built (eb33257). Conflict with main in DailySlate (Oregon + NBA σ) — same agent merging main into branch. |
