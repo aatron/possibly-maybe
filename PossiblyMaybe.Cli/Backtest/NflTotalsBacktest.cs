@@ -2,20 +2,47 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using PossiblyMaybe.Data;
 using PossiblyMaybe.Domain;
+using PossiblyMaybe.Domain.SportPacks;
 
 namespace PossiblyMaybe.Cli.Backtest;
 
 /// <summary>
-/// NFL totals: nflverse pregame EPA (+ roof/wind) blended with market; scoring EMA fallback when EPA missing.
+/// NFL totals: nflverse pregame EPA (+ roof; optional nfl-wind) blended with market;
+/// scoring EMA fallback when EPA missing.
 /// HOLD FAIL once ESPN OpenClose lands: prior +7.1u/33 was CloseOnly (CLV=0 mirage).
 /// </summary>
 public static class NflTotalsBacktest
 {
-    public const string HoldoutSeason = "2024";
+    public static string HoldoutSeason => NflSportPack.Instance.TierCHoldoutSeason;
 
     public static async Task<(Gate1aResult Train, Gate1aResult Hold)> RunAsync(
         string dbPath, double marketWeight, double minEv, double minAbsEdge,
-        string? epaCsvPath = null, bool requireOpenClose = true, CancellationToken ct = default)
+        string? epaCsvPath = null, bool requireOpenClose = true, bool applyWind = true,
+        CancellationToken ct = default)
+    {
+        var holdout = HoldoutSeason;
+        var train = new Acc("nfl_train");
+        var hold = new Acc($"nfl_holdout_{holdout}");
+        await WalkAsync(dbPath, marketWeight, minEv, minAbsEdge, epaCsvPath, requireOpenClose, applyWind,
+            seasonFilter: null, holdout, train, hold, ct);
+        return (train.ToResult(), hold.ToResult());
+    }
+
+    /// <summary>Score one pre-holdout season on filled O→C only (Tier A fold).</summary>
+    public static async Task<Gate1aResult> RunSeasonFoldAsync(
+        string dbPath, string season, double marketWeight, double minEv, double minAbsEdge,
+        bool applyWind, string? epaCsvPath = null, CancellationToken ct = default)
+    {
+        var acc = new Acc($"nfl_fold_{season}");
+        await WalkAsync(dbPath, marketWeight, minEv, minAbsEdge, epaCsvPath, requireOpenClose: true, applyWind,
+            seasonFilter: season, holdout: null, train: null, hold: acc, ct);
+        return acc.ToResult();
+    }
+
+    static async Task WalkAsync(
+        string dbPath, double marketWeight, double minEv, double minAbsEdge,
+        string? epaCsvPath, bool requireOpenClose, bool applyWind,
+        string? seasonFilter, string? holdout, Acc? train, Acc hold, CancellationToken ct)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbPath}").Options;
         await using var db = new AppDbContext(options);
@@ -29,12 +56,10 @@ public static class NflTotalsBacktest
         var byOdds = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
         Dictionary<int, NflGameContext> ctx = [];
         try { ctx = await db.NflGameContexts.AsNoTracking().ToDictionaryAsync(x => x.GameId, ct); }
-        catch { /* */ }
+        catch { /* table may be absent on fresh DBs */ }
 
         var epa = LoadPregameEpa(epaCsvPath ?? DefaultEpaCsvPath());
-        var scoring = new ScoringBook(alpha: 0.15, leagueInit: 44);
-        var train = new Acc("nfl_train");
-        var hold = new Acc("nfl_holdout_2024");
+        var scoring = new ScoringBook(alpha: NflChampConfig.EmaAlpha, leagueInit: 44);
 
         foreach (var g in games)
         {
@@ -43,61 +68,65 @@ public static class NflTotalsBacktest
             var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
             var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close)
                         ?? snaps.OrderByDescending(s => s.CapturedAt).FirstOrDefault();
-            if (close?.Line is not { } closeLine) continue;
 
-            // Bet price: open when present, else close (CloseOnly — no true CLV)
-            var betLine = open?.Line ?? closeLine;
-            var hasClv = open?.Line is not null && open.ClvQuality == ClvQuality.OpenClose
-                         && Math.Abs(betLine - closeLine) >= 0.25;
-
-            double modelExp;
-            if (g.Season is { } season
-                && epa.TryGetValue((season, g.HomeTeam, g.AwayTeam), out var e))
-                modelExp = TotalsMath.NflTotalFromEpa(e.HomeOff, e.HomeDef, e.AwayOff, e.AwayDef);
-            else
-                modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
-
-            if (ctx.TryGetValue(g.Id, out var c))
+            var scoreThis = seasonFilter is null || g.Season == seasonFilter;
+            if (scoreThis && close?.Line is { } closeLine)
             {
-                var roof = (c.Roof ?? "").ToLowerInvariant();
-                if (roof is "dome" or "closed" or "retractable")
-                    modelExp += 1.5; // industry dome bump
-                if (c.WindMph is >= 15)
-                    modelExp -= 3.0; // wind under lever
-            }
+                var betLine = open?.Line ?? closeLine;
+                var hasClv = open?.Line is not null && open.ClvQuality == ClvQuality.OpenClose
+                             && Math.Abs(betLine - closeLine) >= 0.25;
 
-            var market = betLine;
-            var exp = marketWeight * market + (1 - marketWeight) * modelExp;
-            var edge = exp - market;
-            var acc = g.Season == HoldoutSeason ? hold : train;
-            var juice = -110;
-            var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, betLine);
-            var clv = hasClv ? TotalsMath.OverClvPoints(betLine, closeLine) : 0;
-
-            // After D1 O→C import: soft-spot hunt bets only when true open→close exists.
-            if ((!requireOpenClose || hasClv) && Math.Abs(edge) >= minAbsEdge)
-            {
-                if (edge > 0)
-                {
-                    var p = TotalsMath.OverProb(exp, market, sharpness: 0.2);
-                    var ev = OddsMath.ExpectedValue(p, juice);
-                    if (ev >= minEv)
-                        acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou), hasClv);
-                }
+                double modelExp;
+                if (g.Season is { } season
+                    && epa.TryGetValue((season, g.HomeTeam, g.AwayTeam), out var e))
+                    modelExp = TotalsMath.NflTotalFromEpa(e.HomeOff, e.HomeDef, e.AwayOff, e.AwayDef);
                 else
+                    modelExp = scoring.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+
+                if (ctx.TryGetValue(g.Id, out var c))
                 {
-                    var p = 1 - TotalsMath.OverProb(exp, market, sharpness: 0.2);
-                    var ev = OddsMath.ExpectedValue(p, juice);
-                    if (ev >= minEv)
-                        acc.AddBet(hasClv ? -clv : 0, ou < 0, TotalsMath.OuPnL(juice, -ou), hasClv);
+                    var roof = (c.Roof ?? "").ToLowerInvariant();
+                    if (roof is "dome" or "closed" or "retractable")
+                        modelExp += 1.5; // industry dome bump (not part of nfl-wind arm)
+                    if (applyWind)
+                        modelExp = NflWind.AdjustExpectedTotal(modelExp, c.WindMph);
                 }
+
+                var market = betLine;
+                var exp = marketWeight * market + (1 - marketWeight) * modelExp;
+                var edge = exp - market;
+                var acc = seasonFilter is not null
+                    ? hold
+                    : (g.Season == holdout ? hold : train!);
+
+                var juice = -110;
+                var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, betLine);
+                var clv = hasClv ? TotalsMath.OverClvPoints(betLine, closeLine) : 0;
+
+                if ((!requireOpenClose || hasClv) && Math.Abs(edge) >= minAbsEdge)
+                {
+                    if (edge > 0)
+                    {
+                        var p = TotalsMath.OverProb(exp, market, sharpness: 0.2);
+                        var ev = OddsMath.ExpectedValue(p, juice);
+                        if (ev >= minEv)
+                            acc.AddBet(clv, ou > 0, TotalsMath.OuPnL(juice, ou), hasClv);
+                    }
+                    else
+                    {
+                        var p = 1 - TotalsMath.OverProb(exp, market, sharpness: 0.2);
+                        var ev = OddsMath.ExpectedValue(p, juice);
+                        if (ev >= minEv)
+                            acc.AddBet(hasClv ? -clv : 0, ou < 0, TotalsMath.OuPnL(juice, -ou), hasClv);
+                    }
+                }
+
+                acc.AddGame();
             }
 
-            acc.AddGame();
+            // Always advance ratings chronologically (walk-forward), even outside fold season.
             scoring.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);
         }
-
-        return (train.ToResult(), hold.ToResult());
     }
 
     public static async Task SweepAsync(string dbPath, CancellationToken ct = default)
@@ -128,7 +157,6 @@ public static class NflTotalsBacktest
         Console.WriteLine($"=== NFL CHAMP (train max PnL) w={best.W:F2} edge={best.Edge:F1} ===");
         Console.WriteLine($"TRAIN  n={best.Train.Bets} clv={best.Train.MeanClv:F3} hit={best.Train.HitRate:P1} pnl={best.Train.PaperPnlUnits:F1}");
         Console.WriteLine($"HOLDOUT n={best.Hold.Bets} clv={best.Hold.MeanClv:F3} hit={best.Hold.HitRate:P1} pnl={best.Hold.PaperPnlUnits:F1}");
-        // Full money gate: PnL + CLV once OpenClose density exists; else provisional PnL-only
         var clvReady = best.Hold.Bets >= 30 && Math.Abs(best.Hold.MeanClv) > 1e-9;
         var passFull = best.Hold.PaperPnlUnits > 0 && best.Hold.MeanClv > 0 && best.Hold.Bets >= 30;
         var passProv = !clvReady && best.Hold.PaperPnlUnits > 0 && best.Hold.Bets >= 30;
@@ -166,6 +194,9 @@ public static class NflTotalsBacktest
         {
             var p = Path.Combine(dir.FullName, "data", "raw", "nfl", "pregame_epa.csv");
             if (File.Exists(p)) return p;
+            // shortcut: round-4 worktrees omit bulky raw/; fall back to adjacent main checkout
+            var sibling = Path.Combine(dir.FullName, "..", "possibly-maybe", "data", "raw", "nfl", "pregame_epa.csv");
+            if (File.Exists(sibling)) return Path.GetFullPath(sibling);
         }
         return Path.Combine("data", "raw", "nfl", "pregame_epa.csv");
     }

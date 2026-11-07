@@ -12,6 +12,18 @@ public static class SportPackRegistry
 
     public static SportPack Mls => MlsSportPack.Instance;
     public static SportPack Epl => EplSportPack.Instance;
+            [NflSportPack.Instance.LeagueId] = NflSportPack.Instance,
+        };
+
+    public static SportPack Mls => MlsSportPack.Instance;
+    public static SportPack Nfl => NflSportPack.Instance;
+            [MlbSportPack.Instance.LeagueId] = MlbSportPack.Instance,
+            [NcaafSportPack.Instance.LeagueId] = NcaafSportPack.Instance,
+        };
+
+    public static SportPack Mls => MlsSportPack.Instance;
+    public static SportPack Mlb => MlbSportPack.Instance;
+    public static SportPack Ncaaf => NcaafSportPack.Instance;
 
     public static SportPack Get(string leagueId)
         => ById.TryGetValue(leagueId, out var p)

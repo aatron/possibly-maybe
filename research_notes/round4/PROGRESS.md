@@ -13,29 +13,33 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | A4 | League / venue census | Auto / Composer | notes | ranked list | done | league_census.md |
 | A5 | Seasonality scan | Composer | `../pm-r4-a5` `r4/a5` | phase table (BH) | running | |
 | B1 | Availability: +absence, +injury-guard | Composer | `../pm-r4-b1` `r4/b1` | Tier A / live | running | |
-| B2 | +pooling, +roster-reset | Composer | `../pm-r4-b2` `r4/b2` | Tier A / live | running | |
+| B2 | +pooling, +roster-reset | Composer | `../pm-r4-b2` `r4/b2` | Tier A / live | done | ef60fef |
 | B3 | nba-volume, nba-volume-efg | Composer | `../pm-r4-b3` `r4/b3` | Tier A | running | |
 | B4 | mls-dc, +poisson-all, +negbin, +dc-rho | Composer | `../pm-r4-b4` `r4/b4` | Tier A | running | |
-| B5 | refs-nba totals | Composer | `../pm-r4-b5` `r4/b5` | Tier A | running | |
+| B5 | refs-nba totals | Composer | `../pm-r4-b5` `r4/b5` | Tier A | done | e9a831f |
 | B6 | consensus-outlier, line-move-follow | Composer | `../pm-r4-b6` `r4/b6` | live | running | |
 | B7 | +fitted-curve, strict / EV-band | Composer | `../pm-r4-b7` `r4/b7` | Tier A | running | |
 | B8 | +conformal, kalman | Composer | `../pm-r4-b8` `r4/b8` | Tier A | running | |
-| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A | running | |
+| B9 | inv-var-blend | Composer | `../pm-r4-b9` `r4/b9` | Tier A FAIL → shadow only | done | 10ef936 |
 | C0 | Sport-pack template | Composer | `../pm-r4-c0` `r4/c0` | MLS identical | done | eb3ad96 |
 | C1 | NCAAB totals | Composer | `../pm-r4-c1` `r4/c1` | Tier A / C | running | |
-| C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C | running | |
+| C2 | NCAAF totals | Composer | `../pm-r4-c2` `r4/c2` | Tier A / C | done | cce3dd5 |
 | C3 | NFL redo + wind + sub-markets | Composer | `../pm-r4-c3` `r4/c3` | Tier A | running | |
-| C4 | MLB redo + F5 ready | Composer | `../pm-r4-c4` `r4/c4` | Tier A / C | running | |
+| C4 | MLB redo + F5 ready | Composer | `../pm-r4-c4` `r4/c4` | Tier A / C | done | d01ba86 |
 | C5 | La Liga + EFL shadow | Composer | `../pm-r4-c5` `r4/c5` | Tier A | running | |
-| C6-epl | EPL pack (A4 #1 ready) | Composer | `../pm-r4-c6-epl` `r4/c6-epl` | Tier A | done (branch) | |
+| C6-epl | EPL pack (A4 #1 ready) | Composer | `../pm-r4-c6-epl` `r4/c6-epl` | Tier A | running | |
 | C6-bundesliga | Bundesliga pack (A4 #2 ready) | Composer | `../pm-r4-c6-bundesliga` `r4/c6-bundesliga` | Tier A | running | |
 | C6-nhl | NHL pack (A4 #3; Tier A O→C-gated) | Composer | `../pm-r4-c6-nhl` `r4/c6-nhl` | shadow + tracker | running | |
 | C7 | Spreads + moneylines | Composer | `../pm-r4-c7` `r4/c7` | Tier A | running | |
 | R1 | As-of cutoff in all model builders | Composer | A1 amendment or `../pm-r4-r1` | leak test | pending (amend A1) | |
 | R2 | Append-only decision log (run id, SHA, watermark, prices, injury snapshot) | Composer | A1 amendment | schema test | pending (amend A1) | |
-| R3 | Same-book close | Composer | after A2 `../pm-r4-r3` | % same-book close | pending (A2) | |
-| R4 | replay --asof command | Composer | `../pm-r4-r4` | 11-07 diff = 0 | pending (A1, R1, R2) | |
-| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` | stage test | pending (A3) | |
+| R3 | Same-book close | Composer | `../pm-r4-r3` `r4/r3` | % same-book close | running | |
+| R4 | replay --asof command | — | — | — | superseded by R7–R9 (replay = engine over logged dates) | |
+| R7 | Point-in-time AsOfView (no DB handle for strategies) | Composer | `../pm-r4-r7` | leak tests | pending (A1+R1/R2) | |
+| R8 | IStrategy plug-in + port champions | Composer | `../pm-r4-r8` | reproduce Tier A/B | pending (R7) | |
+| R9 | Day-stepping engine shared with live | Composer | `../pm-r4-r9` | live == engine today | pending (R7) | |
+| R10 | Vault + trial ledger + nested tuning + no sim-only promotion | Composer | `../pm-r4-r10` | vault refusal test | pending (R8, R9) | |
+| R5 | Checkpoint reporter (50/100–200/500/1500) | Composer | `../pm-r4-r5` `r4/r5` | stage test | running | |
 | R6 | Real DK price on paper tickets | Composer | `../pm-r4-r6` | % real price | pending | |
 | D1 | True close on every league's settle | Composer | — | check | pending | |
 | D2 | Serie A verdict | Auto / Composer | `../pm-r4-d2` | fold table | pending (A1, B4) | |
@@ -54,4 +58,6 @@ Never redo a `done` row. Specs = `PLAN.md` § Wave tables. r3 W16 still external
 | 2026-11-07 | A2 merged @ 597cd2a; A1 merged @ a537a6c (167 tests, 11 py). Launched A5 + B1–B9 + C7. |
 | 2026-11-07 | User: record data so any model can be re-run without cheating → Wave R (R1–R6) added; R1/R2 should amend A1 while it is running. |
 | 2026-11-07 | A3 merged @ 3ddce67 (172 tests). A4 census done. Launched C6-epl, C6-bundesliga, C6-nhl. |
-| 2026-11-07 | C6-epl branch: EplSportPack + FD import/backtest/shadow; Tier C holdout locked `2025-2026` before tuning (`c6_epl_proof.md`). |
+| 2026-11-07 | B9 merged @ 10ef936 (174 tests). |
+| 2026-11-07 | User: blind day-by-day sim for any new approach → R7–R10 added; recommend R7–R9 before wave B (variants written once as strategies). |
+| 2026-11-07 | Merged B2, B5, C2, C4 (191+ tests). |

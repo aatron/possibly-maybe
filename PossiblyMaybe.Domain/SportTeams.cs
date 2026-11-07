@@ -358,9 +358,10 @@ public static class SportTeams
         // Oregon cardinal set → codes OregonExclusion already knows
         ["Oregon"] = "ore", ["Oregon Ducks"] = "ore", ["Ducks"] = "ore",
         ["Oregon State"] = "orst", ["OregonState"] = "orst", ["Oregon St"] = "orst",
-        ["Oregon St."] = "orst", ["Oregon State Beavers"] = "orst", ["Beavers"] = "orst",
+        ["Oregon St."] = "orst", ["OregonSt"] = "orst", ["Oregon State Beavers"] = "orst",
+        ["Oregon St Beavers"] = "orst", ["Beavers"] = "orst",
         ["Portland State"] = "port", ["PortlandState"] = "port", ["Portland St"] = "port",
-        ["Portland St."] = "port", ["Portland State Vikings"] = "port",
+        ["Portland St."] = "port", ["PortlandSt"] = "port", ["Portland State Vikings"] = "port",
         ["Portland U"] = "up", ["PortlandU"] = "up", ["University of Portland"] = "up",
         ["Portland Pilots"] = "up", ["Pilots"] = "up", ["Portlandu"] = "up",
     };
