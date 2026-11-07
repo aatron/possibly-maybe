@@ -18,6 +18,7 @@ public static class KalshiQuotes
         ["SERIEA"] = "KXSERIEATOTAL",
         ["LIGAMX"] = "KXLIGAMXTOTAL",
         ["NHL"] = "KXNHLTOTAL",
+        ["EPL"] = "KXEPLTOTAL",
     };
 
     /// <summary>Public series ticker for a sport, or null when unwired.</summary>

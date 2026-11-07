@@ -11,6 +11,7 @@ public class KalshiQuotesTests
     [Arguments("SERIEA", "KXSERIEATOTAL")]
     [Arguments("LIGAMX", "KXLIGAMXTOTAL")]
     [Arguments("NHL", "KXNHLTOTAL")]
+    [Arguments("EPL", "KXEPLTOTAL")]
     [Arguments("ligue1", "KXLIGUE1TOTAL")]
     public async Task TrySeriesTicker_WiredSports(string sport, string ticker)
         => await Assert.That(KalshiQuotes.TrySeriesTicker(sport)).IsEqualTo(ticker);

@@ -12,7 +12,15 @@ public class OregonExclusionTests
     [Arguments("MLS", "Portland Timbers")]
     [Arguments("MLS", "POR")]
     [Arguments("NCAAF", "Oregon Ducks")]
+    [Arguments("NCAAF", "Oregon")]
     [Arguments("NCAAF", "Oregon State")]
+    [Arguments("NCAAF", "OregonState")]
+    [Arguments("NCAAF", "Oregon St")]
+    [Arguments("NCAAF", "Oregon St.")]
+    [Arguments("NCAAF", "OregonSt")]
+    [Arguments("NCAAF", "Oregon State Beavers")]
+    [Arguments("NCAAF", "Beavers")]
+    [Arguments("NCAAF", "ORE")]
     [Arguments("NCAAB", "Oregon St.")]
     [Arguments("NCAAB", "Oregon State Beavers")]
     [Arguments("NCAAF", "ORST")]
@@ -32,6 +40,7 @@ public class OregonExclusionTests
     [Arguments("NCAAB", "UP")]
     [Arguments("NCAAB", "PORTLANDU")]
     [Arguments("NCAAF", "University of Oregon")]
+    [Arguments("NCAAF", "Oregon State University")]
     [Arguments("NCAAB", "Oregon State University")]
     [Arguments("NCAAB", "Portland State University")]
     [Arguments("NCAAB", "U of Portland")]
@@ -44,6 +53,20 @@ public class OregonExclusionTests
     [Arguments(null, "Eugene Emeralds")]
     public async Task Excluded(string sport, string team)
         => await Assert.That(OregonExclusion.IsExcluded(sport, team)).IsTrue();
+
+    [Test]
+    public async Task Ncaaf_SbroCodes_MapToExclusion()
+    {
+        // SBRO football spellings → NcaaCode → OregonExclusion
+        await Assert.That(SportTeams.NcaaCode("Oregon")).IsEqualTo("ore");
+        await Assert.That(SportTeams.NcaaCode("OregonState")).IsEqualTo("orst");
+        await Assert.That(SportTeams.NcaaCode("PortlandSt")).IsEqualTo("port");
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", SportTeams.NcaaCode("Oregon"))).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", SportTeams.NcaaCode("OregonState"))).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAF", SportTeams.NcaaCode("PortlandSt"))).IsTrue();
+        await Assert.That(OregonExclusion.IsExcludedGameKey("NCAAF", "20211113 ore@stanford")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcludedGameKey("NCAAF", "20211113 orst@ucla")).IsTrue();
+    }
 
     [Test]
     [Arguments("NCAAF", "Ohio State")]

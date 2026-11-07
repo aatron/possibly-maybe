@@ -24,6 +24,11 @@ public sealed class ShadowEntry
     public double? PnL { get; set; }
     public double? CloseLine { get; set; }
     public double? ClvPts { get; set; }
+    /// <summary>Book label for CloseLine (R3). Shadow defaults to DraftKings.</summary>
+    public string? CloseBook { get; set; }
+    public DateTimeOffset? CloseCapturedAt { get; set; }
+    public double? MinutesBeforeStart { get; set; }
+    public bool CrossBookClose { get; set; }
     public DateTimeOffset? SettledAt { get; set; }
 }
 
@@ -98,7 +103,23 @@ public static class VariantLedger
         await db.Database.EnsureCreatedAsync(ct);
         // EnsureCreated is a no-op when ShadowEntries already exists — add Candidates additively.
         await EnsureCandidateTableAsync(db, ct);
+        await EnsureShadowCloseColumnsAsync(db, ct);
         return (db, dbPath);
+    }
+
+    static async Task EnsureShadowCloseColumnsAsync(VariantDbContext db, CancellationToken ct)
+    {
+        foreach (var sql in new[]
+                 {
+                     "ALTER TABLE ShadowEntries ADD COLUMN CloseBook TEXT",
+                     "ALTER TABLE ShadowEntries ADD COLUMN CloseCapturedAt TEXT",
+                     "ALTER TABLE ShadowEntries ADD COLUMN MinutesBeforeStart REAL",
+                     "ALTER TABLE ShadowEntries ADD COLUMN CrossBookClose INTEGER NOT NULL DEFAULT 0",
+                 })
+        {
+            try { await db.Database.ExecuteSqlRawAsync(sql, ct); }
+            catch { /* duplicate column */ }
+        }
     }
 
     /// <summary>EnsureCreated never ALTERs / never adds tables to an existing DB.</summary>

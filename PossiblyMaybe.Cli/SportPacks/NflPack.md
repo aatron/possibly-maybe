@@ -4,8 +4,8 @@
 
 ## Are we using football-critical metrics today?
 
-**No.** Data landed locally; no NFL totals model yet.  
-NBA “pace × ORtg” is the right *shape*, but NFL needs **plays/EPA**, not basketball possessions.
+**Partial (C3).** Pack + EPA/roof backtest + `nfl-wind` Tier A on filled O→C exist; still HOLD FAIL (not money).  
+NBA “pace × ORtg” is the right *shape*; NFL uses **EPA + pace**, with wind as a narrow arm.
 
 ## What sites say matters for NFL totals (ranked)
 
@@ -25,9 +25,10 @@ Dome/closed roof ≈ small over bump. Cold alone is often already priced; **wind
 - [x] Spreadspoke → `data/raw/kaggle/nfl_scores_and_betting/` (~14k games, **close** OU)
 - [x] minmaxer → `data/raw/kaggle/nfl_odds_2026/nfl_2026_odds.csv` (**open/close**, only **~92** games in 2026 — too thin for a full Gate 1 holdout alone)
 - [x] nflverse close-only → `data/raw/nfl/nflverse_games.csv`
-- [ ] Import sport-tagged games + totals
-- [ ] Need **more NFL open→close history** before a serious kill gate (92 rows ≠ season holdout)
-- [ ] Feature ingest: nflverse EPA/pace (free) before claiming soft spots
+- [x] Import sport-tagged games + totals (`import-nfl` + O→C overlays)
+- [x] Multi-season O→C (SBRO/flancast 2007–21 + ESPN 2023–24) — see warehouse
+- [x] Feature ingest: pregame EPA CSV + `NflGameContext` roof/wind
+- [x] C3: `NflSportPack`, `tier-a-nfl-wind`, shadow series notes (`NflShadowMarkets`)
 
 ## Gate 1 feature order
 
