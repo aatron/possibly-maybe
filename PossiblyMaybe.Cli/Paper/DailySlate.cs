@@ -39,6 +39,7 @@ public static class DailySlate
             ["SERIEA"] = "ita.1",
             ["LALIGA"] = "esp.1",
             ["EFL"] = "eng.2",
+            ["BUNDESLIGA"] = "ger.1",
             ["EPL"] = "eng.1",
         };
 
@@ -114,14 +115,14 @@ public static class DailySlate
     public static Task RunMlsAsync(string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
         => RunSoccerAsync("MLS", dbPath, yyyymmdd, bankroll, ct);
 
-    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow (LALIGA/EFL/EPL).</summary>
+    /// <summary>Soccer totals: paper HOLD-PASS (MLS/LIGUE1/LIGAMX/SERIEA) or shadow (LALIGA/EFL/EPL/BUNDESLIGA).</summary>
     public static async Task RunSoccerAsync(
         string sport, string dbPath, string yyyymmdd, double bankroll, CancellationToken ct = default)
     {
         sport = sport.ToUpperInvariant();
         if (!SoccerEspnPaths.ContainsKey(sport))
             throw new ArgumentException(
-                $"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL, EPL.");
+                $"No live slate for {sport}. Paper: MLS, LIGUE1, LIGAMX, SERIEA. Shadow: LALIGA, EFL, EPL, BUNDESLIGA.");
 
         List<SlateCandidate> candidates;
         try
@@ -144,6 +145,7 @@ public static class DailySlate
             "SERIEA" => SerieAChampConfig.Model,
             "LALIGA" => SportPackRegistry.LaLiga.Model,
             "EFL" => SportPackRegistry.Efl.Model,
+            "BUNDESLIGA" => SportPackRegistry.Bundesliga.Model,
             "EPL" => SportPackRegistry.Epl.Model,
             _ => sport,
         };
@@ -449,9 +451,15 @@ public static class DailySlate
                 });
         }
 
-        if (sport is "LALIGA" or "EFL" or "EPL")
+        if (sport is "LALIGA" or "EFL" or "EPL" or "BUNDESLIGA")
         {
-            var pack = SportPackRegistry.Get(sport);
+            var pack = sport switch
+            {
+                "LALIGA" => SportPackRegistry.LaLiga,
+                "EFL" => SportPackRegistry.Efl,
+                "EPL" => SportPackRegistry.Epl,
+                _ => SportPackRegistry.Bundesliga,
+            };
             var book = new ScoringBook(alpha: pack.EmaAlpha, leagueInit: 2.7);
             foreach (var g in games)
                 book.Update(g.HomeTeam, g.AwayTeam, g.HomeScore!.Value, g.AwayScore!.Value);

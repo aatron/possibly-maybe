@@ -168,6 +168,14 @@ public static class SportTeams
         return LigaMx.TryGetValue(t, out var c) ? c : null;
     }
 
+    /// <summary>Map ESPN / FD / common names → warehouse Bundesliga team strings (Kaggle canon).</summary>
+    public static string? TryBundesliga(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return Bundesliga.TryGetValue(t, out var c) ? c : null;
+    }
+
     /// <summary>Map ESPN / common names → warehouse EPL (Premier League) team strings.</summary>
     public static string? TryEpl(string? raw)
     {
@@ -343,6 +351,47 @@ public static class SportTeams
         ["Lincoln City"] = "Lincoln City", ["Lincoln"] = "Lincoln City",
     };
 
+    // Warehouse canon = Kaggle football-odds-movements Bundesliga names.
+    private static readonly Dictionary<string, string> Bundesliga = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Arminia Bielefeld"] = "Arminia Bielefeld", ["Bielefeld"] = "Arminia Bielefeld",
+        ["Augsburg"] = "Augsburg", ["FC Augsburg"] = "Augsburg", ["FCA"] = "Augsburg",
+        ["Bayer Leverkusen"] = "Bayer Leverkusen", ["Leverkusen"] = "Bayer Leverkusen", ["B04"] = "Bayer Leverkusen",
+        ["Bayern Munchen"] = "Bayern Munchen", ["Bayern München"] = "Bayern Munchen",
+        ["Bayern Munich"] = "Bayern Munchen", ["Bayern"] = "Bayern Munchen", ["MUN"] = "Bayern Munchen",
+        ["Borussia Dortmund"] = "Borussia Dortmund", ["Dortmund"] = "Borussia Dortmund", ["DOR"] = "Borussia Dortmund",
+        ["Borussia Monchengladbach"] = "Borussia Monchengladbach",
+        ["Borussia Mönchengladbach"] = "Borussia Monchengladbach",
+        ["M'gladbach"] = "Borussia Monchengladbach", ["Gladbach"] = "Borussia Monchengladbach",
+        ["BMG"] = "Borussia Monchengladbach",
+        ["Darmstadt"] = "Darmstadt", ["Darmstadt 98"] = "Darmstadt", ["SV Darmstadt 98"] = "Darmstadt",
+        ["Eintracht Frankfurt"] = "Eintracht Frankfurt", ["Frankfurt"] = "Eintracht Frankfurt", ["SGE"] = "Eintracht Frankfurt",
+        ["FC Koln"] = "FC Koln", ["FC Köln"] = "FC Koln", ["FC Cologne"] = "FC Koln", ["Cologne"] = "FC Koln",
+        ["Köln"] = "FC Koln", ["Koln"] = "FC Koln", ["KOE"] = "FC Koln",
+        ["FSV Mainz 05"] = "FSV Mainz 05", ["Mainz"] = "FSV Mainz 05", ["Mainz 05"] = "FSV Mainz 05", ["M05"] = "FSV Mainz 05",
+        ["Fortuna Dusseldorf"] = "Fortuna Dusseldorf", ["Fortuna Düsseldorf"] = "Fortuna Dusseldorf",
+        ["Düsseldorf"] = "Fortuna Dusseldorf", ["Dusseldorf"] = "Fortuna Dusseldorf",
+        ["Greuther Furth"] = "Greuther Furth", ["Greuther Fürth"] = "Greuther Furth", ["Fürth"] = "Greuther Furth",
+        ["Hamburger SV"] = "Hamburger SV", ["Hamburg SV"] = "Hamburger SV", ["Hamburg"] = "Hamburger SV", ["HSV"] = "Hamburger SV",
+        ["Hannover 96"] = "Hannover 96", ["Hannover"] = "Hannover 96",
+        ["Heidenheimer"] = "Heidenheimer", ["Heidenheim"] = "Heidenheimer", ["1. FC Heidenheim"] = "Heidenheimer",
+        ["Hertha Berlin"] = "Hertha Berlin", ["Hertha BSC"] = "Hertha Berlin", ["Hertha"] = "Hertha Berlin",
+        ["Holstein Kiel"] = "Holstein Kiel", ["Kiel"] = "Holstein Kiel",
+        ["Nurnberg"] = "Nurnberg", ["Nürnberg"] = "Nurnberg", ["1. FC Nürnberg"] = "Nurnberg", ["Nuremberg"] = "Nurnberg",
+        ["RB Leipzig"] = "RB Leipzig", ["Leipzig"] = "RB Leipzig", ["RBL"] = "RB Leipzig",
+        ["SC Freiburg"] = "SC Freiburg", ["Freiburg"] = "SC Freiburg", ["SCF"] = "SC Freiburg",
+        ["SC Paderborn 07"] = "SC Paderborn 07", ["Paderborn"] = "SC Paderborn 07", ["SCP"] = "SC Paderborn 07",
+        ["Schalke 04"] = "Schalke 04", ["Schalke"] = "Schalke 04", ["S04"] = "Schalke 04",
+        ["St. Pauli"] = "St. Pauli", ["St Pauli"] = "St. Pauli", ["FC St. Pauli"] = "St. Pauli",
+        ["TSG Hoffenheim"] = "TSG Hoffenheim", ["Hoffenheim"] = "TSG Hoffenheim", ["TSG"] = "TSG Hoffenheim",
+        ["Union Berlin"] = "Union Berlin", ["1. FC Union Berlin"] = "Union Berlin", ["FCU"] = "Union Berlin",
+        ["VfB Stuttgart"] = "VfB Stuttgart", ["Stuttgart"] = "VfB Stuttgart", ["VFB"] = "VfB Stuttgart",
+        ["VfL Bochum"] = "VfL Bochum", ["Bochum"] = "VfL Bochum",
+        ["VfL Wolfsburg"] = "VfL Wolfsburg", ["Wolfsburg"] = "VfL Wolfsburg",
+        ["Werder Bremen"] = "Werder Bremen", ["Bremen"] = "Werder Bremen", ["SVW"] = "Werder Bremen",
+        ["SV Elversberg"] = "SV Elversberg", ["Elversberg"] = "SV Elversberg", ["ELV"] = "SV Elversberg",
+    };
+
     private static readonly Dictionary<string, string> Epl = new(StringComparer.OrdinalIgnoreCase)
     {
         ["AFC Bournemouth"] = "AFC Bournemouth", ["Bournemouth"] = "AFC Bournemouth", ["BOU"] = "AFC Bournemouth",
@@ -392,7 +441,7 @@ public static class SportTeams
         Func<string?, string?> map = sport.ToUpperInvariant() switch
         {
             "MLS" => TryMls, "LIGUE1" => TryLigue1, "SERIEA" => TrySerieA, "LIGAMX" => TryLigaMx,
-            "EPL" => TryEpl, "LALIGA" => TryLaLiga, "EFL" => TryEfl, _ => _ => null,
+            "EPL" => TryEpl, "LALIGA" => TryLaLiga, "EFL" => TryEfl, "BUNDESLIGA" => TryBundesliga, _ => _ => null,
         };
         var hit = map(display) ?? map(shortName);
         if (hit is not null) return hit;

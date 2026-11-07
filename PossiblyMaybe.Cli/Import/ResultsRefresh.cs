@@ -9,13 +9,13 @@ namespace PossiblyMaybe.Cli.Import;
 
 /// <summary>
 /// Daily incremental refresh of completed results for paper + shadow leagues
-/// (NBA + MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL) from the ESPN scoreboard, plus NBA box lines
+/// (NBA + MLS/LIGUE1/LIGAMX/SERIEA/LALIGA/EFL/EPL/BUNDESLIGA) from the ESPN scoreboard, plus NBA box lines
 /// (ESPN summary) and MLS xG (ASA). Idempotent via SourceKey.
 /// </summary>
 public static class ResultsRefresh
 {
     public static readonly string[] Leagues =
-        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL"];
+        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL", "BUNDESLIGA"];
 
     private static readonly HttpClient Http = new()
     {
@@ -32,6 +32,7 @@ public static class ResultsRefresh
         ["SERIEA"] = "soccer/ita.1",
         ["LALIGA"] = "soccer/esp.1",
         ["EFL"] = "soccer/eng.2",
+        ["BUNDESLIGA"] = "soccer/ger.1",
         ["EPL"] = "soccer/eng.1",
     };
 

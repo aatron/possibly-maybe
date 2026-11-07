@@ -81,6 +81,39 @@ public class SportPackTests
     }
 
     [Test]
+
+    public async Task Bundesliga_Pack_Locks_TierC_And_Oregon()
+    {
+        var pack = SportPackRegistry.Get("BUNDESLIGA");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("BUNDESLIGA");
+        await Assert.That(pack.Market).IsEqualTo(BundesligaShadowConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(BundesligaShadowConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(BundesligaShadowConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(BundesligaShadowConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(BundesligaShadowConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(BundesligaShadowConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(BundesligaShadowConfig.BankrollSeed);
+        // Tier C locked in c6_bundesliga_proof.md before any gate tuning
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2024-2025");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2025-2026");
+        await Assert.That(pack.SkipSeason).IsEqualTo("");
+        await Assert.That(pack.TierAFolds).IsEquivalentTo(
+            ["2018-2019", "2019-2020", "2020-2021", "2021-2022", "2022-2023", "2023-2024"]);
+        await Assert.That(pack.OregonNames.Count).IsEqualTo(0);
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+        await Assert.That(pack.ResolveAlias("Bayern Munich")).IsEqualTo("Bayern Munchen");
+        await Assert.That(pack.ResolveAlias("Borussia Mönchengladbach")).IsEqualTo("Borussia Monchengladbach");
+        await Assert.That(pack.ResolveAlias("FC Cologne")).IsEqualTo("FC Koln");
+        await Assert.That(SportTeams.ResolveSoccer("BUNDESLIGA", "MUN", "Bayern Munich", "Bayern"))
+            .IsEqualTo("Bayern Munchen");
+
+        await Assert.That(OregonExclusion.IsExcluded("BUNDESLIGA", "Bayern Munich")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("BUNDESLIGA", "Dortmund")).IsFalse();
+        await Assert.That(OregonExclusion.IsExcluded("MLS", "Portland Timbers")).IsTrue();
+    }
+
+    [Test]
     public async Task Ncaab_Pack_Matches_ChampConfig_Oregon_And_HoldoutLock()
     {
         var pack = SportPackRegistry.Get("NCAAB");

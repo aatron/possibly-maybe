@@ -49,6 +49,7 @@ SPORTS_BASE: dict[str, dict] = {
     "SERIEA": {"espn": "soccer/ita.1", "kalshi": "KXSERIEATOTAL", "cdc": None},
     "LALIGA": {"espn": "soccer/esp.1", "kalshi": None, "cdc": None},  # no public Kalshi totals series known
     "EFL": {"espn": "soccer/eng.2", "kalshi": None, "cdc": None},  # Championship; no public series known
+    "BUNDESLIGA": {"espn": "soccer/ger.1", "kalshi": "KXBUNDESLIGATOTAL", "cdc": None},  # Crypto kind TBD
     "EPL": {"espn": "soccer/eng.1", "kalshi": "KXEPLTOTAL", "cdc": "EPL"},
 }
 # ESPN abbr -> repo GameKey code (SportTeams.cs / TeamCodes conventions)

@@ -19,9 +19,9 @@ public static class VariantBackfill
     public static readonly string ReplayStart = "20261030";
     public static readonly string ReplayEnd = "20261106";
 
-    /// <summary>r3 path + C6 shadow leagues — backfill every season present in the warehouse for these.</summary>
+    /// <summary>Paper + shadow leagues — backfill every season present in the warehouse for these.</summary>
     public static readonly string[] R3Leagues =
-        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL"];
+        ["NBA", "MLS", "LIGUE1", "LIGAMX", "SERIEA", "LALIGA", "EFL", "EPL", "BUNDESLIGA"];
 
     public static async Task RunAsync(
         string warehouseDbPath,
@@ -134,6 +134,8 @@ public static class VariantBackfill
                 LaLigaShadowConfig.EmaAlpha, false),
             "EFL" => (EflShadowConfig.MarketWeight, EflShadowConfig.MinAbsTotalEdge, EflShadowConfig.MinEv,
                 EflShadowConfig.EmaAlpha, false),
+            "BUNDESLIGA" => (BundesligaShadowConfig.MarketWeight, BundesligaShadowConfig.MinAbsTotalEdge,
+                BundesligaShadowConfig.MinEv, BundesligaShadowConfig.EmaAlpha, false),
             "EPL" => (EplChampConfig.MarketWeight, EplChampConfig.MinAbsTotalEdge, EplChampConfig.MinEv,
                 EplChampConfig.EmaAlpha, false),
             _ => throw new ArgumentException(sport),

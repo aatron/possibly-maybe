@@ -6,6 +6,7 @@ public static class SportPackRegistry
     static readonly Dictionary<string, SportPack> ById =
         new(StringComparer.OrdinalIgnoreCase)
         {
+            [BundesligaSportPack.Instance.LeagueId] = BundesligaSportPack.Instance,
             [EflSportPack.Instance.LeagueId] = EflSportPack.Instance,
             [EplSportPack.Instance.LeagueId] = EplSportPack.Instance,
             [LaLigaSportPack.Instance.LeagueId] = LaLigaSportPack.Instance,
@@ -16,6 +17,7 @@ public static class SportPackRegistry
             [NflSportPack.Instance.LeagueId] = NflSportPack.Instance,
         };
 
+    public static SportPack Bundesliga => BundesligaSportPack.Instance;
     public static SportPack Efl => EflSportPack.Instance;
     public static SportPack Epl => EplSportPack.Instance;
     public static SportPack LaLiga => LaLigaSportPack.Instance;

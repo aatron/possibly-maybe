@@ -41,6 +41,8 @@ public class ResultsRefreshTests
     [Arguments("LIGAMX", "UNAM", "Pumas UNAM", "Pumas U.N.A.M.")]
     [Arguments("LIGAMX", "ASL", "Atlético de San Luis", "Atletico San Luis")]
     [Arguments("SERIEA", "INT", "Internazionale", "Inter Milan")]
+    [Arguments("BUNDESLIGA", "MUN", "Bayern Munich", "Bayern Munchen")]
+    [Arguments("BUNDESLIGA", "BMG", "Borussia Mönchengladbach", "Borussia Monchengladbach")]
     [Arguments("MLS", "LA", "LA Galaxy", "LAG")]
     [Arguments("MLS", "XXX", "Brand New FC", "Brand New FC")]
     public async Task ResolveSoccer_NamesWinAndNewClubsNeverAlias(string sport, string abbr, string display, string expected)
