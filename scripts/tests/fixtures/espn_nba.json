@@ -1,0 +1,43 @@
+{
+ "events": [
+  {
+   "date": "2026-11-08T01:00Z",
+   "status": {
+    "type": {"state": "pre", "completed": false}
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {"homeAway": "home", "team": {"abbreviation": "BOS", "name": "Celtics"}},
+      {"homeAway": "away", "team": {"abbreviation": "GS", "name": "Warriors"}}
+     ],
+     "odds": [
+      {
+       "provider": {"name": "Draft Kings"},
+       "overUnder": 225.5,
+       "total": {
+        "over": {"close": {"odds": "-110"}, "open": {"line": "o224.5", "odds": "-110"}},
+        "under": {"close": {"odds": "-110"}, "open": {"line": "u224.5", "odds": "-110"}}
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "date": "2026-11-07T00:00Z",
+   "status": {
+    "type": {"state": "post", "completed": true}
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {"homeAway": "home", "team": {"abbreviation": "NY", "name": "Knicks"}},
+      {"homeAway": "away", "team": {"abbreviation": "MIA", "name": "Heat"}}
+     ],
+     "odds": []
+    }
+   ]
+  }
+ ]
+}
