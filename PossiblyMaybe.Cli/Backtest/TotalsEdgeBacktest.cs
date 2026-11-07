@@ -331,6 +331,110 @@ public static class TotalsEdgeBacktest
     }
 
     /// <summary>
+    /// Same as <see cref="RunSeasonFoldAsync"/> but splits champ-eligible bets into kept vs removed
+    /// by optional edge-cap / line-move guards. Open→close stands in for open→current until W3 mid-snaps.
+    /// </summary>
+    public static async Task<(Gate1aResult Kept, Gate1aResult Removed)> RunSeasonFoldGuardedAsync(
+        string dbPath,
+        string testSeason,
+        double marketWeight,
+        double minEv,
+        double minAbsEdge,
+        double? edgeCap,
+        double? lineMoveK,
+        TotalsModelKind model = TotalsModelKind.PaceEffNormal,
+        double alpha = 0.15,
+        CancellationToken ct = default)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+        await using var db = new AppDbContext(options);
+
+        var games = (await db.Games.AsNoTracking()
+                .Where(g => g.Sport == "NBA" && g.HomeScore != null && g.AwayScore != null)
+                .ToListAsync(ct))
+            .Where(g => string.CompareOrdinal(g.Season, HoldoutSeason) < 0)
+            .OrderBy(g => g.TipoffUtc).ThenBy(g => g.Id)
+            .ToList();
+
+        var odds = await db.OddsSnapshots.AsNoTracking()
+            .Where(o => o.Market == "TOTAL")
+            .ToListAsync(ct);
+        var byGame = odds.GroupBy(o => o.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        Dictionary<int, GameBox> boxes = [];
+        try { boxes = await db.GameBoxes.AsNoTracking().ToDictionaryAsync(b => b.GameId, ct); }
+        catch { /* older DB */ }
+
+        var pace = new PaceEfficiencyBook(alpha: alpha);
+        var kept = new Acc($"kept_{testSeason}");
+        var removed = new Acc($"removed_{testSeason}");
+        ExpandingResidualSigma? residualSigma = model == TotalsModelKind.PaceEffNormal
+            ? new ExpandingResidualSigma()
+            : null;
+
+        foreach (var g in games)
+        {
+            byGame.TryGetValue(g.Id, out var snaps);
+            snaps ??= [];
+            var open = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Open);
+            var close = snaps.FirstOrDefault(s => s.PriceKind == PriceKind.Close);
+            var modelExp = pace.ExpectedTotal(g.HomeTeam, g.AwayTeam);
+
+            if (open?.Line is { } line && close?.Line is { } closeLine
+                && Math.Abs(line - closeLine) >= 0.25)
+            {
+                var exp = marketWeight * line + (1 - marketWeight) * modelExp;
+                var edge = exp - line;
+                var juice = open.AmericanOdds == 0 ? -110 : open.AmericanOdds;
+                var ou = TotalsMath.OuResult(g.HomeScore!.Value, g.AwayScore!.Value, line);
+                var clvOver = TotalsMath.OverClvPoints(line, closeLine);
+                var pOver = residualSigma is not null
+                    ? TotalsMath.NormalOverProb(exp, line, residualSigma.Sigma)
+                    : TotalsMath.OverProb(exp, line);
+
+                if (g.Season == testSeason
+                    && Math.Abs(edge) >= minAbsEdge
+                    && !OregonExclusion.IsExcluded("NBA", g.HomeTeam, g.AwayTeam))
+                {
+                    void Place(string side, double p, double clv, bool won, double pnl)
+                    {
+                        var ev = OddsMath.ExpectedValue(p, juice);
+                        if (ev < minEv) return;
+                        var edgeHit = edgeCap is { } cap && Guards.ExceedsEdgeCap(ev, cap);
+                        var moveHit = lineMoveK is { } k
+                            && Guards.LineMovedAgainst(side, line, closeLine, k);
+                        var acc = edgeHit || moveHit ? removed : kept;
+                        acc.AddBet(clv, won, pnl,
+                            kellyPnl: pnl * OddsMath.FractionalKelly(p, juice, 0.25));
+                    }
+
+                    if (edge > 0)
+                        Place("over", pOver, clvOver, ou > 0, TotalsMath.OuPnL(juice, ou));
+                    else
+                        Place("under", 1 - pOver, -clvOver, ou < 0, TotalsMath.OuPnL(juice, -ou));
+                }
+
+                if (g.Season == testSeason)
+                    kept.AddGame();
+
+                residualSigma?.Observe(g.HomeScore!.Value + g.AwayScore!.Value - exp);
+            }
+
+            if (boxes.TryGetValue(g.Id, out var box))
+            {
+                pace.Update(
+                    g.HomeTeam, g.AwayTeam,
+                    box.FgaHome, box.OrebHome, box.TovHome, box.FtaHome, box.PtsHome, box.Fg3aHome,
+                    box.FgaAway, box.OrebAway, box.TovAway, box.FtaAway, box.PtsAway, box.Fg3aAway);
+            }
+        }
+
+        return (kept.ToResult(), removed.ToResult());
+    }
+
+    /// <summary>
     /// Soft-threshold OLS of (actual−modelExp) on B2B-count using TRAIN seasons only.
     /// Returns 0 if |β| &lt; thresh (L1-style drop).
     /// </summary>

@@ -275,6 +275,26 @@ switch (command)
         await PoissonCdfTierA.RunAsync(dbPath, filter);
         return 0;
     }
+    case "tier-a-guards":
+    {
+        // tier-a-guards [db] — edge-cap + line-move Tier A sweep + removed-bet proof
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 && args[^1].EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            ? args[^1]
+            : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await GuardSweepTierA.RunAsync(dbPath);
+        return 0;
+    }
     case "tier-c-poisson":
     {
         // Parent look-once only. Do not re-run after results are logged.
@@ -652,6 +672,7 @@ static void PrintUsage()
           sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
+          tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof
           sweep-decay [db]           EMA α half-life + sparse B2B (library sparsity)
           slate-nba [yyyymmdd] [bank]  Today's NBA totals soft spots (PaceEff)
           slate-mls [yyyymmdd] [bank]  Today's MLS totals soft spots (paper)
