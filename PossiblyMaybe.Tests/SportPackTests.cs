@@ -42,4 +42,41 @@ public class SportPackTests
         await Assert.That(OregonExclusion.IsExcluded("WNBA", "POR")).IsTrue();
         await Assert.That(OregonExclusion.IsExcluded("MLS", "Chicago Fire")).IsFalse();
     }
+
+    [Test]
+    public async Task Ncaab_Pack_Matches_ChampConfig_Oregon_And_HoldoutLock()
+    {
+        var pack = SportPackRegistry.Get("NCAAB");
+
+        await Assert.That(pack.LeagueId).IsEqualTo("NCAAB");
+        await Assert.That(pack.Market).IsEqualTo(NcaabChampConfig.Market);
+        await Assert.That(pack.Model).IsEqualTo(NcaabChampConfig.Model);
+        await Assert.That(pack.MarketWeight).IsEqualTo(NcaabChampConfig.MarketWeight);
+        await Assert.That(pack.MinEv).IsEqualTo(NcaabChampConfig.MinEv);
+        await Assert.That(pack.MinAbsTotalEdge).IsEqualTo(NcaabChampConfig.MinAbsTotalEdge);
+        await Assert.That(pack.EmaAlpha).IsEqualTo(NcaabChampConfig.EmaAlpha);
+        await Assert.That(pack.BankrollSeed).IsEqualTo(NcaabChampConfig.BankrollSeed);
+        // Tier C locked before tuning (last SBRO season)
+        await Assert.That(pack.TrainMaxSeason).IsEqualTo("2020-21");
+        await Assert.That(pack.TierCHoldoutSeason).IsEqualTo("2021-22");
+        await Assert.That(pack.SkipSeason).IsEqualTo("2022-23");
+        await Assert.That(NcaabTotalsBacktestHoldout()).IsEqualTo("2021-22");
+        await Assert.That(pack.RatingBookKind).IsEqualTo("PaceEfficiencyBook+ScoringBook-fallback");
+        await Assert.That(pack.TierAFolds).IsEquivalentTo(
+            ["2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21"]);
+        await Assert.That(pack.ResolveAlias("Oregon Ducks")).IsEqualTo("ore");
+        await Assert.That(pack.ResolveAlias("OregonState")).IsEqualTo("orst");
+        await Assert.That(pack.ResolveAlias("Portland Pilots")).IsEqualTo("up");
+        await Assert.That(pack.ResolveAlias("Duke")).IsEqualTo("duke");
+        await Assert.That(pack.OregonNamesExcluded()).IsTrue();
+
+        await Assert.That(OregonExclusion.IsExcluded("NCAAB", "Oregon Ducks")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAB", "Oregon State")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAB", "Portland State")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAB", "Portland Pilots")).IsTrue();
+        await Assert.That(OregonExclusion.IsExcluded("NCAAB", "Duke")).IsFalse();
+    }
+
+    // Avoid Cli project ref from tests for holdout string — pack is source of truth.
+    static string NcaabTotalsBacktestHoldout() => SportPackRegistry.Ncaab.TierCHoldoutSeason;
 }

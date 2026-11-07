@@ -230,6 +230,23 @@ switch (command)
         await MlsTotalsBacktest.SweepAsync(dbPath);
         return 0;
     }
+    case "sweep-ncaab":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = args.Length > 1 ? args[1] : Path.Combine(repoRoot, "possiblymaybe.db");
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}. Run import-disk-odds first.");
+            return 2;
+        }
+        await NcaabTotalsBacktest.SweepAsync(dbPath);
+        return 0;
+    }
     case "sweep-soccer":
     {
         // sweep-soccer <SPORT> <holdoutSeason> [db]  e.g. sweep-soccer EFL 2024-2025
@@ -408,6 +425,28 @@ switch (command)
             return 2;
         }
         await DailySlate.RunNbaAsync(dbPath, date, bank);
+        return 0;
+    }
+    case "slate-ncaab":
+    {
+        var repoRoot = FindRepoRoot();
+        var dbPath = Path.Combine(repoRoot, "possiblymaybe.db");
+        var date = args.Length > 1 && args[1].Length == 8 ? args[1]
+            : DateTime.UtcNow.ToString("yyyyMMdd");
+        var bank = args.Length > 2 && double.TryParse(args[^1], out var b) ? b : NcaabChampConfig.BankrollSeed;
+        if (args.Length > 1 && args[1].EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            dbPath = args[1];
+        if (!File.Exists(dbPath))
+        {
+            var alt = Path.GetFullPath(Path.Combine(repoRoot, "..", "possibly-maybe", "possiblymaybe.db"));
+            if (File.Exists(alt)) dbPath = alt;
+        }
+        if (!File.Exists(dbPath))
+        {
+            Console.Error.WriteLine($"DB not found: {dbPath}");
+            return 2;
+        }
+        await DailySlate.RunNcaabAsync(dbPath, date, bank);
         return 0;
     }
     case "slate-mls":
@@ -802,7 +841,8 @@ static void PrintUsage()
           import-round2-odds [db]    D1 flancast NFL O→C overlay + MLB 2011–21
           import-line-tracker [snapshots.db] [db]  Tracker open/close → OddsSnapshots
           import-disk-odds [db]      W15 on-disk SBRO NFL/NBA/NCAA + Arnav MLB O→C
-          sweep-mlb / sweep-nfl / sweep-mls      Soft-spot sweeps (MLB / NFL / MLS)
+          sweep-mlb / sweep-nfl / sweep-mls / sweep-ncaab  Soft-spot sweeps
+          slate-ncaab [yyyymmdd] [bank]  NCAAB totals shadow slate (PaceEff/Scoring)
           sweep-soccer-dc <SPORT> <hold> [db]  Dixon–Coles att-def EMA totals
           tier-a-poisson [SPORT|all] [db]  Tier A poisson-cdf-pover (pre-holdout folds)
           tier-a-guards [db]             Edge-cap + line-move Tier A + removed-bet proof

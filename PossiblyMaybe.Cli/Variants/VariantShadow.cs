@@ -20,6 +20,14 @@ public static class VariantShadow
 
         var candidates = new List<SlateCandidate>();
         candidates.AddRange(await DailySlate.BuildNbaCandidatesAsync(warehouseDbPath, yyyymmdd, ct));
+        try
+        {
+            candidates.AddRange(await DailySlate.BuildNcaabCandidatesAsync(warehouseDbPath, yyyymmdd, ct));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"variants-shadow: NCAAB scoreboard skipped ({ex.Message})");
+        }
         foreach (var sport in DailySlate.SoccerEspnPaths.Keys)
             candidates.AddRange(await DailySlate.BuildSoccerCandidatesAsync(sport, warehouseDbPath, yyyymmdd, ct));
 

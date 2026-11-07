@@ -47,4 +47,26 @@ public class SbroXlsxParserTests
         await Assert.That(OregonExclusion.IsExcluded("NCAAB", SportTeams.NcaaCode("OregonState"))).IsTrue();
         await Assert.That(OregonExclusion.IsExcluded("NCAAB", SportTeams.NcaaCode("PortlandU"))).IsTrue();
     }
+
+    [Test]
+    public async Task NcaaCode_UnmappedNeverAliasesOntoExistingOrOregon()
+    {
+        var duke = SportTeams.NcaaCode("Duke");
+        var gonzaga = SportTeams.NcaaCode("Gonzaga");
+        var unknown = SportTeams.NcaaCode("Some New College XYZ");
+        await Assert.That(duke).IsEqualTo("duke");
+        await Assert.That(gonzaga).IsEqualTo("gonzaga");
+        await Assert.That(unknown).IsEqualTo("somenewcollegexy"); // SanitizeNcaa truncates to 16
+        await Assert.That(unknown).IsNotEqualTo(duke);
+        await Assert.That(unknown).IsNotEqualTo(gonzaga);
+        await Assert.That(unknown).IsNotEqualTo("ore");
+        await Assert.That(unknown).IsNotEqualTo("orst");
+        await Assert.That(unknown).IsNotEqualTo("port");
+        await Assert.That(unknown).IsNotEqualTo("up");
+        // TryNcaa only hits Oregon cardinal map
+        await Assert.That(SportTeams.TryNcaa("Duke")).IsNull();
+        await Assert.That(SportTeams.TryNcaa("Oregon Ducks")).IsEqualTo("ore");
+        await Assert.That(SportTeams.ResolveNcaa("ORE", "Oregon Ducks", null)).IsEqualTo("ore");
+        await Assert.That(SportTeams.ResolveNcaa(null, "Gonzaga Bulldogs", "Gonzaga")).IsEqualTo("gonzagabulldogs");
+    }
 }

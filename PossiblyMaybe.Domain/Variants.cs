@@ -180,6 +180,12 @@ public static class VariantRegistry
                 : TotalsMath.OverProb(blendedExp, line, sharpness: 0.25);
         }
 
+        if (c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("NCAAF", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("NFL", StringComparison.OrdinalIgnoreCase)
+            || c.Sport.Equals("MLB", StringComparison.OrdinalIgnoreCase))
+            return TotalsMath.OverProb(blendedExp, line, sharpness: 0.2);
+
         var lh = c.LambdaHome ?? blendedExp / 2;
         var la = c.LambdaAway ?? blendedExp / 2;
         return SoccerOverProbConfig.OverProb(lh, la, blendedExp, line, c.Sport);
@@ -196,7 +202,10 @@ public static class VariantRegistry
     {
         if (c.OpenLine is not { } open || c.Line is not { } cur) return false;
         var move = cur - open; // + = line rose
-        var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase) ? v.NbaLineMoveK : v.SoccerLineMoveK;
+        var k = c.Sport.Equals("NBA", StringComparison.OrdinalIgnoreCase)
+                || c.Sport.Equals("NCAAB", StringComparison.OrdinalIgnoreCase)
+            ? v.NbaLineMoveK
+            : v.SoccerLineMoveK;
         // OVER hurt when line drops; UNDER hurt when line rises
         return betOver ? move <= -k : move >= k;
     }

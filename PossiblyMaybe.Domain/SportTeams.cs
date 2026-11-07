@@ -269,7 +269,8 @@ public static class SportTeams
 
     /// <summary>
     /// Minimal NCAA school → short code for GameKey. Oregon spellings map to exclusion codes;
-    /// everything else gets a stable sanitized token from the SBRO name.
+    /// everything else gets a stable sanitized token from the SBRO/ESPN name.
+    /// Unmapped schools never resolve onto another school's code (only Oregon cardinal aliases are listed).
     /// </summary>
     public static string NcaaCode(string? raw)
     {
@@ -278,6 +279,26 @@ public static class SportTeams
         if (Ncaa.TryGetValue(spaced, out var code) || Ncaa.TryGetValue(raw.Trim(), out code))
             return code;
         return SanitizeNcaa(spaced);
+    }
+
+    /// <summary>Known NCAA alias → code, or null (never invent a hit onto another club).</summary>
+    public static string? TryNcaa(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var spaced = SplitCamel(raw.Trim());
+        if (Ncaa.TryGetValue(spaced, out var code) || Ncaa.TryGetValue(raw.Trim(), out code))
+            return code;
+        return null;
+    }
+
+    /// <summary>ESPN / display → warehouse NCAAB code. Unknown clubs keep their own sanitized name.</summary>
+    public static string ResolveNcaa(string? abbr, string? display, string? shortName)
+    {
+        var hit = TryNcaa(display) ?? TryNcaa(shortName) ?? TryNcaa(abbr);
+        if (hit is not null) return hit;
+        if (!string.IsNullOrWhiteSpace(display)) return NcaaCode(display);
+        if (!string.IsNullOrWhiteSpace(shortName)) return NcaaCode(shortName);
+        return NcaaCode(abbr);
     }
 
     static string SplitCamel(string raw)
@@ -305,15 +326,19 @@ public static class SportTeams
         return s.Length == 0 ? "unk" : s.Length <= 16 ? s : s[..16];
     }
 
+    // Only Oregon-cardinal aliases. Do not add other schools here — SanitizeNcaa keeps them distinct.
     private static readonly Dictionary<string, string> Ncaa = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Oregon cardinal set → codes OregonExclusion already knows
         ["Oregon"] = "ore", ["Oregon Ducks"] = "ore", ["Ducks"] = "ore",
+        ["University of Oregon"] = "ore", ["ORE"] = "ore",
         ["Oregon State"] = "orst", ["OregonState"] = "orst", ["Oregon St"] = "orst",
         ["Oregon St."] = "orst", ["Oregon State Beavers"] = "orst", ["Beavers"] = "orst",
+        ["Oregon State University"] = "orst", ["ORST"] = "orst",
         ["Portland State"] = "port", ["PortlandState"] = "port", ["Portland St"] = "port",
         ["Portland St."] = "port", ["Portland State Vikings"] = "port",
+        ["Portland State University"] = "port", ["PORT"] = "port",
         ["Portland U"] = "up", ["PortlandU"] = "up", ["University of Portland"] = "up",
         ["Portland Pilots"] = "up", ["Pilots"] = "up", ["Portlandu"] = "up",
+        ["U of Portland"] = "up", ["UP"] = "up", ["PORTLANDU"] = "up",
     };
 }
